@@ -6,17 +6,10 @@ platform:
   - osx-64
 
 install:
-  - pip install -r requirements.txt
+  - conda install binstar
   - pip install coverage mock
-test:
-  - python setup.py develop
-  - python binstar_client/tests/runtests.py
 
 script:
   - conda build .
 
-build_targets:
-  channels:
-    - dev
-    - "%(branch)s"
-  files: dist/*.tar.bz2
+build_targets: conda
