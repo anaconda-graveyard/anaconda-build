@@ -21,13 +21,14 @@ from binstar_client.utils import get_binstar
 from binstar_client.utils import package_specs
 import time
 import logging
+from binstar_build_client import BinstarBuildAPI
 
 log = logging.getLogger('binstar.build')
 
 def tail(args):
-    
-    binstar = get_binstar(args)
-    
+
+    binstar = get_binstar(args, cls=BinstarBuildAPI)
+
     log_items = binstar.tail_build(args.package.user, args.package.name, args.build_no, limit=args.n)
     for log_item in log_items['log']:
         log.info(log_item.get('msg'))
@@ -53,8 +54,8 @@ def tail(args):
 
 
 def list_builds(args):
-    
-    binstar = get_binstar(args)
+
+    binstar = get_binstar(args, cls=BinstarBuildAPI)
 
     log.info('Getting builds:')
 
@@ -88,7 +89,7 @@ def add_parser(subparsers):
                        help='build to the package OWNER/PACKAGE',
                        nargs='?',
                        type=package_specs)
-    
+
     parser.add_argument('build_no',
                        help='Tail the build output of build number X.Y',
                        type=float)
@@ -96,7 +97,7 @@ def add_parser(subparsers):
     group = parser.add_argument_group('Tail Options')
     group.add_argument('-n', metavar='#', type=int,
                        help='Number of lines for tail output')
-    
+
     group.add_argument('-f', action='store_true',
                        help=('The -f option causes tail to not stop when end of current output is reached,'
                              ' but rather to wait for additional data to be appended to the input')
@@ -104,7 +105,7 @@ def add_parser(subparsers):
 
     parser.set_defaults(main=tail)
     #===========================================================================
-    # 
+    #
     #===========================================================================
     parser = subparsers.add_parser('list-all',
                                       help='list the builds for package',
@@ -116,7 +117,7 @@ def add_parser(subparsers):
                        type=package_specs)
     parser.set_defaults(main=list_builds, build_no=None)
     #===========================================================================
-    # 
+    #
     #===========================================================================
     parser = subparsers.add_parser('list',
                                       help='list the builds for package',

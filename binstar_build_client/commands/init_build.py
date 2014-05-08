@@ -24,34 +24,35 @@ import os
 from binstar_client import errors
 from binstar_client.utils.build_file import initial_build_config
 import sys
+from binstar_build_client import BinstarBuildAPI
 
 log = logging.getLogger('binstar.build')
 
 def init_build(args):
-    
-    binstar = get_binstar()
+
+    binstar = get_binstar(args, cls=BinstarBuildAPI)
 
     # Force user auth
     user = binstar.user()
-    
+
     binstar_yml = join(args.path, '.binstar.yml')
-    
+
     if os.path.exists(binstar_yml):
         result = bool_input("The file '%s' already exists. Would you like to overwrite it?" % binstar_yml,
                             default=False)
         if not result:
             log.error('goodby')
             sys.exit(1)
-    
+
     name = basename(abspath(args.path))
     package_name = raw_input('Please choose a name for this package: (default %s)\n> ' % name)
     package_name = package_name or name
-    
-          
+
+
     with open(binstar_yml, 'w') as fd:
         fd.write(initial_build_config % dict(PACKAGE_NAME=package_name))
     log.info("Wrote file '%s'" % binstar_yml)
-    
+
     try:
         _ = binstar.package(user['login'], package_name)
     except errors.NotFound:

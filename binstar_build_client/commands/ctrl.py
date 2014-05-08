@@ -21,6 +21,7 @@ from binstar_client.utils import get_binstar
 from binstar_client.utils import package_specs
 import argparse
 import logging
+from binstar_build_client import BinstarBuildAPI
 
 log = logging.getLogger('binstar.build')
 
@@ -33,11 +34,11 @@ def halt_build(binstar, args):
     return
 
 def resubmit_build(args):
-    
-    binstar = get_binstar(args)
-    
+
+    binstar = get_binstar(args, cls=BinstarBuildAPI)
+
     binstar.resubmit_build(args.package.user, args.package.name, args.build_no)
-    
+
     log.info("Build %s resubmitted" % args.build_no)
 
 
@@ -53,11 +54,11 @@ def add_parser(subparsers):
                        help='build to the package OWNER/PACKAGE',
                        nargs='?',
                        type=package_specs)
-    
+
     parser.add_argument('build_no',
                        help='The build to resubmit',
                        type=float)
-    
+
     parser.set_defaults(main=resubmit_build)
-    
+
 

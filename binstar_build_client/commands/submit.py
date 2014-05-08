@@ -28,6 +28,7 @@ import os
 from binstar_client.utils import package_specs
 from itertools import product
 from binstar_client import errors
+from binstar_build_client import BinstarBuildAPI
 
 log = logging.getLogger('binstar.build')
 
@@ -69,9 +70,9 @@ def serialize_builds(instruction_sets):
         yield value
 
 def submit_build(args):
-    
-    binstar = get_binstar(args)
-    
+
+    binstar = get_binstar(args, cls=BinstarBuildAPI)
+
     path = abspath(args.path)
     log.info('Getting build product: %s' % abspath(args.path))
 
@@ -90,7 +91,7 @@ def submit_build(args):
 
             with open(tmp, mode='rb') as fd:
 
-                build_no = binstar.submit_for_build(args.package.user, args.package.name, fd, builds, 
+                build_no = binstar.submit_for_build(args.package.user, args.package.name, fd, builds,
                                                     test_only=args.test_only)
         log.info('Build %s submitted' % build_no)
     else:
@@ -99,7 +100,7 @@ def submit_build(args):
 
 def main(args):
 
-    binstar = get_binstar()
+    binstar = get_binstar(args, cls=BinstarBuildAPI)
 
     # Force user auth
     user = binstar.user()
@@ -139,29 +140,28 @@ def main(args):
         log.error("Run: 'binstar package --create %s/%s' to create this package" % (user_name, package_name))
         raise errors.NotFound('Package %s/%s' % (user_name, package_name))
     args.package = PackageSpec(user_name, package_name)
-    
+
     submit_build(args)
-    
-    
+
+
 def add_parser(subparsers):
     parser = subparsers.add_parser('submit',
                                       help='Submit for building',
                                       description=__doc__,
                                       )
-    
+
     parser.add_argument('path', default='.', nargs='?')
-    
+
     parser.add_argument('--test-only', '--no-upload', action='store_true',
                         dest='test_only',
                         help="Don't upload the build targets to binstar, but run everything else")
-    
+
     parser.add_argument('-p', '--package',
-                       help="The binstar package namespace to upload the build to", 
+                       help="The binstar package namespace to upload the build to",
                        type=package_specs)
-    
+
     parser.add_argument('-n', '--dry-run',
                        help="Parse the build file but don't submit", action='store_true')
 
     parser.set_defaults(main=main)
-    
-    
+
