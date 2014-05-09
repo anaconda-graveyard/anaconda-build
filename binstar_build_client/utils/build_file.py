@@ -5,7 +5,7 @@ Created on Feb 18, 2014
 '''
 
 
-initial_build_config ='''
+initial_build_config = '''
 ## The package attribure specifies a binstar package namespace to build the package to. 
 ## This can be specified here or on the command line
 package: %(PACKAGE_NAME)s
@@ -74,7 +74,11 @@ script:
 # build_artifacts:
 #   - *.log
 
-## Build Targets: Upload these files to your bunstar package
+## Build Targets: Upload these files to your binstar package
+## build targets may be a list of files (globs allows) to upload
+## The special build targets 'conda' and 'pypi' may be used to 
+## upload conda builds  
+## e.g. conda is an alias for /opt/anaconda/conda-bld/<os-arch>/*.tar.bz2
 # build_targets:
-#   - dist/*
+#   - conda
 '''

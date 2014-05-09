@@ -5,8 +5,7 @@ import os
 import requests
 import warnings
 
-from binstar_client.mixins.build import BuildMixin
-from binstar_client.utils.http_codes import STATUS_CODES
+from binstar_build_client.mixins.build import BuildMixin
 import logging
 from binstar_client import Binstar
 

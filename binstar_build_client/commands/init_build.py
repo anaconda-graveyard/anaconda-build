@@ -22,7 +22,7 @@ import logging
 from os.path import abspath, join, basename
 import os
 from binstar_client import errors
-from binstar_client.utils.build_file import initial_build_config
+from binstar_build_client.utils.build_file import initial_build_config
 import sys
 from binstar_build_client import BinstarBuildAPI
 
@@ -58,7 +58,7 @@ def init_build(args):
     except errors.NotFound:
         log.warn('The package %(username)s/%(name)s does not exist\n'
                  'Please run:\n   binstar package %(username)s/%(name)s --create' % dict(username=user['login'], name=package_name))
-    log.info("Run 'binstar build --submit' to submit your first build")
+    log.info("Run 'binstar-build submit' to submit your first build")
     return
 
 def add_parser(subparsers):

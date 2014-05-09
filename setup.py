@@ -21,7 +21,7 @@ setup(
                       'pytz'],
     entry_points={
           'console_scripts': [
-              'binstar-build = binstar_client.scripts.build:main',
+              'binstar-build = binstar_build_client.scripts.build:main',
               ]
                  },
 

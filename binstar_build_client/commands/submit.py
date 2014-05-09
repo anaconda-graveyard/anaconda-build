@@ -26,9 +26,10 @@ import tarfile
 from contextlib import contextmanager
 import os
 from binstar_client.utils import package_specs
-from itertools import product
 from binstar_client import errors
 from binstar_build_client import BinstarBuildAPI
+from binstar_build_client.utils.matrix import serialize_builds
+from binstar_build_client.utils.filter import ExcludeGit
 
 log = logging.getLogger('binstar.build')
 
@@ -41,33 +42,6 @@ def mktemp(suffix=".tar.gz", prefix='binstar', dir=None):
     finally:
         log.debug('Removing temp file: %s' % tmp)
         os.unlink(tmp)
-
-def expand_build_matrix(instruction_set):
-    instruction_set = instruction_set.copy()
-
-    platforms = instruction_set.pop('platform', ['linux-64']) or [None]
-    if not isinstance(platforms, list): platforms = [platforms]
-    envs = instruction_set.pop('env', [None]) or [None]
-    if not isinstance(envs, list): envs = [envs]
-    engines = instruction_set.pop('engine', ['python=2']) or [None]
-    if not isinstance(engines, list): engines = [engines]
-
-    for platform, env, engine in product(platforms, envs, engines):
-        build = instruction_set.copy()
-        build.update(platform=platform, env=env, engine=engine)
-        yield build
-
-def serialize_builds(instruction_sets):
-    builds = {}
-    for instruction_set in instruction_sets:
-        for build in expand_build_matrix(instruction_set):
-            k = '%s::%s::%s' % (build['platform'], build['engine'], build['env'])
-            bld = builds.setdefault(k, build)
-            bld.update(build)
-
-    for k, value in sorted(builds.items()):
-        if value.get('exclude'): continue
-        yield value
 
 def submit_build(args):
 
@@ -87,13 +61,20 @@ def submit_build(args):
     if not args.dry_run:
         with mktemp() as tmp:
             with tarfile.open(tmp, mode='w|bz2') as tf:
-                tf.add(path, '.')
+                tf.add(path, '.', exclude=ExcludeGit(path))
 
             with open(tmp, mode='rb') as fd:
 
                 build_no = binstar.submit_for_build(args.package.user, args.package.name, fd, builds,
                                                     test_only=args.test_only)
+
+        log.info('')
+        log.info('To view this build go to http://alpha.binstar.org/%s/%s/builds/matrix/%s' % (args.package.user, args.package.name, build_no))
+        log.info('')
+        log.info('You may also run binstar-build tail -f %s/%s %s' % (args.package.user, args.package.name, build_no))
+        log.info('')
         log.info('Build %s submitted' % build_no)
+
     else:
         log.info('Build not submitted (dry-run)')
 
@@ -119,7 +100,6 @@ def main(args):
             user_name = build.get('user')
 
     # Force package to exist
-    print "args.package", args.package
     if args.package:
         if user_name and not args.package.user == user_name:
             log.warn('User name does not match the user specified in the .bisntar.yml file (%s != %s)', args.package.user, user_name)
@@ -142,7 +122,6 @@ def main(args):
     args.package = PackageSpec(user_name, package_name)
 
     submit_build(args)
-
 
 def add_parser(subparsers):
     parser = subparsers.add_parser('submit',
