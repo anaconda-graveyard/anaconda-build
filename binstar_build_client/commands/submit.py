@@ -71,7 +71,7 @@ def submit_build(args):
         log.info('')
         log.info('To view this build go to http://alpha.binstar.org/%s/%s/builds/matrix/%s' % (args.package.user, args.package.name, build_no))
         log.info('')
-        log.info('You may also run binstar-build tail -f %s/%s %s' % (args.package.user, args.package.name, build_no))
+        log.info('You may also run\n\n    binstar-build tail -f %s/%s %s\n' % (args.package.user, args.package.name, build_no))
         log.info('')
         log.info('Build %s submitted' % build_no)
 
@@ -117,7 +117,7 @@ def main(args):
         _ = binstar.package(user_name, package_name)
     except errors.NotFound:
         log.error("The package %s/%s does not exist." % (user_name, package_name))
-        log.error("Run: 'binstar package --create %s/%s' to create this package" % (user_name, package_name))
+        log.error("Run: \n\n    binstar package --create %s/%s\n\n to create this package" % (user_name, package_name))
         raise errors.NotFound('Package %s/%s' % (user_name, package_name))
     args.package = PackageSpec(user_name, package_name)
 
