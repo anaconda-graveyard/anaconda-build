@@ -17,7 +17,7 @@ Tail the output of a build untill it is complete:
     
 '''
 
-from binstar_client.utils import get_binstar, PackageSpec
+from binstar_client.utils import get_binstar, PackageSpec, upload_print_callback
 import logging, yaml
 from os.path import abspath, join, isfile
 from binstar_client.errors import UserError
@@ -60,13 +60,15 @@ def submit_build(args):
 
     if not args.dry_run:
         with mktemp() as tmp:
+            log.info("Archiving build directory for upload")
             with tarfile.open(tmp, mode='w|bz2') as tf:
                 tf.add(path, '.', exclude=ExcludeGit(path))
 
+            log.info("Created archive uploading to binstar")
             with open(tmp, mode='rb') as fd:
 
                 build_no = binstar.submit_for_build(args.package.user, args.package.name, fd, builds,
-                                                    test_only=args.test_only)
+                                                    test_only=args.test_only, callback=upload_print_callback(args))
 
         log.info('')
         log.info('To view this build go to http://alpha.binstar.org/%s/%s/builds/matrix/%s' % (args.package.user, args.package.name, build_no))
@@ -141,6 +143,9 @@ def add_parser(subparsers):
 
     parser.add_argument('-n', '--dry-run',
                        help="Parse the build file but don't submit", action='store_true')
+
+    parser.add_argument('--no-progress',
+                       help="Don't show progress bar", action='store_true')
 
     parser.set_defaults(main=main)
 
