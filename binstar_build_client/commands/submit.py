@@ -1,19 +1,25 @@
 '''
 Build command
-
-Initialize the build directory:
-
-    binstar build --init
-    
-This will create a default .binstar.yml file in the current directory
   
 Submit a build:
 
-    binstar build --submit
+    binstar-build submit [path]
     
-Tail the output of a build untill it is complete:
+You may also submit a build via a git url:
 
-    binstar build --tail 1.0
+     binstar-build submit git+<git-url>[#branch]
+
+    For example if I have the git repo https://github.com/srossross/testci:
+        
+        binstar-build submit git+https://github.com/srossross/testci
+        
+    Or to test a branch:
+    
+        binstar-build submit git+https://github.com/srossross/testci#feature/testing
+     
+See also:
+
+    binstar-build tail -h
     
 '''
 
@@ -30,6 +36,7 @@ from binstar_client import errors
 from binstar_build_client import BinstarBuildAPI
 from binstar_build_client.utils.matrix import serialize_builds
 from binstar_build_client.utils.filter import ExcludeGit
+from binstar_build_client.utils.git_utils import is_giturl, clone_repo
 
 log = logging.getLogger('binstar.build')
 
@@ -48,6 +55,7 @@ def submit_build(args):
     binstar = get_binstar(args, cls=BinstarBuildAPI)
 
     path = abspath(args.path)
+
     log.info('Getting build product: %s' % abspath(args.path))
 
     with open(join(path, '.binstar.yml')) as cfg:
@@ -91,10 +99,14 @@ def main(args):
     package_name = None
     user_name = None
 
+    if is_giturl(args.path):
+        args.path = clone_repo(args.path)
+
+
     binstar_yml = join(args.path, '.binstar.yml')
 
     if not isfile(binstar_yml):
-        raise UserError("file %s does not exist" % binstar_yml)
+        raise UserError("file %s does not exist\n perhaps you should run\n\n    binstar-build init\n" % binstar_yml)
 
     with open(binstar_yml) as cfg:
         for build in yaml.load_all(cfg):
