@@ -1,4 +1,4 @@
-package: binstar
+package: binstar-build
 engine:
   - python=2.7
 platform:
