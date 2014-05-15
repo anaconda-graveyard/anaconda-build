@@ -8,10 +8,10 @@ from fnmatch import fnmatch
 import os
 
 class ExcludeGit(object):
-    def __init__(self, path):
+    def __init__(self, path, use_git_ignore=True):
         self.path = os.path.abspath(path)
         self.to_ignore = []
-        while 1:
+        while use_git_ignore:
             git_ignore = os.path.join(path, '.gitignore')
             if os.path.isfile(git_ignore):
                 with open(git_ignore) as gi:
@@ -27,6 +27,9 @@ class ExcludeGit(object):
     def __call__(self, filename):
         if '/.git/' in filename:
             return True
+        if not self.to_ignore:
+            return False
+
         if os.path.isdir(filename):
             filename += '/'
         if filename.startswith(self.path):

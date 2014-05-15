@@ -70,7 +70,7 @@ def submit_build(args):
         with mktemp() as tmp:
             log.info("Archiving build directory for upload ...")
             with tarfile.open(tmp, mode='w|bz2') as tf:
-                tf.add(path, '.', exclude=None if args.dont_git_ignore else ExcludeGit(path))
+                tf.add(path, '.', exclude=ExcludeGit(path, use_git_ignore=not args.dont_git_ignore))
 
             log.info("Created archive; Uploading to binstar")
             with open(tmp, mode='rb') as fd:
