@@ -68,11 +68,11 @@ def submit_build(args):
 
     if not args.dry_run:
         with mktemp() as tmp:
-            log.info("Archiving build directory for upload")
+            log.info("Archiving build directory for upload ...")
             with tarfile.open(tmp, mode='w|bz2') as tf:
-                tf.add(path, '.', exclude=ExcludeGit(path))
+                tf.add(path, '.', exclude=None if args.dont_git_ignore else ExcludeGit(path))
 
-            log.info("Created archive uploading to binstar")
+            log.info("Created archive; Uploading to binstar")
             with open(tmp, mode='rb') as fd:
 
                 build_no = binstar.submit_for_build(args.package.user, args.package.name, fd, builds,
@@ -101,6 +101,7 @@ def main(args):
 
     if is_giturl(args.path):
         args.path = clone_repo(args.path)
+        args.dont_git_ignore = True
 
 
     binstar_yml = join(args.path, '.binstar.yml')
@@ -158,6 +159,9 @@ def add_parser(subparsers):
 
     parser.add_argument('--no-progress',
                        help="Don't show progress bar", action='store_true')
+
+    parser.add_argument('--dont-git-ignore',
+                       help="Don't ignore files from .gitignore", action='store_true')
 
     parser.set_defaults(main=main)
 
