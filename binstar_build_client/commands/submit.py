@@ -36,7 +36,7 @@ from binstar_client import errors
 from binstar_build_client import BinstarBuildAPI
 from binstar_build_client.utils.matrix import serialize_builds
 from binstar_build_client.utils.filter import ExcludeGit
-from binstar_build_client.utils.git_utils import is_giturl, clone_repo
+from binstar_build_client.utils.git_utils import is_giturl, clone_repo, get_urlpath
 
 log = logging.getLogger('binstar.build')
 
@@ -53,7 +53,6 @@ def mktemp(suffix=".tar.gz", prefix='binstar', dir=None):
 def submit_build(args):
 
     binstar = get_binstar(args, cls=BinstarBuildAPI)
-
     path = abspath(args.path)
 
     log.info('Getting build product: %s' % abspath(args.path))
@@ -67,16 +66,39 @@ def submit_build(args):
         log.info(' %i)' % i + ' %(platform)-10s  %(engine)-15s  %(env)-15s' % build)
 
     if not args.dry_run:
-        with mktemp() as tmp:
-            log.info("Archiving build directory for upload ...")
-            with tarfile.open(tmp, mode='w|bz2') as tf:
-                tf.add(path, '.', exclude=ExcludeGit(path, use_git_ignore=not args.dont_git_ignore))
+        if args.git_url:
+            log.info("Submitting the following repo for package creation: %s" % args.git_url)
 
-            log.info("Created archive; Uploading to binstar")
-            with open(tmp, mode='rb') as fd:
+            #split branch from repo
+            repo_branch = args.git_url_path.split('/')
+            if len(repo_branch) == 2:
+                #form of srossross/testci
+                repo = '/'.join(repo_branch)
+                branch = 'master'
+            else:
+                #form of srossross/testci/tree/topull
+                repo = '/'.join(repo_branch[:2])
+                branch = repo_branch[-1]
 
-                build_no = binstar.submit_for_build(args.package.user, args.package.name, fd, builds,
+            for b in builds:
+                b['repo'] = repo
+                b['branch'] = branch
+
+            print "the build, ", builds
+            build_no = binstar.submit_for_url_build(args.package.user, args.package.name, builds,
                                                     test_only=args.test_only, callback=upload_print_callback(args))
+
+        else:
+            with mktemp() as tmp:
+                log.info("Archiving build directory for upload ...")
+                with tarfile.open(tmp, mode='w|bz2') as tf:
+                    tf.add(path, '.', exclude=ExcludeGit(path, use_git_ignore=not args.dont_git_ignore))
+
+                log.info("Created archive; Uploading to binstar")
+                with open(tmp, mode='rb') as fd:
+
+                    build_no = binstar.submit_for_build(args.package.user, args.package.name, fd, builds,
+                                                        test_only=args.test_only, callback=upload_print_callback(args))
 
         log.info('')
         log.info('To view this build go to http://alpha.binstar.org/%s/%s/builds/matrix/%s' % (args.package.user, args.package.name, build_no))
@@ -99,7 +121,12 @@ def main(args):
     package_name = None
     user_name = None
 
+    if args.git_url:
+        args.path = args.git_url
+
     if is_giturl(args.path):
+        args.git_url = args.path
+        args.git_url_path = get_urlpath(args.path)
         args.path = clone_repo(args.path)
         args.dont_git_ignore = True
 
@@ -144,7 +171,7 @@ def add_parser(subparsers):
                                       description=__doc__,
                                       )
 
-    parser.add_argument('path', default='.', nargs='?')
+    parser.add_argument('--path', default='.', nargs='?')
 
     parser.add_argument('--test-only', '--no-upload', action='store_true',
                         dest='test_only',
@@ -153,6 +180,10 @@ def add_parser(subparsers):
     parser.add_argument('-p', '--package',
                        help="The binstar package namespace to upload the build to",
                        type=package_specs)
+
+    parser.add_argument('-gu', '--git-url',
+                       help="The github url with valid .binstar.yml file to clone",
+                       type=str)
 
     parser.add_argument('-n', '--dry-run',
                        help="Parse the build file but don't submit", action='store_true')

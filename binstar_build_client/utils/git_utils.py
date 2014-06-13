@@ -14,6 +14,11 @@ def is_giturl(path):
     if url.scheme and url.scheme.startswith('git+'):
         return True
 
+def get_urlpath(path):
+    url = urlparse(path)
+    return url.path[1:] #path is /a/b (want to remove first slash)
+
+
 
 def clone_repo(path):
     url = urlparse(path)
