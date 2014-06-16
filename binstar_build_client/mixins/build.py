@@ -66,27 +66,11 @@ class BuildMixin(object):
         # /build/<owner_login>/<package_name>/submit-git-url
         url = '%s/build/%s/%s/submit-git-url' % (self.domain, username, package)
 
-        print "the instructions: ", instructions
         data = jencode(instructions=instructions, test_only=test_only)
         res = self.session.post(url, data=data)
-        self._check_response(res)
+
+        self._check_response(res, [201])
         obj = res.json()
-
-        s3url = obj['s3_url']
-        s3data = obj['s3form_data']
-
-
-        _hexmd5, b64md5, size = compute_hash(fd)
-        s3data['Content-Length'] = size
-        s3data['Content-MD5'] = b64md5
-
-        data_stream, headers = stream_multipart(s3data, files={'file':(obj['basename'], fd)},
-                                                callback=callback)
-
-        s3res = requests.post(s3url, data=data_stream, verify=True, timeout=10 * 60 * 60, headers=headers)
-
-        if s3res.status_code != 201:
-            raise BinstarError('Error uploading to s3', s3res.status_code)
 
         url = '%s/build/%s/%s/commit/%s' % (self.domain, username, package, obj['build_id'])
         res = self.session.post(url, verify=True)

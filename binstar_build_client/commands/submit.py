@@ -69,25 +69,6 @@ def submit_build(args):
         if args.git_url:
             log.info("Submitting the following repo for package creation: %s" % args.git_url)
 
-            #split branch from repo
-            repo_branch = args.git_url_path.split('/')
-            if len(repo_branch) == 2:
-                #form of srossross/testci
-                repo = '/'.join(repo_branch)
-                branch = 'master'
-            else:
-                #form of srossross/testci/tree/topull
-                repo = '/'.join(repo_branch[:2])
-                branch = repo_branch[-1]
-
-            for b in builds:
-                b['repo'] = repo
-                b['branch'] = branch
-
-            print "the build, ", builds
-            build_no = binstar.submit_for_url_build(args.package.user, args.package.name, builds,
-                                                    test_only=args.test_only, callback=upload_print_callback(args))
-
         else:
             with mktemp() as tmp:
                 log.info("Archiving build directory for upload ...")
@@ -99,6 +80,39 @@ def submit_build(args):
 
                     build_no = binstar.submit_for_build(args.package.user, args.package.name, fd, builds,
                                                         test_only=args.test_only, callback=upload_print_callback(args))
+
+        log.info('')
+        log.info('To view this build go to http://alpha.binstar.org/%s/%s/builds/matrix/%s' % (args.package.user, args.package.name, build_no))
+        log.info('')
+        log.info('You may also run\n\n    binstar-build tail -f %s/%s %s\n' % (args.package.user, args.package.name, build_no))
+        log.info('')
+        log.info('Build %s submitted' % build_no)
+
+    else:
+        log.info('Build not submitted (dry-run)')
+
+def submit_git_build(args):
+
+    binstar = get_binstar(args, cls=BinstarBuildAPI)
+    path = abspath(args.path)
+
+    if not args.dry_run:
+        log.info("Submitting the following repo for package creation: %s" % args.git_url)
+
+        #split branch from repo
+        repo_branch = args.git_url_path.split('/')
+        if len(repo_branch) == 2:
+            #form of srossross/testci
+            repo = '/'.join(repo_branch)
+            branch = 'master'
+        else:
+            #form of srossross/testci/tree/topull
+            repo = '/'.join(repo_branch[:2])
+            branch = repo_branch[-1]
+
+        builds = {'repo': repo, 'branch':branch}
+        build_no = binstar.submit_for_url_build(args.package.user, args.package.name, builds,
+                                                test_only=args.test_only, callback=upload_print_callback(args))
 
         log.info('')
         log.info('To view this build go to http://alpha.binstar.org/%s/%s/builds/matrix/%s' % (args.package.user, args.package.name, build_no))
@@ -127,43 +141,54 @@ def main(args):
     if is_giturl(args.path):
         args.git_url = args.path
         args.git_url_path = get_urlpath(args.path)
-        args.path = clone_repo(args.path)
+        # args.path = clone_repo(args.path)
         args.dont_git_ignore = True
+        user_name = user['login']
+        package_name = args.package_name
 
-
-    binstar_yml = join(args.path, '.binstar.yml')
-
-    if not isfile(binstar_yml):
-        raise UserError("file %s does not exist\n perhaps you should run\n\n    binstar-build init\n" % binstar_yml)
-
-    with open(binstar_yml) as cfg:
-        for build in yaml.load_all(cfg):
-            package_name = build.get('package')
-            user_name = build.get('user')
-
-    # Force package to exist
-    if args.package:
-        if user_name and not args.package.user == user_name:
-            log.warn('User name does not match the user specified in the .bisntar.yml file (%s != %s)', args.package.user, user_name)
-        user_name = args.package.user
-        if package_name and not args.package.name == package_name:
-            log.warn('Package name does not match the user specified in the .bisntar.yml file (%s != %s)', args.package.name, package_name)
-        package_name = args.package.name
-    else:
-        if user_name is None:
-            user_name = user['login']
         if not package_name:
-            raise UserError("You must specify the package name in the .bisntar.yml file or the command line")
+            package_name = args.git_url_path.split('/')[1]
+            log.info("Using repo name '%s' as the pkg name." % package_name)
 
-    try:
-        _ = binstar.package(user_name, package_name)
-    except errors.NotFound:
-        log.error("The package %s/%s does not exist." % (user_name, package_name))
-        log.error("Run: \n\n    binstar package --create %s/%s\n\n to create this package" % (user_name, package_name))
-        raise errors.NotFound('Package %s/%s' % (user_name, package_name))
-    args.package = PackageSpec(user_name, package_name)
+        args.package = PackageSpec(user_name, package_name)
+        submit_git_build(args)
 
-    submit_build(args)
+
+    #not a github repo (must check for valid .binstar.yml file
+    else:
+        binstar_yml = join(args.path, '.binstar.yml')
+
+        if not isfile(binstar_yml):
+            raise UserError("file %s does not exist\n perhaps you should run\n\n    binstar-build init\n" % binstar_yml)
+
+        with open(binstar_yml) as cfg:
+            for build in yaml.load_all(cfg):
+                package_name = build.get('package')
+                user_name = build.get('user')
+
+        # Force package to exist
+        if args.package:
+            if user_name and not args.package.user == user_name:
+                log.warn('User name does not match the user specified in the .binstar.yml file (%s != %s)', args.package.user, user_name)
+            user_name = args.package.user
+            if package_name and not args.package.name == package_name:
+                log.warn('Package name does not match the user specified in the .binstar.yml file (%s != %s)', args.package.name, package_name)
+            package_name = args.package.name
+        else:
+            if user_name is None:
+                user_name = user['login']
+            if not package_name:
+                raise UserError("You must specify the package name in the .binstar.yml file or the command line")
+
+        try:
+            _ = binstar.package(user_name, package_name)
+        except errors.NotFound:
+            log.error("The package %s/%s does not exist." % (user_name, package_name))
+            log.error("Run: \n\n    binstar package --create %s/%s\n\n to create this package" % (user_name, package_name))
+            raise errors.NotFound('Package %s/%s' % (user_name, package_name))
+        args.package = PackageSpec(user_name, package_name)
+
+        submit_build(args)
 
 def add_parser(subparsers):
     parser = subparsers.add_parser('submit',
@@ -183,6 +208,10 @@ def add_parser(subparsers):
 
     parser.add_argument('-gu', '--git-url',
                        help="The github url with valid .binstar.yml file to clone",
+                       type=str)
+
+    parser.add_argument('-pn', '--package-name',
+                       help="The name of a package to be used in conjunction with --git-url",
                        type=str)
 
     parser.add_argument('-n', '--dry-run',
