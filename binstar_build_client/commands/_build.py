@@ -22,7 +22,7 @@ from __future__ import (print_function, unicode_literals, division,
 
 from binstar_client.utils import get_binstar, PackageSpec, bool_input
 import logging, yaml
-from os.path import abspath, join, isfile, dirname, basename
+from os.path import abspath, join, isfile, basename
 from binstar_client.errors import UserError
 import tempfile
 import tarfile
