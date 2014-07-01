@@ -7,7 +7,7 @@ Created on May 15, 2014
 from __future__ import (print_function, unicode_literals, division,
     absolute_import)
 
-from urlparse import urlparse, urlunparse
+from six.moves.urllib.parse import urlparse, urlunparse
 from logging import getLogger
 import shutil
 import atexit

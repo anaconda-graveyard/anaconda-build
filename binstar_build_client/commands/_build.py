@@ -36,6 +36,8 @@ import argparse
 from binstar_client.utils.build_file import initial_build_config
 import sys
 
+from six.moves import input
+
 log = logging.getLogger('binstar.build')
 
 @contextmanager
@@ -187,7 +189,7 @@ def init_build(args):
             sys.exit(1)
 
     name = basename(abspath(args.path))
-    package_name = raw_input('Please choose a name for this package: (default %s)\n> ' % name)
+    package_name = input('Please choose a name for this package: (default %s)\n> ' % name)
     package_name = package_name or name
 
 
