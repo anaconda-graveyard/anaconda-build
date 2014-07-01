@@ -4,6 +4,10 @@ Created on May 8, 2014
 @author: sean
 '''
 
+
+from __future__ import (print_function, unicode_literals, division,
+    absolute_import)
+
 from itertools import product
 
 def expand_build_matrix(instruction_set):

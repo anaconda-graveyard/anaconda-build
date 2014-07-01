@@ -4,18 +4,21 @@ Build command
 Initialize the build directory:
 
     binstar build --init
-    
+
 This will create a default .binstar.yml file in the current directory
-  
+
 Submit a build:
 
     binstar build --submit
-    
+
 Tail the output of a build untill it is complete:
 
     binstar build --tail 1.0
-    
+
 '''
+
+from __future__ import (print_function, unicode_literals, division,
+    absolute_import)
 
 from binstar_client.utils import get_binstar, PackageSpec, bool_input
 import logging, yaml
@@ -133,9 +136,9 @@ def serialize_builds(instruction_sets):
 
 
 def submit_build(args):
-    
+
     binstar = get_binstar(args)
-    
+
     path = abspath(args.path)
     log.info('Getting build product: %s' % abspath(args.path))
 
@@ -163,35 +166,35 @@ def submit_build(args):
 
 def resubmit_build(binstar, args):
     binstar.resubmit_build(args.package.user, args.package.name, args.resubmit)
-    
+
 
 
 
 def init_build(args):
-    
+
     binstar = get_binstar()
 
     # Force user auth
     user = binstar.user()
-    
+
     binstar_yml = join(args.path, '.binstar.yml')
-    
+
     if os.path.exists(binstar_yml):
         result = bool_input("The file '%s' already exists. Would you like to overwrite it?" % binstar_yml,
                             default=False)
         if not result:
             log.error('goodby')
             sys.exit(1)
-    
+
     name = basename(abspath(args.path))
     package_name = raw_input('Please choose a name for this package: (default %s)\n> ' % name)
     package_name = package_name or name
-    
-          
+
+
     with open(binstar_yml, 'w') as fd:
         fd.write(initial_build_config % dict(PACKAGE_NAME=package_name))
     log.info("Wrote file '%s'" % binstar_yml)
-    
+
     try:
         _ = binstar.package(user['login'], package_name)
     except errors.NotFound:
@@ -241,11 +244,11 @@ def main(args):
         log.error("Run: 'binstar package --create %s/%s' to create this package" % (user_name, package_name))
         raise errors.NotFound('Package %s/%s' % (user_name, package_name))
     args.package = PackageSpec(user_name, package_name)
-        
+
     if args.resubmit:
         log.info("Re submit build %s", args.resubmit)
         return resubmit_build(binstar, args)
-    
+
     if args.tail:
         return tail(binstar, args)
 
@@ -270,7 +273,7 @@ def add_parser(subparsers):
                        type=package_specs)
     parser.add_argument('--test-only', '--no-upload', action='store_true',
                         help="Don't upload the build targets to binstar, but run everything else")
-    
+
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('-l', '--list', default=True, type=int,
                        help='List the sub builds for this package')
@@ -302,4 +305,3 @@ def add_parser(subparsers):
                        )
 
     parser.set_defaults(main=main)
-

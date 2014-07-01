@@ -2,6 +2,9 @@
 Attach a private key file
 '''
 
+from __future__ import (print_function, unicode_literals, division,
+    absolute_import)
+
 from binstar_client.utils import get_binstar
 from binstar_client.utils import package_specs
 import logging
@@ -24,7 +27,7 @@ def set_keyfile(args):
 def keyfiles(args):
     binstar = get_binstar(args, cls=BinstarBuildAPI)
     for key in binstar.keyfiles(args.package.user, args.package.name):
-        print key
+        print(key)
 
 
 def add_parser(subparsers):
@@ -57,5 +60,3 @@ def add_parser(subparsers):
     group.add_argument('-r', '--remove', action='store_true')
 
     parser.set_defaults(main=set_keyfile)
-
-
