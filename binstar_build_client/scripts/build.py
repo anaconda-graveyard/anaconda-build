@@ -4,18 +4,22 @@ Binstar Build command
 Initialize the build directory:
 
     binstar-build init
-    
+
 This will create a default .binstar.yml file in the current directory
-  
+
 Submit a build:
 
     binstar-build submit
-    
+
 Tail the output of a build untill it is complete:
 
     binstar-build tail user/package 1.0
-    
+
 '''
+
+from __future__ import (print_function, unicode_literals, division,
+    absolute_import)
+
 from ..commands import sub_commands
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 from binstar_client import __version__ as version
@@ -76,7 +80,7 @@ def main():
             return args.main(args)
         except Unauthorized as err:
             if not args.token:
-                print 'The action you are performing requires authentication, please sign in:'
+                print('The action you are performing requires authentication, please sign in:')
                 interactive_login()
                 return args.main(args)
             else:

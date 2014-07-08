@@ -4,6 +4,10 @@ Created on May 8, 2014
 @author: sean
 '''
 
+
+from __future__ import (print_function, unicode_literals, division,
+    absolute_import)
+
 from fnmatch import fnmatch
 import os
 
@@ -36,4 +40,3 @@ class ExcludeGit(object):
             filename = filename[len(self.path):]
 
         return any(fnmatch(filename, pat) for pat in self.to_ignore)
-
