@@ -36,7 +36,7 @@ from binstar_client import errors
 from binstar_build_client import BinstarBuildAPI
 from binstar_build_client.utils.matrix import serialize_builds
 from binstar_build_client.utils.filter import ExcludeGit
-from binstar_build_client.utils.git_utils import is_giturl, clone_repo, get_urlpath
+from binstar_build_client.utils.git_utils import is_giturl, get_urlpath
 
 log = logging.getLogger('binstar.build')
 
@@ -79,6 +79,7 @@ def submit_build(args):
                 with open(tmp, mode='rb') as fd:
 
                     build_no = binstar.submit_for_build(args.package.user, args.package.name, fd, builds,
+                                                        channels=args.channels,
                                                         test_only=args.test_only, callback=upload_print_callback(args))
 
         log.info('')
@@ -99,20 +100,21 @@ def submit_git_build(args):
     if not args.dry_run:
         log.info("Submitting the following repo for package creation: %s" % args.git_url)
 
-        #split branch from repo
+        # split branch from repo
         repo_branch = args.git_url_path.split('/')
         if len(repo_branch) == 2:
-            #form of srossross/testci
+            # form of srossross/testci
             repo = '/'.join(repo_branch)
             branch = 'master'
         else:
-            #form of srossross/testci/tree/topull
+            # form of srossross/testci/tree/topull
             repo = '/'.join(repo_branch[:2])
             branch = repo_branch[-1]
 
         builds = {'repo': repo, 'branch':branch}
         build_no = binstar.submit_for_url_build(args.package.user, args.package.name, builds,
-                                                test_only=args.test_only, callback=upload_print_callback(args))
+                                                test_only=args.test_only, callback=upload_print_callback(args),
+                                                channels=args.channels)
 
         log.info('')
         log.info('To view this build go to http://alpha.binstar.org/%s/%s/builds/matrix/%s' % (args.package.user, args.package.name, build_no))
@@ -154,7 +156,7 @@ def main(args):
         submit_git_build(args)
 
 
-    #not a github repo (must check for valid .binstar.yml file
+    # not a github repo (must check for valid .binstar.yml file
     else:
         binstar_yml = join(args.path, '.binstar.yml')
 
@@ -222,6 +224,9 @@ def add_parser(subparsers):
 
     parser.add_argument('--dont-git-ignore',
                        help="Don't ignore files from .gitignore", action='store_true')
+
+    parser.add_argument('--channel', action='append', dest='channels',
+                       help="Upload targets to this channel")
 
     parser.set_defaults(main=main)
 
