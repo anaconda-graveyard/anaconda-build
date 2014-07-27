@@ -3,14 +3,18 @@ Created on May 15, 2014
 
 @author: sean
 '''
-from urlparse import urlparse, urlunparse
+
+from __future__ import (print_function, unicode_literals, division,
+    absolute_import)
+
+from six.moves.urllib.parse import urlparse, urlunparse
 from logging import getLogger
 import shutil
 import atexit
 log = getLogger('binstar.git')
 def is_giturl(path):
     url = urlparse(path)
-    print 'is_giturl', url
+    print('is_giturl', url)
     if url.scheme and url.scheme.startswith('git+'):
         return True
 
@@ -21,7 +25,7 @@ def clone_repo(path):
     scheme = url.scheme[4:]
 
     git_url = urlunparse((scheme, url.netloc, url.path, '', '', ''))
-    print "clone_repo!", git_url
+    print("clone_repo!", git_url)
     import tempfile
     from subprocess import check_call
     tmp_dir = tempfile.mkdtemp('.git', 'binstar-build')
@@ -37,5 +41,3 @@ def clone_repo(path):
     atexit.register(rmrepo)
 
     return tmp_dir
-
-

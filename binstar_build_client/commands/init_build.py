@@ -4,18 +4,21 @@ Build command
 Initialize the build directory:
 
     binstar build --init
-    
+
 This will create a default .binstar.yml file in the current directory
-  
+
 Submit a build:
 
     binstar build --submit
-    
+
 Tail the output of a build untill it is complete:
 
     binstar build --tail 1.0
-    
+
 '''
+
+from __future__ import (print_function, unicode_literals, division,
+    absolute_import)
 
 from binstar_client.utils import get_binstar, bool_input
 import logging
@@ -25,6 +28,8 @@ from binstar_client import errors
 from binstar_build_client.utils.build_file import initial_build_config
 import sys
 from binstar_build_client import BinstarBuildAPI
+
+from six.moves import input
 
 log = logging.getLogger('binstar.build')
 
@@ -45,7 +50,7 @@ def init_build(args):
             sys.exit(1)
 
     name = basename(abspath(args.path))
-    package_name = raw_input('Please choose a name for this package: (default %s)\n> ' % name)
+    package_name = input('Please choose a name for this package: (default %s)\n> ' % name)
     package_name = package_name or name
 
 
@@ -68,5 +73,3 @@ def add_parser(subparsers):
                                       )
     parser.add_argument('path', default='.', nargs='?')
     parser.set_defaults(main=init_build)
-
-

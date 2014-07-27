@@ -1,3 +1,7 @@
+
+from __future__ import (print_function, unicode_literals, division,
+    absolute_import)
+
 import imp
 import os
 MODULE_EXTENSIONS = ('.py', '.pyc', '.pyo')
