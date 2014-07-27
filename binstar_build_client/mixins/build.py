@@ -3,6 +3,10 @@ Created on Aug 1, 2013
 
 @author: sean
 '''
+
+from __future__ import (print_function, unicode_literals, division,
+    absolute_import)
+
 from binstar_client.utils import jencode, compute_hash
 from binstar_client.requests_ext import stream_multipart
 import requests
@@ -41,7 +45,6 @@ class BuildMixin(object):
 
         s3url = obj['post_url']
         s3data = obj['form_data']
-
 
         _hexmd5, b64md5, size = compute_hash(fd)
         s3data['Content-Length'] = size
@@ -103,6 +106,3 @@ class BuildMixin(object):
         res = self.session.post(url)
         self._check_response(res, [201])
         return
-
-
-

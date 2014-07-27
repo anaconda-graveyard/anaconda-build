@@ -4,18 +4,21 @@ Build command
 Initialize the build directory:
 
     binstar build --init
-    
+
 This will create a default .binstar.yml file in the current directory
-  
+
 Submit a build:
 
     binstar build --submit
-    
+
 Tail the output of a build untill it is complete:
 
     binstar build --tail 1.0
-    
+
 '''
+
+from __future__ import (print_function, unicode_literals, division,
+    absolute_import)
 
 from binstar_client.utils import get_binstar
 from binstar_client.utils import package_specs
@@ -132,5 +135,3 @@ def add_parser(subparsers):
                        help='Tail the build output of build number X.Y',
                        type=int)
     parser.set_defaults(main=list_builds)
-
-

@@ -3,6 +3,11 @@ Created on Sep 23, 2013
 
 @author: sean
 '''
+
+
+from __future__ import (print_function, unicode_literals, division,
+    absolute_import)
+
 from coverage.summary import SummaryReporter
 from coverage.results import Numbers
 from coverage.misc import NotPython
@@ -28,15 +33,15 @@ def blue(text):
     return OKBLUE + text + ENDC
 
 class ColorSummaryReporter(SummaryReporter):
-    
-    @property    
+
+    @property
     def fmt_name(self):
         max_name = max([len(cu.name) for cu in self.code_units] + [5])
         fmt_name = "%%- %ds  " % max_name
         return fmt_name
 
     def fmt_coverage(self, perc):
-        
+
         fmt_coverage = self.fmt_name + "%6d %6d"
         if self.branches:
             fmt_coverage += " %6d %6d"
@@ -46,7 +51,7 @@ class ColorSummaryReporter(SummaryReporter):
             color = blue
         if perc < 50:
             color = red
-        
+
         fmt_coverage += color("%%%ds%%%%" % (width100+3,))
         if self.config.show_missing:
             fmt_coverage += "   %s"
@@ -61,7 +66,7 @@ class ColorSummaryReporter(SummaryReporter):
         header += "%*s" % (width100+4, "Cover")
         header += "\n"
         return header
-    
+
     def report(self, morfs, outfile=None):
         """Writes a report summarizing coverage statistics per module.
 
@@ -71,9 +76,9 @@ class ColorSummaryReporter(SummaryReporter):
         self.find_code_units(morfs)
 
         # Prepare the formatting strings
-        
+
         fmt_err = "%s   %s: %s\n"
-        
+
         header = self.header()
 #         fmt_coverage = self.fmt_coverage()
         rule = "-" * len(header) + "\n"
