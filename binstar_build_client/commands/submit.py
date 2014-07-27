@@ -76,7 +76,8 @@ def submit_build(args):
             with open(tmp, mode='rb') as fd:
 
                 build_no = binstar.submit_for_build(args.package.user, args.package.name, fd, builds,
-                                                    test_only=args.test_only, callback=upload_print_callback(args))
+                                                    test_only=args.test_only, channels=args.channels,
+                                                    callback=upload_print_callback(args))
 
         log.info('')
         log.info('To view this build go to http://alpha.binstar.org/%s/%s/builds/matrix/%s' % (args.package.user, args.package.name, build_no))
@@ -162,6 +163,9 @@ def add_parser(subparsers):
 
     parser.add_argument('--dont-git-ignore',
                        help="Don't ignore files from .gitignore", action='store_true')
+
+    parser.add_argument('--channel', action='append', dest='channels',
+                       help="Upload targets to this channel")
 
     parser.set_defaults(main=main)
 
