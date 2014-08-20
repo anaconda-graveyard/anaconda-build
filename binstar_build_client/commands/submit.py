@@ -1,26 +1,26 @@
 '''
 Build command
-  
+
 Submit a build:
 
     binstar-build submit [path]
-    
+
 You may also submit a build via a git url:
 
      binstar-build submit git+<git-url>[#branch]
 
     For example if I have the git repo https://github.com/srossross/testci:
-        
+
         binstar-build submit git+https://github.com/srossross/testci
-        
+
     Or to test a branch:
-    
+
         binstar-build submit git+https://github.com/srossross/testci#feature/testing
-     
+
 See also:
 
     binstar-build tail -h
-    
+
 '''
 
 from binstar_client.utils import get_binstar, PackageSpec, upload_print_callback
@@ -118,16 +118,16 @@ def main(args):
     # Force package to exist
     if args.package:
         if user_name and not args.package.user == user_name:
-            log.warn('User name does not match the user specified in the .bisntar.yml file (%s != %s)', args.package.user, user_name)
+            log.warn('User name does not match the user specified in the .binstar.yml file (%s != %s)', args.package.user, user_name)
         user_name = args.package.user
         if package_name and not args.package.name == package_name:
-            log.warn('Package name does not match the user specified in the .bisntar.yml file (%s != %s)', args.package.name, package_name)
+            log.warn('Package name does not match the user specified in the .binstar.yml file (%s != %s)', args.package.name, package_name)
         package_name = args.package.name
     else:
         if user_name is None:
             user_name = user['login']
         if not package_name:
-            raise UserError("You must specify the package name in the .bisntar.yml file or the command line")
+            raise UserError("You must specify the package name in the .binstar.yml file or the command line")
 
     try:
         _ = binstar.package(user_name, package_name)
