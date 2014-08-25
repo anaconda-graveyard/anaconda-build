@@ -9,7 +9,7 @@ exec(open('binstar_build_client/_version.py').read(), ctx)
 version = ctx.get('__version__', 'dev')
 
 setup(
-    name='binstar build',
+    name='binstar-build',
     version=version,
     author='Sean Ross-Ross',
     author_email='srossross@gmail.com',
@@ -19,6 +19,10 @@ setup(
                       'pyyaml',
                       'python-dateutil',
                       'pytz'],
+
+    include_package_data=True,
+    zip_safe=False,
+
     entry_points={
           'console_scripts': [
               'binstar-build = binstar_build_client.scripts.build:main',

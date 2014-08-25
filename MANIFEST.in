@@ -1,0 +1,1 @@
+recursive-include binstar_build_client *.txt *.html *.sh
