@@ -1,6 +1,9 @@
 import sys
 
 class BuildLog(object):
+    """
+    This IO object writes data build log output to the binstar server and also to stdout  
+    """
     def __init__(self, bs, username, queue, worker_id, job_id):
         self.bs = bs
         self.username = username
