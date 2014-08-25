@@ -64,20 +64,18 @@ class BuildMixin(object):
         return obj['build_no']
 
     def submit_for_url_build(self, username, package, instructions,
-                         test_only=False, callback=None):
+                             test_only=False, callback=None,
+                             channels=None, sub_dir=''):
 
         # /build/<owner_login>/<package_name>/submit-git-url
         url = '%s/build/%s/%s/submit-git-url' % (self.domain, username, package)
 
-        data = jencode(instructions=instructions, test_only=test_only)
-        res = self.session.post(url, data=data)
+        data, headers = jencode(instructions=instructions, test_only=test_only,
+                                channels=channels, sub_dir=sub_dir)
+        res = self.session.post(url, data=data, headers=headers)
 
         self._check_response(res, [201])
         obj = res.json()
-
-        url = '%s/build/%s/%s/commit/%s' % (self.domain, username, package, obj['build_id'])
-        res = self.session.post(url, verify=True)
-        self._check_response(res, [201])
         return obj['build_no']
 
     def builds(self, username, package, build_no=None):

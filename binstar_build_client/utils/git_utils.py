@@ -12,15 +12,15 @@ from logging import getLogger
 import shutil
 import atexit
 log = getLogger('binstar.git')
-def is_giturl(path):
+
+def is_url(path):
     url = urlparse(path)
-    print('is_giturl', url)
-    if url.scheme and url.scheme.startswith('git+'):
+    if url.scheme:
         return True
 
 def get_urlpath(path):
     url = urlparse(path)
-    return url.path[1:] #path is /a/b (want to remove first slash)
+    return url.path[1:]  # path is /a/b (want to remove first slash)
 
 
 

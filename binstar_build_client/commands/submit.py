@@ -23,6 +23,10 @@ See also:
     
 '''
 
+from __future__ import (print_function, unicode_literals, division,
+    absolute_import)
+
+
 from binstar_client.utils import get_binstar, PackageSpec, upload_print_callback
 import logging, yaml
 from os.path import abspath, join, isfile
@@ -36,7 +40,10 @@ from binstar_client import errors
 from binstar_build_client import BinstarBuildAPI
 from binstar_build_client.utils.matrix import serialize_builds
 from binstar_build_client.utils.filter import ExcludeGit
-from binstar_build_client.utils.git_utils import is_giturl, get_urlpath
+from binstar_build_client.utils.git_utils import is_url, get_urlpath
+from six.moves.urllib.parse import urlparse
+import re
+from argparse import RawDescriptionHelpFormatter
 
 log = logging.getLogger('binstar.build')
 
@@ -95,26 +102,38 @@ def submit_build(args):
 def submit_git_build(args):
 
     binstar = get_binstar(args, cls=BinstarBuildAPI)
-    path = abspath(args.path)
+
+    try:
+        binstar_package = binstar.package(args.package.user, args.package.name)
+    except errors.NotFound:
+        print(args.package)
+        print("Package %s does not exist" % (args.package,))
+        raise errors.UserError("Package %s does not exist" % (args.package,))
+
 
     if not args.dry_run:
         log.info("Submitting the following repo for package creation: %s" % args.git_url)
 
-        # split branch from repo
-        repo_branch = args.git_url_path.split('/')
-        if len(repo_branch) == 2:
-            # form of srossross/testci
-            repo = '/'.join(repo_branch)
-            branch = 'master'
-        else:
-            # form of srossross/testci/tree/topull
-            repo = '/'.join(repo_branch[:2])
-            branch = repo_branch[-1]
 
+        # split branch from repo
+        url = urlparse(args.path)
+        print (url)
+        if url.netloc != 'github.com':
+            raise errors.UserError("Currently only github.com urls are supported (got %s)" % url.netloc)
+
+        pat = re.compile('^/(?P<repo>\w+/\w+)(/tree/(?P<branch>[\w/]+))?$')
+        match = pat.match(url.path)
+        if not match:
+            raise errors.UserError("URL path '%s' is not a git repo" % url.path)
+
+        groups = match.groupdict()
+        repo = groups.get('repo')
+        branch = groups.get('branch') or url.fragment or 'master'
         builds = {'repo': repo, 'branch':branch}
         build_no = binstar.submit_for_url_build(args.package.user, args.package.name, builds,
+                                                channels=args.channels, sub_dir=args.sub_dir,
                                                 test_only=args.test_only, callback=upload_print_callback(args),
-                                                channels=args.channels)
+                                                )
 
         log.info('')
         log.info('To view this build go to http://alpha.binstar.org/%s/%s/builds/matrix/%s' % (args.package.user, args.package.name, build_no))
@@ -140,19 +159,17 @@ def main(args):
     if args.git_url:
         args.path = args.git_url
 
-    if is_giturl(args.path):
+    if args.git_url or is_url(args.path):
         args.git_url = args.path
         args.git_url_path = get_urlpath(args.path)
-        # args.path = clone_repo(args.path)
         args.dont_git_ignore = True
         user_name = user['login']
-        package_name = args.package_name
-
-        if not package_name:
+        if not args.package:
             package_name = args.git_url_path.split('/')[1]
             log.info("Using repo name '%s' as the pkg name." % package_name)
+            args.package = PackageSpec(user_name, package_name)
 
-        args.package = PackageSpec(user_name, package_name)
+
         submit_git_build(args)
 
 
@@ -196,9 +213,10 @@ def add_parser(subparsers):
     parser = subparsers.add_parser('submit',
                                       help='Submit for building',
                                       description=__doc__,
+                                      formatter_class=RawDescriptionHelpFormatter,
                                       )
 
-    parser.add_argument('--path', default='.', nargs='?')
+    parser.add_argument('path', default='.', nargs='?')
 
     parser.add_argument('--test-only', '--no-upload', action='store_true',
                         dest='test_only',
@@ -208,13 +226,10 @@ def add_parser(subparsers):
                        help="The binstar package namespace to upload the build to",
                        type=package_specs)
 
-    parser.add_argument('-gu', '--git-url',
-                       help="The github url with valid .binstar.yml file to clone",
-                       type=str)
-
-    parser.add_argument('-pn', '--package-name',
-                       help="The name of a package to be used in conjunction with --git-url",
-                       type=str)
+    parser.add_argument('--git-url',
+                       help="The github url with valid .binstar.yml file to clone")
+    parser.add_argument('--sub-dir',
+                       help="The sub directory within the git repository (github url submits only)")
 
     parser.add_argument('-n', '--dry-run',
                        help="Parse the build file but don't submit", action='store_true')
