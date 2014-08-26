@@ -86,7 +86,7 @@ def submit_build(args):
                 with open(tmp, mode='rb') as fd:
 
                     build_no = binstar.submit_for_build(args.package.user, args.package.name, fd, builds,
-                                                        channels=args.channels,
+                                                        channels=args.channels, queue=args.queue,
                                                         test_only=args.test_only, callback=upload_print_callback(args))
 
         log.info('')
@@ -131,7 +131,7 @@ def submit_git_build(args):
         branch = groups.get('branch') or url.fragment or 'master'
         builds = {'repo': repo, 'branch':branch}
         build_no = binstar.submit_for_url_build(args.package.user, args.package.name, builds,
-                                                channels=args.channels, sub_dir=args.sub_dir,
+                                                channels=args.channels, queue=args.queue, sub_dir=args.sub_dir,
                                                 test_only=args.test_only, callback=upload_print_callback(args),
                                                 )
 
@@ -242,6 +242,9 @@ def add_parser(subparsers):
 
     parser.add_argument('--channel', action='append', dest='channels',
                        help="Upload targets to this channel")
+
+    parser.add_argument('--queue',
+                       help="Build on this queue")
 
     parser.set_defaults(main=main)
 
