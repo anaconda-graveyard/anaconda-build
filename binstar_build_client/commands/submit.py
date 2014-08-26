@@ -1,26 +1,26 @@
 '''
 Build command
-  
+
 Submit a build:
 
     binstar-build submit [path]
-    
+
 You may also submit a build via a git url:
 
      binstar-build submit git+<git-url>[#branch]
 
     For example if I have the git repo https://github.com/srossross/testci:
-        
+
         binstar-build submit git+https://github.com/srossross/testci
-        
+
     Or to test a branch:
-    
+
         binstar-build submit git+https://github.com/srossross/testci#feature/testing
-     
+
 See also:
 
     binstar-build tail -h
-    
+
 '''
 
 from __future__ import (print_function, unicode_literals, division,
@@ -208,6 +208,7 @@ def main(args):
         args.package = PackageSpec(user_name, package_name)
 
         submit_build(args)
+
 
 def add_parser(subparsers):
     parser = subparsers.add_parser('submit',
