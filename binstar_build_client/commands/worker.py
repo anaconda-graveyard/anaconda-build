@@ -5,12 +5,13 @@ Build worker
 from __future__ import (print_function, unicode_literals, division,
     absolute_import)
 
-
-from binstar_client.utils import get_binstar
 import logging
 import os
+
 from binstar_build_client import BinstarBuildAPI
 from binstar_build_client.worker.worker import Worker
+from binstar_client.utils import get_binstar
+
 
 log = logging.getLogger('binstar.build')
 
@@ -22,6 +23,10 @@ def main(args):
         current_user = bs.user()
         args.username = current_user['login']
 
+    log.info('Starting worker:')
+    log.info('User: %s' % args.username)
+    log.info('Queue: %s' % args.queue)
+    log.info('Platform: %s' % args.platform)
     woker = Worker(bs, args)
     woker.work_forever()
 

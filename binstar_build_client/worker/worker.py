@@ -32,6 +32,7 @@ class Worker(object):
         """
         Start a loop and continuously build forever
         """
+        log.info('Working Forever')
         with self.worker_context() as worker_id:
             self.worker_id = worker_id
             self._build_loop()
@@ -98,7 +99,6 @@ class Worker(object):
 
         build_log.write("Building on worker %s (platform %s)\n" % (self.args.hostname, self.args.platform))
         build_log.write("Starting build %s\n" % job_data['job_name'])
-        pprint(job_data)
 
         if not os.path.exists('build_scripts'):
             os.mkdir('build_scripts')
