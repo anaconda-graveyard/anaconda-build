@@ -2,8 +2,7 @@
 The worker 
 """
 from binstar_build_client.worker.utils.buffered_io import BufferedPopen
-from binstar_build_client.worker.utils.script_generator import gen_build_script, \
-    get_list
+from binstar_build_client.worker.utils.script_generator import gen_build_script
 from binstar_build_client.worker.build_log import BuildLog
 from binstar_client import errors
 from contextlib import contextmanager
@@ -38,46 +37,57 @@ class Worker(object):
             self._build_loop()
 
 
+    def _handle_job(self, journal):
+        """
+        Handle a single build job
+        only catches build script level errors
+        """
+        bs = self.bs
+        args = self.args
+
+        try:
+            job_data = bs.pop_build_job(args.username, args.queue, self.worker_id)
+        except errors.NotFound:
+            if args.show_traceback:
+                raise
+            else:
+                msg = ("This worker can no longer pop items off the build queue. "
+                       "Did someone remove it manually?")
+                raise errors.BinstarError(msg)
+        if job_data.get('job') is None:
+            time.sleep(self.SLEEP_TIME)
+            return
+        ctx = (job_data['job']['_id'], job_data['job_name'])
+        log.info('Starting build, %s, %s\n' % ctx)
+        journal.write('starting build, %s, %s\n' % ctx)
+
+        try:
+            failed, status = self.build(job_data)
+        except Exception:
+#                     bs.push_build_job(args.username, args.queue, self.worker_id, job_data['job']['_id'])
+#                     raise
+            job_data = bs.fininsh_build(args.username, args.queue, self.worker_id, job_data['job']['_id'],
+                                        failed=True, status='error')
+            traceback.print_exc()
+        else:
+            job_data = bs.fininsh_build(args.username, args.queue, self.worker_id, job_data['job']['_id'],
+                                        failed=failed, status=status)
+
+        finally:
+            journal.write('finished build, %s, %s\n' % ctx)
+
     def _build_loop(self):
         """
         This is the main build loop this checks binstar.org for any jobs it can do and 
         """
 
-        bs = self.bs
-        args = self.args
-        sleep_time = 5
         with open(self.JOURNAL_FILE, 'a') as journal:
             while 1:
                 try:
-                    job_data = bs.pop_build_job(args.username, args.queue, self.worker_id)
-                except errors.NotFound:
-                    if args.show_traceback:
-                        raise
-                    else:
-                        msg = ("This worker can no longer pop items off the build queue. "
-                               "Did someone remove it manually?")
-                        raise errors.BinstarError(msg)
-                if job_data.get('job') is None:
-                    time.sleep(self.SLEEP_TIME)
-                    continue
-                ctx = (job_data['job']['_id'], job_data['job_name'])
-                log.info('Starting build, %s, %s\n' % ctx)
-                journal.write('starting build, %s, %s\n' % ctx)
-
-                try:
-                    failed, status = self.build(job_data)
+                    self._handle_job(journal)
                 except Exception:
-#                     bs.push_build_job(args.username, args.queue, self.worker_id, job_data['job']['_id'])
-#                     raise
-                    job_data = bs.fininsh_build(args.username, args.queue, self.worker_id, job_data['job']['_id'],
-                                                failed=True, status='error')
                     traceback.print_exc()
-                else:
-                    job_data = bs.fininsh_build(args.username, args.queue, self.worker_id, job_data['job']['_id'],
-                                                failed=failed, status=status)
-
-                finally:
-                    journal.write('finished build, %s, %s\n' % ctx)
+                    time.sleep(self.SLEEP_TIME)
 
     def build(self, job_data):
         """
