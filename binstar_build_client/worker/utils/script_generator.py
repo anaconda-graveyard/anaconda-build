@@ -4,6 +4,7 @@ TODO: create and select build_script.bat for windows builds
 import jinja2
 import pipes
 import shlex
+import os
 
 def get_channels(job_data):
     """
@@ -125,9 +126,19 @@ def gen_build_script(build_data, **context):
     Generate a build script from a submitted build
     """
 
+    platform = build_data['build_item_info']['platform']
+    job_id = build_data['job']['_id']
+
     env = jinja2.Environment(loader=jinja2.PackageLoader(__name__, 'data'))
     env.globals.update(get_list=get_list, quote=pipes.quote)
-    build_script = env.get_or_select_template('build_script.sh')
+
+    if platform in ['win-32', 'win-64']:
+        build_script = env.get_or_select_template('build_script.bat')
+        script_filename = os.path.join('build_scripts', '%s.sh' % job_id)
+    else:
+        build_script = env.get_or_select_template('build_script.sh')
+        script_filename = os.path.join('build_scripts', '%s.bat' % job_id)
+
 
     exports = create_exports(build_data)
 
@@ -140,5 +151,9 @@ def gen_build_script(build_data, **context):
                     'files': get_files(build_data),
                })
 
-    return build_script.render(**context)
+
+    with open(script_filename, 'w') as fd:
+        fd.write(build_script)
+
+    return script_filename
 

@@ -6,7 +6,6 @@ from binstar_build_client.worker.utils.script_generator import gen_build_script
 from binstar_build_client.worker.build_log import BuildLog
 from binstar_client import errors
 from contextlib import contextmanager
-from pprint import pprint
 from subprocess import STDOUT
 import logging
 import os
@@ -103,11 +102,8 @@ class Worker(object):
         if not os.path.exists('build_scripts'):
             os.mkdir('build_scripts')
 
-        build_script = gen_build_script(job_data)
+        script_filename = gen_build_script(job_data)
 
-        script_filename = os.path.join('build_scripts', '%s.sh' % job_id)
-        with open(script_filename, 'w') as fd:
-            fd.write(build_script)
 
         iotimeout = job_data['build_item_info'].get('instructions').get('iotimeout', 60 * 5)
         args = ['bash', script_filename, '--api-token', job_data['upload_token']]
