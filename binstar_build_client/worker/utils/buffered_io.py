@@ -6,6 +6,7 @@ i.e. stdout, stderr can be any file 'like' object. Like an io.BytesIO() object
 Also this adds a new keyword argument iotimeout which will terminate the process if no output is recieved for 
 iotimeout seconds  
 """
+
 from __future__ import print_function
 
 import logging
@@ -20,15 +21,25 @@ import time
 
 log = logging.getLogger('binstar.build')
 
-def read_ready(*fds, **kw):
-    read_fds = select.select([fd for fd in fds if fd], [], [], kw.get('timeout', 0.1))[0]
+def read_ready(fds, timeout=0.1):
+    """
+    Wait for any of the fds to be ready to read 
+    """
+    read_fds = select.select([fd for fd in fds if fd], [], [], timeout)[0]
     return [fd if fd in read_fds else None for fd in fds]
 
 def run(proc, out_pipe, stdout, err_pipe, stderr, timeout=None):
-    print("running")
+    """
+    While proc (A Popen object) is alive wait for output to be recieved from
+    out_pipe or err_pipe and write it to stdout and stderr respectively
+    
+    If timeout is given, and no output is recieved after timeout seconds proc will
+    be terminated 
+    """
+
     last_ready = time.time()
     while 1:
-        std_out_ready, std_err_ready = read_ready(out_pipe[0], err_pipe[0])
+        std_out_ready, std_err_ready = read_ready([out_pipe[0], err_pipe[0]])
         if std_out_ready:
             last_ready = time.time()
             out_data = os.read(out_pipe[0], 512)
@@ -71,11 +82,10 @@ def run(proc, out_pipe, stdout, err_pipe, stderr, timeout=None):
     if err_pipe[0]: os.close(err_pipe[0])
     if err_pipe[1]: os.close(err_pipe[1])
 
-#     if stdout: stdout.flush()
-#     if stderr: stderr.flush()
 
 def is_special(stdio):
     return (stdio is None) or (isinstance(stdio, int) and stdio < 0)
+
 def is_normal(stdio):
     return not is_special(stdio)
 
