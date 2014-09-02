@@ -31,7 +31,7 @@ def main(args):
     woker.work_forever()
 
 
-OS_MAP = {'darwin': 'osx', 'windows':'win32'}
+OS_MAP = {'darwin': 'osx', 'windows':'win'}
 ARCH_MAP = {'x86': '32',
             'x86_64': '64',
 			'amd64' : '64'
@@ -62,6 +62,8 @@ def add_parser(subparsers):
                         help='The queue\'s owner (defaults to your currently logged in binstar user account)')
     parser.add_argument('-c', '--clean', action='store_true',
                         help='Clean up an existing workers session')
+    parser.add_argument('-f', '--fail', action='store_true',
+                        help='Exit main loop on any un-handled exception')
 
     parser.set_defaults(main=main)
 
