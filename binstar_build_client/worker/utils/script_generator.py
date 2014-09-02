@@ -133,11 +133,12 @@ def gen_build_script(build_data, **context):
     env.globals.update(get_list=get_list, quote=pipes.quote)
 
     if platform in ['win-32', 'win-64']:
-        build_script = env.get_or_select_template('build_script.bat')
+        build_script_template = env.get_or_select_template('build_script.bat')
         script_filename = os.path.join('build_scripts', '%s.sh' % job_id)
     else:
-        build_script = env.get_or_select_template('build_script.sh')
+        build_script_template = env.get_or_select_template('build_script.sh')
         script_filename = os.path.join('build_scripts', '%s.bat' % job_id)
+
 
 
     exports = create_exports(build_data)
@@ -151,6 +152,8 @@ def gen_build_script(build_data, **context):
                     'files': get_files(build_data),
                })
 
+
+    build_script = build_script_template.render(**context)
 
     with open(script_filename, 'w') as fd:
         fd.write(build_script)
