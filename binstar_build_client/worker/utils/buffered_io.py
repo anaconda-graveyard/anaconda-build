@@ -1,10 +1,22 @@
+"""
+Popen module with buffered IO 
+
+i.e. stdout, stderr can be any file 'like' object. Like an io.BytesIO() object
+
+Also this adds a new keyword argument iotimeout which will terminate the process if no output is recieved for 
+iotimeout seconds  
+"""
+from __future__ import print_function
+
+import logging
 import os
+import platform
 import select
+import signal
 from subprocess import Popen, PIPE
 from threading import Thread
-import signal
-import logging
 import time
+
 
 log = logging.getLogger('binstar.build')
 
@@ -13,6 +25,7 @@ def read_ready(*fds, **kw):
     return [fd if fd in read_fds else None for fd in fds]
 
 def run(proc, out_pipe, stdout, err_pipe, stderr, timeout=None):
+    print("running")
     last_ready = time.time()
     while 1:
         std_out_ready, std_err_ready = read_ready(out_pipe[0], err_pipe[0])
@@ -80,6 +93,8 @@ class BufferedPopen(Popen):
             self._stderr_pipe = os.pipe()  # provide tty to enable
             stderr = self._stderr_pipe[1]
 
+        if platform.system() == 'Windows':
+            close_fds = False
 
         Popen.__init__(self, args, bufsize=bufsize,
                        stdout=stdout, stderr=stderr,
