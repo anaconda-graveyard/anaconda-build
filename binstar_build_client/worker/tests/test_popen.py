@@ -10,9 +10,6 @@ import io
 
 class Test(unittest.TestCase):
 
-    def test_simple(self):
-        p0 = BufferedPopen(['echo', 'hello'])
-        self.assertEqual(p0.wait(), 0)
 
     def test_stdout(self):
         stdout = io.BytesIO()
@@ -20,21 +17,25 @@ class Test(unittest.TestCase):
         self.assertEqual(p0.wait(), 0)
         self.assertEqual(stdout.getvalue(), 'hello\n')
 
-    def test_stderr(self):
-        stderr = io.BytesIO()
+    def test_stdout_error(self):
         stdout = io.BytesIO()
-        p0 = BufferedPopen(['bash', '-c', 'echo stdout 2>&1; echo stderr 1>&2;'], stderr=stderr, stdout=stdout)
-        self.assertEqual(p0.wait(), 0)
-        self.assertEqual(stderr.getvalue(), 'stderr\n')
-        self.assertEqual(stdout.getvalue(), 'stdout\n')
+        p0 = BufferedPopen(['bash', '-c', 'echo hello; bad-command'], stdout=stdout)
+        self.assertNotEqual(p0.wait(), 0)
+        self.assertTrue(stdout.getvalue().startswith('hello\n'))
 
-    def test_timout(self):
+    def test_stderr(self):
         stdout = io.BytesIO()
-        p0 = BufferedPopen(['bash', '-c', 'echo hello && sleep 10 && echo goodby'], stdout=stdout, iotimeout=1)
+        p0 = BufferedPopen(['bash', '-c', 'echo stdout 2>&1; echo stderr 1>&2;'], stdout=stdout)
+        self.assertEqual(p0.wait(), 0)
+        self.assertEqual(stdout.getvalue(), 'stdout\nstderr\n')
+
+    def test_timeout(self):
+        stdout = io.BytesIO()
+        p0 = BufferedPopen(['bash', '-c', 'echo hello && sleep 100 && echo goodby'], stdout=stdout, iotimeout=1)
         self.assertNotEqual(p0.wait(), 0)
         self.assertIn('hello', stdout.getvalue())
         self.assertIn('Timeout: No output from program for 1 seconds', stdout.getvalue())
-        self.assertFalse(p0._thread.isAlive())
+        self.assertFalse(p0._io_thread.isAlive())
 
 if __name__ == "__main__":
     # import sys;sys.argv = ['', 'Test.test_timeout']

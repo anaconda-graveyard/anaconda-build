@@ -64,11 +64,11 @@ class Worker(object):
         try:
             failed, status = self.build(job_data)
         except Exception:
-#                     bs.push_build_job(args.username, args.queue, self.worker_id, job_data['job']['_id'])
-#                     raise
-            job_data = bs.fininsh_build(args.username, args.queue, self.worker_id, job_data['job']['_id'],
-                                        failed=True, status='error')
-            traceback.print_exc()
+            bs.push_build_job(args.username, args.queue, self.worker_id, job_data['job']['_id'])
+            raise
+#             job_data = bs.fininsh_build(args.username, args.queue, self.worker_id, job_data['job']['_id'],
+#                                         failed=True, status='error')
+#             traceback.print_exc()
         else:
             job_data = bs.fininsh_build(args.username, args.queue, self.worker_id, job_data['job']['_id'],
                                         failed=failed, status=status)
@@ -106,7 +106,7 @@ class Worker(object):
 
 
         iotimeout = job_data['build_item_info'].get('instructions').get('iotimeout', 60 * 5)
-        args = ['bash', script_filename, '--api-token', job_data['upload_token']]
+        args = [script_filename, '--api-token', job_data['upload_token']]
 
         if job_data.get('git_oauth_token'):
             args.extend(['--git-oauth-token', job_data.get('git_oauth_token')])
@@ -116,7 +116,7 @@ class Worker(object):
 
         log.info("Running command:")
         log.info(" ".join(args))
-        p0 = BufferedPopen(args, iotimeout=iotimeout, stdout=build_log, stderr=STDOUT)
+        p0 = BufferedPopen(args, iotimeout=iotimeout, stdout=build_log)
         exit_code = p0.wait()
 
         log.info("Build script exited with code %s" % exit_code)

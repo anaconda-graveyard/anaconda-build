@@ -1,8 +1,9 @@
 @echo off
 
 
-set BUILD_ENV_PATH=%TEMP%\binstar_build
-set "BINSTAR_ENGINE=python"
+{% for key, value in exports %}
+set "{{key}}={{value}}"
+{% endfor %}
 
 
 call:parse_options %*

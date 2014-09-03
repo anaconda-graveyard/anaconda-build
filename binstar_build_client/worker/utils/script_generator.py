@@ -125,7 +125,6 @@ def gen_build_script(build_data, **context):
     """
     Generate a build script from a submitted build
     """
-
     platform = build_data['build_item_info']['platform']
     job_id = build_data['job']['_id']
 
@@ -134,11 +133,10 @@ def gen_build_script(build_data, **context):
 
     if platform in ['win-32', 'win-64']:
         build_script_template = env.get_or_select_template('build_script.bat')
-        script_filename = os.path.join('build_scripts', '%s.sh' % job_id)
+        script_filename = os.path.join('build_scripts', '%s.bat' % job_id)
     else:
         build_script_template = env.get_or_select_template('build_script.sh')
-        script_filename = os.path.join('build_scripts', '%s.bat' % job_id)
-
+        script_filename = os.path.join('build_scripts', '%s.sh' % job_id)
 
 
     exports = create_exports(build_data)
@@ -157,6 +155,9 @@ def gen_build_script(build_data, **context):
 
     with open(script_filename, 'w') as fd:
         fd.write(build_script)
+
+    if os.name != 'nt':
+        os.chmod(script_filename, 0700)
 
     return script_filename
 
