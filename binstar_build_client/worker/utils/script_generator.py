@@ -1,10 +1,16 @@
 """
 TODO: create and select build_script.bat for windows builds
 """
-import jinja2
+import logging
 import pipes
 import shlex
+import jinja2
+import sys
 import os
+
+
+log = logging.getLogger(__name__)
+
 
 def get_channels(job_data):
     """
@@ -51,7 +57,8 @@ def get_files(job_data):
 
     if 'conda' in build_targets:
         idx = build_targets.index('conda')
-        build_targets[idx] = '/opt/anaconda/dist/*.tar.bz2'
+        platform = job_data['build_item_info']['platform']
+        build_targets[idx] = os.path.join(sys.prefix, 'conda-bld', platform, '*.tar.bz2')
 
     if 'pypi' in build_targets:
         idx = build_targets.index('pypi')
@@ -99,7 +106,7 @@ def create_exports(build_data):
             'BINSTAR_ENGINE': build_item.get('engine'),
             # the platform from the platform tag
             'BINSTAR_PLATFORM': build_item.get('platform', 'linux-64'),
-            'BUILD_ENV_PATH': "/opt/anaconda/envs/install",
+            'BUILD_ENV_PATH': os.path.join(sys.prefix, "envs", "install"),
             'BINSTAR_API_SITE': quote_str(api_site),
             'BINSTAR_OWNER': quote_str(build_data['owner']['login']),
             'BINSTAR_PACKAGE': quote_str(build_data['package']['name']),
