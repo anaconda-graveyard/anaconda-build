@@ -44,6 +44,13 @@ class Worker(object):
             self._build_loop()
 
     def job_loop(self, journal):
+        """
+        An iterator that will yield job_data objects when
+        one is available. 
+        
+        Also handles journaling of jobs
+        
+        """
         bs = self.bs
         args = self.args
         while 1:
@@ -195,14 +202,11 @@ class Worker(object):
         if os.path.isfile(self.STATE_FILE):
             with open(self.STATE_FILE, 'r') as fd:
                 worker_data = yaml.load(fd)
-            if self.args.clean:
-                self.bs.remove_worker(self.args.username, self.args.queue, worker_data['worker_id'])
-                log.info("Un-registered worker %s from binstar site" % worker_data['worker_id'])
-                os.unlink(self.STATE_FILE)
-                log.info("Removed worker.yaml")
-                raise SystemExit()
-            else:
-                raise errors.UserError("Lock file '%s' exists. Use -c/--clean to remove this working context" % self.STATE_FILE)
+
+            self.bs.remove_worker(self.args.username, self.args.queue, worker_data['worker_id'])
+            log.info("Un-registered worker %s from binstar site" % worker_data['worker_id'])
+            os.unlink(self.STATE_FILE)
+            log.info("Removed worker.yaml")
 
         worker_id = self.bs.register_worker(self.args.username, self.args.queue, self.args.platform, self.args.hostname)
         worker_data = {'worker_id': worker_id}

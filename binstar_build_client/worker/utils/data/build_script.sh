@@ -63,6 +63,7 @@ export {{key}}={{value}}
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### 
 setup_build(){
 
+    echo -e "\n[Setup Buld]"
     echo "Host:" `hostname`
     echo 'Setting engine'
     echo "conda create -p $BUILD_ENV_PATH --quiet --yes $BINSTAR_ENGINE"
@@ -196,7 +197,6 @@ binstar_build(){
     bb_test; eval $bb_check_result
     bb_before_script; eval $bb_check_result
     bb_script; eval $bb_check_result
-    bb_after_script; eval $bb_check_result
 
     export BINSTAR_BUILD_RESULT="success"
 
@@ -242,16 +242,24 @@ upload_build_targets(){
 }
 
 main(){
-    echo "setup_build"
+    
+    {% if ignore_setup_build %}
+    echo "[Ignore Setup Build]"
+    {% else %}
     setup_build;
+    {% endif %}
+
 
     if [ "$BINSTAR_BUILD_RESULT" != "" ]; then 
         echo "Internal binstar build error: Could not set up initial build state"
         exit 9
     fi
 
-    echo "fetch_build_source"
+    {% if ignore_fetch_build_source %}
+    echo "[Ignore Fetch Build Source]"
+    {% else %}
     fetch_build_source;
+    {% endif %}
 
     if [ "$BINSTAR_BUILD_RESULT" != "" ]; then 
         echo "Binstar build error: Could not fetch build sources"

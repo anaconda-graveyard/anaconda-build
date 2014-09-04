@@ -96,6 +96,7 @@ def create_exports(build_data):
     build = build_data['build_info']
 
     api_site = build['api_endpoint']
+
     quote_str = lambda item: pipes.quote(str(item))
     exports = {
             # The build number as MAJOR.MINOR

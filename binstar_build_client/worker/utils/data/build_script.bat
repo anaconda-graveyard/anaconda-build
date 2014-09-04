@@ -1,7 +1,7 @@
 @echo off
 
 {% macro set_error(fail_type='error') -%}
-set "BINSTAR_BUILD_RESULT={{fail_type}}" & goto:eof
+echo "SET ERROR" & set "BINSTAR_BUILD_RESULT={{fail_type}}" & goto:eof
 {%- endmacro %}
 
 {% for key, value in exports %}
@@ -46,7 +46,7 @@ goto:eof
         )
 
         echo "Unknown option %1"
-        exit /B 11
+        exit 11
         
     )
 
@@ -60,21 +60,32 @@ goto:eof
     :: echo BINSTAR_API_TOKEN=%BINSTAR_API_TOKEN%
 
     set BINSTAR_BUILD_RESULT=
-    echo setup_build
+    
 
-    :: call:setup_build;
+    {% if ignore_setup_build %}
+    echo [ignore setup_build]
+    {% else %}
+    echo [setup_build]
+    call:setup_build;
+    {% endif %}
+
 
     if not "%BINSTAR_BUILD_RESULT%" == "" (
         echo Internal binstar build error: Could not set up initial build state
-        exit /B 9
+        exit 9
     )
 
-    echo fetch_build_source
+    {% if ignore_fetch_build_source %}
+    echo [ignore fetch_build_source]
+    {% else %}
+    echo [fetch_build_source]
     call:fetch_build_source
+    {% endif %}
+
 
     if not "%BINSTAR_BUILD_RESULT%" == "" (
-        echo %BINSTAR_BUILD_RESULT% Binstar build error: Could not fetch build sources
-        exit /B 11
+        echo %BINSTAR_BUILD_RESULT%: Could not fetch build sources
+        exit 11
     )
 
     call:binstar_build
@@ -82,20 +93,20 @@ goto:eof
 
     call:upload_build_targets
 
-    echo Exit BINSTAR_BUILD_RESULT="%BINSTAR_BUILD_RESULT%"
+    echo Exit BINSTAR_BUILD_RESULT=%BINSTAR_BUILD_RESULT%
 
     if "%BINSTAR_BUILD_RESULT%" == "success" (
-        exit /B 0
+        exit 0
     )
     if "%BINSTAR_BUILD_RESULT%" == "error" (
-        exit /B 11
+        exit 11
     )
 
     if "%BINSTAR_BUILD_RESULT%" == "failure" (
-        exit /B 12
+        exit 12
     )
     
-    exit /B 13
+    exit 13
 
 
 goto:eof
@@ -144,8 +155,9 @@ goto:eof
         echo tar jxf %BUILD_TARBALL%
 
         :: tar jxf "%BUILD_TARBALL%" || {{set_error()}}
-        python -c "import tarfile; tarfile.open(r'%BUILD_TARBALL%', 'r|bz2').extractall()"
-
+        echo GOT HERE
+        python -c "import tarfile; tarfile.open(r'%BUILD_TARBALL%', 'r|bz2').extractall()" || ( {{set_error()}} )
+        echo GOT HERE
     {% endif %}
 
     {% if sub_dir %}
