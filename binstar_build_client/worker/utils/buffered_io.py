@@ -10,34 +10,37 @@ iotimeout seconds
 from __future__ import print_function
 
 import  os
-from subprocess import Popen, STDOUT
+import subprocess
+from subprocess import Popen, STDOUT, PIPE
 from threading import Thread
 import time
 import psutil
-
 import logging
 log = logging.getLogger(__name__)
+
+def is_special(fd):
+    if fd is None:
+        return True
+    elif isinstance(fd, int) and fd <= 0:
+        return True
+    return False
 
 class BufferedPopen(Popen):
     def __init__(self, args, stdout=None, iotimeout=None, **kwargs):
 
         self._iotimeout = iotimeout
+        self._last_io = time.time()
 
-        if stdout is not None:
-            r, w = os.pipe()
-            self._rfile = os.fdopen(r)
-            self._wfile = os.fdopen(w, 'w')
-            self._output = stdout
-            self._last_io = time.time()
-        else:
-            self._wfile = None
 
-        Popen.__init__(self, args, stdout=self._wfile, stderr=STDOUT, **kwargs)
+        self._output = stdout
+
+        Popen.__init__(self, args, stdout=PIPE, stderr=STDOUT,
+                       **kwargs)
 
         self._timeout_thread = None
         self._io_thread = None
 
-        if stdout is not None:
+        if not is_special(stdout):
             self._io_thread = Thread(target=self._io_loop, name='io_loop')
             self._io_thread.start()
 
@@ -49,9 +52,9 @@ class BufferedPopen(Popen):
         returncode = Popen.wait(self)
         log.debug("returncode", returncode)
 
-        if self._wfile is not None:
-            log.debug("close wfile")
-            self._wfile.close()
+#         if self._wfile is not None:
+#             log.debug("close wfile")
+#             self._wfile.close()
 
         if self._io_thread and self._io_thread.is_alive():
             log.debug("self._io_thread.join()")
@@ -94,11 +97,13 @@ class BufferedPopen(Popen):
     def _io_loop(self):
         while self.poll() is None:
             log.debug("readline...")
-            data = self._rfile.readline()
+            data = self.stdout.readline()
             log.debug("done readline")
             self._last_io = time.time()
             self._output.write(data)
+
+        data = self.stdout.read()
+        self._output.write(data)
         log.debug("exit IO Loop")
-        self._rfile.close()
 
 

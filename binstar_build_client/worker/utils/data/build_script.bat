@@ -2,7 +2,7 @@
 
 
 {% for key, value in exports %}
-set "{{key}}={{value}}"
+set {{key}}={{value}}
 {% endfor %}
 
 
@@ -107,9 +107,16 @@ goto:eof
     echo|set /p "noNewline=Host: "
     hostname
     echo Setting engine
-    echo conda create -p %BUILD_ENV_PATH% --quiet --yes %BINSTAR_ENGINE%
+    echo conda create -p "%BUILD_ENV_PATH%" --quiet --yes %BINSTAR_ENGINE%
+
+    :: @echo on
+
     rm -rf "%BUILD_ENV_PATH%"
-    conda create -p %BUILD_ENV_PATH% --quiet --yes %BINSTAR_ENGINE%
+
+
+    echo BEFORE CALL CONDA CREATE
+    call conda create -p "%BUILD_ENV_PATH%" --quiet --yes %BINSTAR_ENGINE%
+    echo AFTER CALL CONDA CREATE
     
     :: Hack to build with the python set in BINSTAR_ENGINE
     python -c "import sys; sys.stdout.write('%%s%%s' %% (sys.version_info.major, sys.version_info.minor))" > %TEMP%\CONDA_PY 
