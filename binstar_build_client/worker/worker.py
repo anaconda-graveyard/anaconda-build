@@ -4,17 +4,15 @@ The worker
 from contextlib import contextmanager
 import logging
 import os
-from subprocess import Popen, PIPE
-from subprocess import STDOUT
+import sys
 import time
 import traceback
+import yaml
 
 from binstar_build_client.worker.build_log import BuildLog
 from binstar_build_client.worker.utils.buffered_io import BufferedPopen
 from binstar_build_client.worker.utils.script_generator import gen_build_script
 from binstar_client import errors
-import yaml
-import sys
 
 
 log = logging.getLogger('binstar.build')
@@ -162,8 +160,6 @@ class Worker(object):
             failed = True
             status = 'error'
             log.error("Unknown build exit status %s for build %s" % (exit_code, job_data['job_name']))
-
-        aasdf
 
         return failed, status
 
