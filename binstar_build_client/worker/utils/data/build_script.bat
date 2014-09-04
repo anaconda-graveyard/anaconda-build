@@ -1,7 +1,7 @@
 @echo off
 
 {% macro set_error(fail_type='error') -%}
-echo "SET ERROR" & set "BINSTAR_BUILD_RESULT={{fail_type}}" & goto:eof
+set "BINSTAR_BUILD_RESULT={{fail_type}}" & goto:eof
 {%- endmacro %}
 
 {% for key, value in exports %}
