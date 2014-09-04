@@ -70,7 +70,7 @@ setup_build(){
     rm -rf "$BUILD_ENV_PATH"
     conda create -p $BUILD_ENV_PATH --quiet --yes $BINSTAR_ENGINE
         eval $bb_check_command_error
-    export CONDA_PY=`python -c 'import sys; sys.stdout.write("%s%s" % (sys.version_info.major, sys.version_info.minor))'`
+    export CONDA_PY=`python -c 'import sys; sys.stdout.write("{0}{1}".format(sys.version_info[0], sys.version_info[1]))'`
     echo "source activate $BUILD_ENV_PATH"
     source activate $BUILD_ENV_PATH
         eval $bb_check_command_error

@@ -184,7 +184,7 @@ goto:eof
     call conda create -p "%BUILD_ENV_PATH%" --quiet --yes %BINSTAR_ENGINE%
     
     :: Hack to build with the python set in BINSTAR_ENGINE
-    python -c "import sys; sys.stdout.write('%%s%%s' %% (sys.version_info.major, sys.version_info.minor))" > %TEMP%\CONDA_PY 
+    python -c "import sys; sys.stdout.write('{0}{1}'.format(sys.version_info[0], sys.version_info[1]))" > %TEMP%\CONDA_PY 
  
     set /p CONDA_PY=<%TEMP%\CONDA_PY 
     echo activate %BUILD_ENV_PATH%
