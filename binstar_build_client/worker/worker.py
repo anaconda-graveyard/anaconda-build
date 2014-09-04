@@ -103,7 +103,6 @@ class Worker(object):
 
         if args.push_back:
             bs.push_build_job(args.username, args.queue, self.worker_id, job_data['job']['_id'])
-            raise
         else:
             job_data = bs.fininsh_build(args.username, args.queue, self.worker_id, job_data['job']['_id'],
                                         failed=failed, status=status)
