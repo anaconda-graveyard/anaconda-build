@@ -66,6 +66,8 @@ def add_parser(subparsers):
                         help='Exit main loop on any un-handled exception')
     parser.add_argument('-1', '--one', action='store_true',
                         help='Exit main loop after only one build')
+    parser.add_argument('--push-back', action='store_true',
+                        help='Developers only, always push the build *back* onto the build queue')
 
     parser.set_defaults(main=main)
 

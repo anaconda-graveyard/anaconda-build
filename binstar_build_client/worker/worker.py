@@ -91,12 +91,14 @@ class Worker(object):
 
         try:
             failed, status = self.build(job_data)
-        except Exception:
+        except Exception as err:
+            log.exception(err)
+            failed = True
+            status = 'error'
+
+        if args.push_back:
             bs.push_build_job(args.username, args.queue, self.worker_id, job_data['job']['_id'])
             raise
-#             job_data = bs.fininsh_build(args.username, args.queue, self.worker_id, job_data['job']['_id'],
-#                                         failed=True, status='error')
-#             traceback.print_exc()
         else:
             job_data = bs.fininsh_build(args.username, args.queue, self.worker_id, job_data['job']['_id'],
                                         failed=failed, status=status)
@@ -159,7 +161,7 @@ class Worker(object):
         else:  # Unknown error
             failed = True
             status = 'error'
-            log.error("Unknown build exit status %s for build %s" % (exit_code, self.build['_id']))
+            log.error("Unknown build exit status %s for build %s" % (exit_code, job_data['job_name']))
 
         aasdf
 
