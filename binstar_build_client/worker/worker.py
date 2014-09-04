@@ -139,13 +139,9 @@ class Worker(object):
 
         log.info("Running command: (iotimeout=%s)" % iotimeout)
         log.info(" ".join(args))
-        print '--OUTPUT--'
+
         p0 = BufferedPopen(args, stdout=build_log, iotimeout=iotimeout)
         exit_code = p0.wait()
-        print '--XXX XXX XXX --'
-        print build_log.write(p0.stdout.read())
-        print '--END--'
-
 
         log.info("Build script exited with code %s" % exit_code)
         if exit_code == 0:
