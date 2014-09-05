@@ -1,8 +1,3 @@
-'''
-Created on Feb 6, 2014
-
-@author: sean
-'''
 import unittest
 from binstar_build_client.worker.utils.buffered_io import BufferedPopen
 import io
@@ -20,7 +15,8 @@ class Test(unittest.TestCase):
     def test_stdout_error(self):
         stdout = io.BytesIO()
         p0 = BufferedPopen(['bash', '-c', 'echo hello; bad-command'], stdout=stdout)
-        self.assertNotEqual(p0.wait(), 0)
+        return_code = p0.wait()
+        self.assertNotEqual(return_code, 0)
         self.assertTrue(stdout.getvalue().startswith('hello\n'))
 
     def test_stderr(self):
