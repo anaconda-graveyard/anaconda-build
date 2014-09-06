@@ -17,11 +17,6 @@ from binstar_client import errors
 
 log = logging.getLogger('binstar.build')
 
-class IO(object):
-    def write(self, data):
-        print "IO", data,
-        sys.stdout.flush()
-
 class Worker(object):
     """
     
@@ -43,7 +38,7 @@ class Worker(object):
             self.worker_id = worker_id
             self._build_loop()
 
-    def job_loop(self, journal):
+    def job_loop(self):
         """
         An iterator that will yield job_data objects when
         one is available. 
@@ -68,18 +63,7 @@ class Worker(object):
                 time.sleep(self.SLEEP_TIME)
                 continue
 
-            ctx = (job_data['job']['_id'], job_data['job_name'])
-            log.info('Starting build, %s, %s\n' % ctx)
-            journal.write('starting build, %s, %s\n' % ctx)
-
-            try:
-                yield job_data
-            except Exception:
-                journal.write('build errored, %s, %s\n' % ctx)
-                traceback.print_exc()
-                time.sleep(self.SLEEP_TIME)
-            else:
-                journal.write('finished build, %s, %s\n' % ctx)
+            yield job_data
 
             if args.one:
                 break
@@ -100,7 +84,6 @@ class Worker(object):
             log.exception(err)
             failed = True
             status = 'error'
-
         if args.push_back:
             bs.push_build_job(args.username, args.queue, self.worker_id, job_data['job']['_id'])
         else:
@@ -115,7 +98,8 @@ class Worker(object):
 
         with open(self.JOURNAL_FILE, 'a') as journal:
             for job_data in self.job_loop(journal):
-                self._handle_job(job_data)
+                with self.job_context(journal, job_data):
+                    self._handle_job(job_data)
 
 
     def build(self, job_data):
@@ -220,3 +204,18 @@ class Worker(object):
             os.unlink(self.STATE_FILE)
             log.debug("Removed %s" % self.STATE_FILE)
 
+    @contextmanager
+    def job_context(self, journal, job_data):
+
+        ctx = (job_data['job']['_id'], job_data['job_name'])
+
+        log.info('Starting build, %s, %s\n' % ctx)
+        journal.write('starting build, %s, %s\n' % ctx)
+        try:
+            yield
+        except Exception as err:
+            journal.write('build errored, %s, %s\n' % ctx)
+            log.exception(err)
+            time.sleep(self.SLEEP_TIME)
+        else:
+            journal.write('finished build, %s, %s\n' % ctx)
