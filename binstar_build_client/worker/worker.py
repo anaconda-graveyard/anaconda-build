@@ -97,7 +97,7 @@ class Worker(object):
         """
 
         with open(self.JOURNAL_FILE, 'a') as journal:
-            for job_data in self.job_loop(journal):
+            for job_data in self.job_loop():
                 with self.job_context(journal, job_data):
                     self._handle_job(job_data)
 
