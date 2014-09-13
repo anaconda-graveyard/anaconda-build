@@ -1,9 +1,27 @@
 """
-TODO: create and select build_script.bat for windows builds
+
 """
-import jinja2
+
+import logging
 import pipes
 import shlex
+import jinja2
+import sys
+import os
+
+
+log = logging.getLogger(__name__)
+
+#===============================================================================
+# Script exit Codes
+#===============================================================================
+EXIT_CODE_OK = 0
+EXIT_CODE_ERROR = 11
+EXIT_CODE_FAILED = 12
+
+#===============================================================================
+# Helper functions
+#===============================================================================
 
 def get_channels(job_data):
     """
@@ -50,7 +68,8 @@ def get_files(job_data):
 
     if 'conda' in build_targets:
         idx = build_targets.index('conda')
-        build_targets[idx] = '/opt/anaconda/dist/*.tar.bz2'
+        platform = job_data['build_item_info']['platform']
+        build_targets[idx] = os.path.join(sys.prefix, 'conda-bld', platform, '*.tar.bz2')
 
     if 'pypi' in build_targets:
         idx = build_targets.index('pypi')
@@ -88,6 +107,7 @@ def create_exports(build_data):
     build = build_data['build_info']
 
     api_site = build['api_endpoint']
+
     quote_str = lambda item: pipes.quote(str(item))
     exports = {
             # The build number as MAJOR.MINOR
@@ -98,7 +118,7 @@ def create_exports(build_data):
             'BINSTAR_ENGINE': build_item.get('engine'),
             # the platform from the platform tag
             'BINSTAR_PLATFORM': build_item.get('platform', 'linux-64'),
-            'BUILD_ENV_PATH': "/opt/anaconda/envs/install",
+            'BUILD_ENV_PATH': os.path.join(sys.prefix, "envs", "install"),
             'BINSTAR_API_SITE': quote_str(api_site),
             'BINSTAR_OWNER': quote_str(build_data['owner']['login']),
             'BINSTAR_PACKAGE': quote_str(build_data['package']['name']),
@@ -120,14 +140,30 @@ def create_exports(build_data):
         exports.update(build_env)
     return exports
 
+#===============================================================================
+# Generate
+#===============================================================================
+
 def gen_build_script(build_data, **context):
     """
     Generate a build script from a submitted build
+    
+    :return: the filename of the build script to execute
     """
+
+    platform = build_data['build_item_info']['platform']
+    job_id = build_data['job']['_id']
 
     env = jinja2.Environment(loader=jinja2.PackageLoader(__name__, 'data'))
     env.globals.update(get_list=get_list, quote=pipes.quote)
-    build_script = env.get_or_select_template('build_script.sh')
+
+    if platform in ['win-32', 'win-64']:
+        build_script_template = env.get_or_select_template('build_script.bat')
+        script_filename = os.path.join('build_scripts', '%s.bat' % job_id)
+    else:
+        build_script_template = env.get_or_select_template('build_script.sh')
+        script_filename = os.path.join('build_scripts', '%s.sh' % job_id)
+
 
     exports = create_exports(build_data)
 
@@ -138,7 +174,19 @@ def gen_build_script(build_data, **context):
                     'sub_dir': build_data['build_info'].get('sub_dir'),
                     'channels': get_channels(build_data),
                     'files': get_files(build_data),
+                    'EXIT_CODE_OK': 0,
+                    'EXIT_CODE_ERROR': 11,
+                    'EXIT_CODE_FAILED': 12,
                })
 
-    return build_script.render(**context)
+
+    build_script = build_script_template.render(**context)
+
+    with open(script_filename, 'w') as fd:
+        fd.write(build_script)
+
+    if os.name != 'nt':
+        os.chmod(script_filename, 0700)
+
+    return script_filename
 

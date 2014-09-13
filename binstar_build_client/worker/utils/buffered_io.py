@@ -1,111 +1,134 @@
-import os
-import select
-from subprocess import Popen, PIPE
-from threading import Thread
-import signal
+"""
+Popen module with buffered IO 
+
+i.e. stdout, stderr can be any file 'like' object. Like an io.BytesIO() object
+
+Also this adds a new keyword argument iotimeout which will terminate the process if no output is recieved for 
+iotimeout seconds  
+"""
+
+from __future__ import print_function
+
 import logging
+from subprocess import Popen, STDOUT, PIPE
+from threading import Thread, Event
+import psutil
 import time
 
-log = logging.getLogger('binstar.build')
-
-def read_ready(*fds, **kw):
-    read_fds = select.select([fd for fd in fds if fd], [], [], kw.get('timeout', 0.1))[0]
-    return [fd if fd in read_fds else None for fd in fds]
-
-def run(proc, out_pipe, stdout, err_pipe, stderr, timeout=None):
-    last_ready = time.time()
-    while 1:
-        std_out_ready, std_err_ready = read_ready(out_pipe[0], err_pipe[0])
-        if std_out_ready:
-            last_ready = time.time()
-            out_data = os.read(out_pipe[0], 512)
-            if not out_data: continue
-            stdout.write(out_data)
-        else:
-            out_data = ''
-        if std_err_ready:
-            last_ready = time.time()
-            err_data = os.read(err_pipe[0], 512)
-            if not err_data: continue
-            stderr.write(err_data)
-        else:
-            err_data = ''
-
-        if out_data or err_data: continue  # Keep reading/ don't exit
-        if proc.poll() is not None:  # select timeout
-            break  # proc exited
-        if timeout and (time.time() - last_ready) > timeout:
-            log.info("Timeout: No output from program for %s seconds" % timeout)
-            log.info("Terminating Build")
-
-            if is_normal(stderr):
-                out = stderr
-            elif is_normal(stdout):
-                out = stdout
-            else:
-                break
-
-            out.write("\nTimeout: No output from program for %s seconds\n" % timeout)
-            out.write("\nTimeout: If you require a longer timeout you "
-                      "may set the 'iotimeout' variable in your .binstar.yml file\n")
-            out.write("[Terminating]\n")
-            proc.send_signal(signal.SIGTERM)
-            break
 
 
-    if out_pipe[0]: os.close(out_pipe[0])
-    if out_pipe[1]: os.close(out_pipe[1])
-    if err_pipe[0]: os.close(err_pipe[0])
-    if err_pipe[1]: os.close(err_pipe[1])
+log = logging.getLogger(__name__)
 
-#     if stdout: stdout.flush()
-#     if stderr: stderr.flush()
+def is_special(fd):
+    """
+    Test if a stream argument to POPEN is a subprocess.STDOUT or  subprocess.PIPE etc.
+    """
 
-def is_special(stdio):
-    return (stdio is None) or (isinstance(stdio, int) and stdio < 0)
-def is_normal(stdio):
-    return not is_special(stdio)
+    if fd is None:
+        return True
+    elif isinstance(fd, int) and fd <= 0:
+        return True
+    return False
 
 class BufferedPopen(Popen):
-    def __init__(self, args, iotimeout=None, stdout=PIPE, stderr=PIPE, bufsize=1, close_fds=True, **kwargs):
+    """
+    Open a process and Buffer the output to *any* IO object (like `io.BytesIO`)
+    """
+    def __init__(self, args, stdout=None, iotimeout=None, **kwargs):
 
-        _stdout, _stderr = stdout, stderr
-        self._stdout_pipe = [None, None]
-        self._stderr_pipe = [None, None]
-        if is_normal(stdout):
-            self._stdout_pipe = os.pipe()  # provide tty to enable
-            stdout = self._stdout_pipe[1]
-
-        if is_normal(stderr):
-            self._stderr_pipe = os.pipe()  # provide tty to enable
-            stderr = self._stderr_pipe[1]
+        self._iotimeout = iotimeout
+        self._last_io = time.time()
+        self._finished_event = Event()
 
 
-        Popen.__init__(self, args, bufsize=bufsize,
-                       stdout=stdout, stderr=stderr,
-                       close_fds=close_fds, **kwargs)
+        self._output = stdout
 
-        if is_normal(stdout):
-            self.stdout = _stdout
+        Popen.__init__(self, args, stdout=PIPE, stderr=STDOUT,
+                       **kwargs)
 
-        if is_normal(stderr):
-            self.stderr = _stderr
+        self._timeout_thread = None
+        self._io_thread = None
 
-        run_args = (self, self._stdout_pipe, _stdout,
-                          self._stderr_pipe, _stderr,
-                    iotimeout)
+        if not is_special(stdout):
+            self._io_thread = Thread(target=self._io_loop, name='io_loop')
+            self._io_thread.start()
 
-        if is_normal(_stderr) or is_normal(_stdout):
-            t = Thread(target=run, name='BufferedPopen_run', args=run_args)
-            self._thread = t
-            t.start()
-        else:
-            self._thread = None
+            if self._iotimeout:
+                self._timeout_thread = Thread(target=self._io_timeout_loop, name='io_timeout_loop')
+                self._timeout_thread.start()
 
     def wait(self):
-        exitcode = Popen.wait(self)
-        if self._thread and self._thread.isAlive():
-            self._thread.join()
-        return exitcode
+        """Wait for child process to terminate.  Returns returncode
+        attribute."""
+        returncode = Popen.wait(self)
+        self._finished_event.set()
+        log.debug("returncode", returncode)
+
+        if self._io_thread and self._io_thread.is_alive():
+            log.debug("self._io_thread.join()")
+            self._io_thread.join()
+        if self._timeout_thread and self._timeout_thread.is_alive():
+            log.debug("self._timeout_thread.join()")
+            self._timeout_thread.join()
+
+        return returncode
+
+    def _io_timeout_loop(self):
+        """
+        Loop until Popen.wait exits
+        
+        If Popen exceeds iotimeout seconds without producing any output, 
+        then kill_tree will be called.
+        """
+
+        while self.poll() is None:
+            elapsed = time.time() - self._last_io
+
+            if elapsed >= self._iotimeout:
+                log.debug("term proc")
+                self._output.write("\nTimeout: No output from program for %s seconds\n" % self._iotimeout)
+                self._output.write("\nTimeout: If you require a longer timeout you "
+                          "may set the 'iotimeout' variable in your .binstar.yml file\n")
+                self._output.write("[Terminating]\n")
+
+                self.kill_tree()
+                break
+
+            elif 1 > elapsed:
+                sleep_for = 1
+            elif self._iotimeout > elapsed > 0:
+                sleep_for = self._iotimeout - elapsed
+            else:
+                sleep_for = self._iotimeout
+
+            # Sleep if the process is not finished
+            self._finished_event.wait(sleep_for)
+
+
+        log.debug("exit Timeout Loop")
+
+    def kill_tree(self):
+        'Kill all processes and child processes'
+        parent = psutil.Process(self.pid)
+        for child in parent.get_children(recursive=True):
+            child.kill()
+        parent.kill()
+
+    def _io_loop(self):
+        '''Loop over lines of output
+        
+        This should be run in a thread
+        '''
+
+        while self.poll() is None:
+            log.debug("readline...")
+            data = self.stdout.readline()
+            log.debug("done readline")
+            self._last_io = time.time()
+            self._output.write(data)
+
+        data = self.stdout.read()
+        self._output.write(data)
+        log.debug("exit IO Loop")
 
 

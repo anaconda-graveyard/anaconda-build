@@ -63,13 +63,14 @@ export {{key}}={{value}}
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### 
 setup_build(){
 
+    echo -e "\n[Setup Build]"
     echo "Host:" `hostname`
     echo 'Setting engine'
     echo "conda create -p $BUILD_ENV_PATH --quiet --yes $BINSTAR_ENGINE"
     rm -rf "$BUILD_ENV_PATH"
     conda create -p $BUILD_ENV_PATH --quiet --yes $BINSTAR_ENGINE
         eval $bb_check_command_error
-    export CONDA_PY=`python -c 'import sys; sys.stdout.write("%s%s" % (sys.version_info.major, sys.version_info.minor))'`
+    export CONDA_PY=`python -c 'import sys; sys.stdout.write("{0}{1}".format(sys.version_info[0], sys.version_info[1]))'`
     echo "source activate $BUILD_ENV_PATH"
     source activate $BUILD_ENV_PATH
         eval $bb_check_command_error
@@ -196,7 +197,6 @@ binstar_build(){
     bb_test; eval $bb_check_result
     bb_before_script; eval $bb_check_result
     bb_script; eval $bb_check_result
-    bb_after_script; eval $bb_check_result
 
     export BINSTAR_BUILD_RESULT="success"
 
@@ -242,20 +242,28 @@ upload_build_targets(){
 }
 
 main(){
-    echo "setup_build"
+    
+    {% if ignore_setup_build %}
+    echo "[Ignore Setup Build]"
+    {% else %}
     setup_build;
+    {% endif %}
+
 
     if [ "$BINSTAR_BUILD_RESULT" != "" ]; then 
         echo "Internal binstar build error: Could not set up initial build state"
-        exit 9
+        exit {{EXIT_CODE_ERROR}}
     fi
 
-    echo "fetch_build_source"
+    {% if ignore_fetch_build_source %}
+    echo "[Ignore Fetch Build Source]"
+    {% else %}
     fetch_build_source;
+    {% endif %}
 
     if [ "$BINSTAR_BUILD_RESULT" != "" ]; then 
         echo "Binstar build error: Could not fetch build sources"
-        exit 11
+        exit {{EXIT_CODE_ERROR}}
     fi
 
     binstar_build
@@ -266,14 +274,13 @@ main(){
     echo "Exit BINSTAR_BUILD_RESULT=$BINSTAR_BUILD_RESULT"
 
     if [ "$BINSTAR_BUILD_RESULT" == "success" ]; then 
-        exit 0
+        exit {{EXIT_CODE_OK}}
     elif [ "$BINSTAR_BUILD_RESULT" == "error" ]; then 
-        exit 11
+        exit {{EXIT_CODE_ERROR}}
     elif [ "$BINSTAR_BUILD_RESULT" == "failure" ]; then 
-        exit 12
+        exit {{EXIT_CODE_FAILED}}
     else
-        exit 13
-
+        exit {{EXIT_CODE_ERROR}}
     fi    
 }
 

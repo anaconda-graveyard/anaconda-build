@@ -1,20 +1,30 @@
 """
 The worker 
 """
-from binstar_build_client.worker.utils.buffered_io import BufferedPopen
-from binstar_build_client.worker.utils.script_generator import gen_build_script
-from binstar_build_client.worker.build_log import BuildLog
-from binstar_client import errors
 from contextlib import contextmanager
-from pprint import pprint
-from subprocess import STDOUT
 import logging
 import os
+import signal
 import time
-import traceback
 import yaml
 
+from binstar_client import errors
+
+from .utils.buffered_io import BufferedPopen
+from .utils.build_log import BuildLog
+from .utils.script_generator import gen_build_script, \
+    EXIT_CODE_OK, EXIT_CODE_ERROR, EXIT_CODE_FAILED
+
+
 log = logging.getLogger('binstar.build')
+
+class Alarm(Exception):
+    pass
+
+def alarm_action(*args):
+    raise Alarm()
+
+signal.signal(signal.SIGALRM, alarm_action)
 
 class Worker(object):
     """
@@ -37,8 +47,39 @@ class Worker(object):
             self.worker_id = worker_id
             self._build_loop()
 
+    def job_loop(self):
+        """
+        An iterator that will yield job_data objects when
+        one is available. 
+        
+        Also handles journaling of jobs
+        
+        """
+        bs = self.bs
+        args = self.args
+        while 1:
+            try:
+                job_data = bs.pop_build_job(args.username, args.queue, self.worker_id)
+            except errors.NotFound:
+                if args.show_traceback:
+                    raise
+                else:
+                    msg = ("This worker can no longer pop items off the build queue. "
+                           "Did someone remove it manually?")
+                    raise errors.BinstarError(msg)
 
-    def _handle_job(self, journal):
+            if job_data.get('job') is None:
+                time.sleep(self.SLEEP_TIME)
+                continue
+
+            yield job_data
+
+            if args.one:
+                break
+
+
+
+    def _handle_job(self, job_data):
         """
         Handle a single build job
         only catches build script level errors
@@ -47,35 +88,18 @@ class Worker(object):
         args = self.args
 
         try:
-            job_data = bs.pop_build_job(args.username, args.queue, self.worker_id)
-        except errors.NotFound:
-            if args.show_traceback:
-                raise
-            else:
-                msg = ("This worker can no longer pop items off the build queue. "
-                       "Did someone remove it manually?")
-                raise errors.BinstarError(msg)
-        if job_data.get('job') is None:
-            time.sleep(self.SLEEP_TIME)
-            return
-        ctx = (job_data['job']['_id'], job_data['job_name'])
-        log.info('Starting build, %s, %s\n' % ctx)
-        journal.write('starting build, %s, %s\n' % ctx)
-
-        try:
             failed, status = self.build(job_data)
-        except Exception:
-#                     bs.push_build_job(args.username, args.queue, self.worker_id, job_data['job']['_id'])
-#                     raise
-            job_data = bs.fininsh_build(args.username, args.queue, self.worker_id, job_data['job']['_id'],
-                                        failed=True, status='error')
-            traceback.print_exc()
+        except Exception as err:
+            # Catch all exceptions here and submit a build error
+            log.exception(err)
+            failed = True
+            status = 'error'
+        if args.push_back:
+            bs.push_build_job(args.username, args.queue, self.worker_id, job_data['job']['_id'])
         else:
             job_data = bs.fininsh_build(args.username, args.queue, self.worker_id, job_data['job']['_id'],
                                         failed=failed, status=status)
 
-        finally:
-            journal.write('finished build, %s, %s\n' % ctx)
 
     def _build_loop(self):
         """
@@ -83,65 +107,66 @@ class Worker(object):
         """
 
         with open(self.JOURNAL_FILE, 'a') as journal:
-            while 1:
-                try:
-                    self._handle_job(journal)
-                except Exception:
-                    traceback.print_exc()
-                    time.sleep(self.SLEEP_TIME)
+            for job_data in self.job_loop():
+                with self.job_context(journal, job_data):
+                    self._handle_job(job_data)
+
 
     def build(self, job_data):
         """
         Run a single build 
         """
         job_id = job_data['job']['_id']
-        build_log = BuildLog(self.bs, self.args.username, self.args.queue, self.worker_id, job_id)
+        with BuildLog(self.bs, self.args.username, self.args.queue, self.worker_id, job_id) as build_log:
 
-        build_log.write("Building on worker %s (platform %s)\n" % (self.args.hostname, self.args.platform))
-        build_log.write("Starting build %s\n" % job_data['job_name'])
+            build_log.write("Building on worker %s (platform %s)\n" % (self.args.hostname, self.args.platform))
+            build_log.write("Starting build %s\n" % job_data['job_name'])
 
-        if not os.path.exists('build_scripts'):
-            os.mkdir('build_scripts')
+            if not os.path.exists('build_scripts'):
+                os.mkdir('build_scripts')
 
-        build_script = gen_build_script(job_data)
+            script_filename = gen_build_script(job_data)
 
-        script_filename = os.path.join('build_scripts', '%s.sh' % job_id)
-        with open(script_filename, 'w') as fd:
-            fd.write(build_script)
 
-        iotimeout = job_data['build_item_info'].get('instructions').get('iotimeout', 60 * 5)
-        args = ['bash', script_filename, '--api-token', job_data['upload_token']]
+            iotimeout = job_data['build_item_info'].get('instructions').get('iotimeout', 60)
+            args = [script_filename, '--api-token', job_data['upload_token']]
 
-        if job_data.get('git_oauth_token'):
-            args.extend(['--git-oauth-token', job_data.get('git_oauth_token')])
-        else:
-            build_filename = self.download_build_source(job_id)
-            args.extend(['--build-tarball', build_filename])
+            if job_data.get('git_oauth_token'):
+                args.extend(['--git-oauth-token', job_data.get('git_oauth_token')])
+            else:
+                build_filename = self.download_build_source(job_id)
+                args.extend(['--build-tarball', build_filename])
 
-        log.info("Running command:")
-        log.info(" ".join(args))
-        p0 = BufferedPopen(args, iotimeout=iotimeout, stdout=build_log, stderr=STDOUT)
-        exit_code = p0.wait()
+            log.info("Running command: (iotimeout=%s)" % iotimeout)
+            log.info(" ".join(args))
 
-        log.info("Build script exited with code %s" % exit_code)
-        if exit_code == 0:
-            failed = False
-            status = 'success'
-            log.info('Build %s Succeeded' % (job_data['job_name']))
-        elif exit_code == 11:
-            failed = True
-            status = 'error'
-            log.error("Build %s errored" % (job_data['job_name']))
-        elif exit_code == 12:
-            failed = True
-            status = 'failure'
-            log.error("Build %s failed" % (job_data['job_name']))
-        else:  # Unknown error
-            failed = True
-            status = 'error'
-            log.error("Unknown build exit status %s for build %s" % (exit_code, self.build['_id']))
+            p0 = BufferedPopen(args, stdout=build_log, iotimeout=iotimeout)
+            try:
+                exit_code = p0.wait()
+            except Alarm:
+                log.info('Build %s exceeded maximum duration. Terminating.' % (job_data['job_name']))
+                p0.kill_tree()
+                exit_code = p0.wait()
 
-        return failed, status
+            log.info("Build script exited with code %s" % exit_code)
+            if exit_code == EXIT_CODE_OK:
+                failed = False
+                status = 'success'
+                log.info('Build %s Succeeded' % (job_data['job_name']))
+            elif exit_code == EXIT_CODE_ERROR:
+                failed = True
+                status = 'error'
+                log.error("Build %s errored" % (job_data['job_name']))
+            elif exit_code == EXIT_CODE_FAILED:
+                failed = True
+                status = 'failure'
+                log.error("Build %s failed" % (job_data['job_name']))
+            else:  # Unknown error
+                failed = True
+                status = 'error'
+                log.error("Unknown build exit status %s for build %s" % (exit_code, job_data['job_name']))
+
+            return failed, status
 
     def download_build_source(self, job_id):
         """
@@ -175,14 +200,11 @@ class Worker(object):
         if os.path.isfile(self.STATE_FILE):
             with open(self.STATE_FILE, 'r') as fd:
                 worker_data = yaml.load(fd)
-            if self.args.clean:
-                self.bs.remove_worker(self.args.username, self.args.queue, worker_data['worker_id'])
-                log.info("Un-registered worker %s from binstar site" % worker_data['worker_id'])
-                os.unlink(self.STATE_FILE)
-                log.info("Removed worker.yaml")
-                raise SystemExit()
-            else:
-                raise errors.UserError("Lock file '%s' exists. Use -c/--clean to remove this working context" % self.STATE_FILE)
+
+            self.bs.remove_worker(self.args.username, self.args.queue, worker_data['worker_id'])
+            log.info("Un-registered worker %s from binstar site" % worker_data['worker_id'])
+            os.unlink(self.STATE_FILE)
+            log.info("Removed worker.yaml")
 
         worker_id = self.bs.register_worker(self.args.username, self.args.queue, self.args.platform, self.args.hostname)
         worker_data = {'worker_id': worker_id}
@@ -197,3 +219,35 @@ class Worker(object):
             os.unlink(self.STATE_FILE)
             log.debug("Removed %s" % self.STATE_FILE)
 
+    @contextmanager
+    def job_context(self, journal, job_data):
+        """
+        Yields a context where a job can execute safely
+        
+        If the context is not exited within 'args.timeout' seconds, an exception will be raised
+        """
+        ctx = (job_data['job']['_id'], job_data['job_name'])
+
+        log.info('Starting build, %s, %s' % ctx)
+        journal.write('starting build, %s, %s\n' % ctx)
+
+        start_time = time.time()
+        log.info('Setting alarm to terminate build after %i seconds' % self.args.timeout)
+        signal.alarm(self.args.timeout)
+
+        try:
+            yield
+        except Alarm as err:
+            journal.write('max build duration exceeded, %s, %s\n' % ctx)
+            log.exception(err)
+            time.sleep(self.SLEEP_TIME)
+        except Exception as err:
+            journal.write('build errored, %s, %s\n' % ctx)
+            log.exception(err)
+            time.sleep(self.SLEEP_TIME)
+        else:
+            journal.write('finished build, %s, %s\n' % ctx)
+        finally:
+            duration = time.time() - start_time
+            log.info('Build Duration %i seconds (removing alarm signal)' % duration)
+            signal.alarm(0)
