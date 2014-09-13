@@ -14,6 +14,7 @@ class MockWorker(Worker):
         args = Mock()
         args.hostname = 'test_hostname'
         args.platform = 'test_platform'
+        args.timeout = 100
         Worker.__init__(self, bs, args)
 
 def default_build_data():

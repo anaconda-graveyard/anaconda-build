@@ -11,6 +11,9 @@ import os
 
 log = logging.getLogger(__name__)
 
+EXIT_CODE_OK = 0
+EXIT_CODE_ERROR = 11
+EXIT_CODE_FAILED = 12
 
 def get_channels(job_data):
     """
@@ -156,6 +159,9 @@ def gen_build_script(build_data, **context):
                     'sub_dir': build_data['build_info'].get('sub_dir'),
                     'channels': get_channels(build_data),
                     'files': get_files(build_data),
+                    'EXIT_CODE_OK': 0,
+                    'EXIT_CODE_ERROR': 11,
+                    'EXIT_CODE_FAILED': 12,
                })
 
 

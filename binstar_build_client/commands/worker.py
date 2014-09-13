@@ -6,12 +6,12 @@ from __future__ import (print_function, unicode_literals, division,
     absolute_import)
 
 import logging
-import os
 import platform
 
 from binstar_build_client import BinstarBuildAPI
 from binstar_build_client.worker.worker import Worker
 from binstar_client.utils import get_binstar
+
 
 log = logging.getLogger('binstar.build')
 
@@ -60,6 +60,9 @@ def add_parser(subparsers):
                         help='The root directory this build should use (default: "%(default)s")')
     parser.add_argument('-u', '--username', '--owner',
                         help='The queue\'s owner (defaults to your currently logged in binstar user account)')
+    parser.add_argument('-t', '--max-job-duration', type=int, metavar='SECONDS',
+                        dest='timeout',
+                        help='Force jobs to stop after they exceed duration (default: %(default)s)', default=60 * 60 * 60)
     parser.add_argument('-c', '--clean', action='store_true',
                         help='Clean up an existing workers session')
     parser.add_argument('-f', '--fail', action='store_true',

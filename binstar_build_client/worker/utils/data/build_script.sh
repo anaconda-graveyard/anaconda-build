@@ -252,7 +252,7 @@ main(){
 
     if [ "$BINSTAR_BUILD_RESULT" != "" ]; then 
         echo "Internal binstar build error: Could not set up initial build state"
-        exit 9
+        exit {{EXIT_CODE_ERROR}}
     fi
 
     {% if ignore_fetch_build_source %}
@@ -263,7 +263,7 @@ main(){
 
     if [ "$BINSTAR_BUILD_RESULT" != "" ]; then 
         echo "Binstar build error: Could not fetch build sources"
-        exit 11
+        exit {{EXIT_CODE_ERROR}}
     fi
 
     binstar_build
@@ -274,14 +274,13 @@ main(){
     echo "Exit BINSTAR_BUILD_RESULT=$BINSTAR_BUILD_RESULT"
 
     if [ "$BINSTAR_BUILD_RESULT" == "success" ]; then 
-        exit 0
+        exit {{EXIT_CODE_OK}}
     elif [ "$BINSTAR_BUILD_RESULT" == "error" ]; then 
-        exit 11
+        exit {{EXIT_CODE_ERROR}}
     elif [ "$BINSTAR_BUILD_RESULT" == "failure" ]; then 
-        exit 12
+        exit {{EXIT_CODE_FAILED}}
     else
-        exit 13
-
+        exit {{EXIT_CODE_ERROR}}
     fi    
 }
 

@@ -9,10 +9,8 @@ iotimeout seconds
 
 from __future__ import print_function
 
-import  os
-import subprocess
 from subprocess import Popen, STDOUT, PIPE
-from threading import Thread
+from threading import Thread, Event
 import time
 import psutil
 import logging
@@ -30,6 +28,7 @@ class BufferedPopen(Popen):
 
         self._iotimeout = iotimeout
         self._last_io = time.time()
+        self._finished_event = Event()
 
 
         self._output = stdout
@@ -50,11 +49,8 @@ class BufferedPopen(Popen):
 
     def wait(self):
         returncode = Popen.wait(self)
+        self._finished_event.set()
         log.debug("returncode", returncode)
-
-#         if self._wfile is not None:
-#             log.debug("close wfile")
-#             self._wfile.close()
 
         if self._io_thread and self._io_thread.is_alive():
             log.debug("self._io_thread.join()")
@@ -66,35 +62,49 @@ class BufferedPopen(Popen):
         return returncode
 
     def _io_timeout_loop(self):
+        """
+        Loop until the Popen wait command exits 
+        """
+
         while self.poll() is None:
             elapsed = time.time() - self._last_io
 
-            if elapsed > self._iotimeout:
+            if elapsed >= self._iotimeout:
                 log.debug("term proc")
                 self._output.write("\nTimeout: No output from program for %s seconds\n" % self._iotimeout)
                 self._output.write("\nTimeout: If you require a longer timeout you "
                           "may set the 'iotimeout' variable in your .binstar.yml file\n")
                 self._output.write("[Terminating]\n")
 
-                # self.send_signal(signal.SIGKILL)
-
-                parent = psutil.Process(self.pid)
-                for child in parent.get_children(recursive=True):
-                    child.kill()
-                parent.kill()
-                time.sleep(.1)
+                self.kill_tree()
                 break
 
-            if elapsed > 0:
-                sleep_for = min(self._iotimeout, elapsed)
+            elif 1 > elapsed:
+                sleep_for = 1
+            elif self._iotimeout > elapsed > 0:
+                sleep_for = self._iotimeout - elapsed
             else:
                 sleep_for = self._iotimeout
 
-            time.sleep(sleep_for)
+            # Sleep if the process is not finished
+            self._finished_event.wait(sleep_for)
+
 
         log.debug("exit Timeout Loop")
 
+    def kill_tree(self):
+        'Kill all processes and child processes'
+        parent = psutil.Process(self.pid)
+        for child in parent.get_children(recursive=True):
+            child.kill()
+        parent.kill()
+
     def _io_loop(self):
+        '''Loop over lines of output
+        
+        This should be run in a thread
+        '''
+
         while self.poll() is None:
             log.debug("readline...")
             data = self.stdout.readline()
