@@ -9,14 +9,21 @@ iotimeout seconds
 
 from __future__ import print_function
 
+import logging
 from subprocess import Popen, STDOUT, PIPE
 from threading import Thread, Event
-import time
 import psutil
-import logging
+import time
+
+
+
 log = logging.getLogger(__name__)
 
 def is_special(fd):
+    """
+    Test if a stream argument to POPEN is a subprocess.STDOUT or  subprocess.PIPE etc.
+    """
+
     if fd is None:
         return True
     elif isinstance(fd, int) and fd <= 0:
@@ -24,6 +31,9 @@ def is_special(fd):
     return False
 
 class BufferedPopen(Popen):
+    """
+    Open a process and Buffer the output to *any* IO object (like `io.BytesIO`)
+    """
     def __init__(self, args, stdout=None, iotimeout=None, **kwargs):
 
         self._iotimeout = iotimeout
@@ -48,6 +58,8 @@ class BufferedPopen(Popen):
                 self._timeout_thread.start()
 
     def wait(self):
+        """Wait for child process to terminate.  Returns returncode
+        attribute."""
         returncode = Popen.wait(self)
         self._finished_event.set()
         log.debug("returncode", returncode)
@@ -63,7 +75,10 @@ class BufferedPopen(Popen):
 
     def _io_timeout_loop(self):
         """
-        Loop until the Popen wait command exits 
+        Loop until Popen.wait exits
+        
+        If Popen exceeds iotimeout seconds without producing any output, 
+        then kill_tree will be called.
         """
 
         while self.poll() is None:

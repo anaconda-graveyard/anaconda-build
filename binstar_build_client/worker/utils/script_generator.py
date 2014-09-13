@@ -1,6 +1,7 @@
 """
-TODO: create and select build_script.bat for windows builds
+
 """
+
 import logging
 import pipes
 import shlex
@@ -11,9 +12,16 @@ import os
 
 log = logging.getLogger(__name__)
 
+#===============================================================================
+# Script exit Codes
+#===============================================================================
 EXIT_CODE_OK = 0
 EXIT_CODE_ERROR = 11
 EXIT_CODE_FAILED = 12
+
+#===============================================================================
+# Helper functions
+#===============================================================================
 
 def get_channels(job_data):
     """
@@ -132,10 +140,17 @@ def create_exports(build_data):
         exports.update(build_env)
     return exports
 
+#===============================================================================
+# Generate
+#===============================================================================
+
 def gen_build_script(build_data, **context):
     """
     Generate a build script from a submitted build
+    
+    :return: the filename of the build script to execute
     """
+
     platform = build_data['build_item_info']['platform']
     job_id = build_data['job']['_id']
 

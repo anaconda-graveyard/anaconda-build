@@ -63,7 +63,7 @@ export {{key}}={{value}}
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### 
 setup_build(){
 
-    echo -e "\n[Setup Buld]"
+    echo -e "\n[Setup Build]"
     echo "Host:" `hostname`
     echo 'Setting engine'
     echo "conda create -p $BUILD_ENV_PATH --quiet --yes $BINSTAR_ENGINE"
