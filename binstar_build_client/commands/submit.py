@@ -23,6 +23,10 @@ See also:
 
 '''
 
+from __future__ import (print_function, unicode_literals, division,
+    absolute_import)
+
+
 from binstar_client.utils import get_binstar, PackageSpec, upload_print_callback
 import logging, yaml
 from os.path import abspath, join, isfile
@@ -36,7 +40,10 @@ from binstar_client import errors
 from binstar_build_client import BinstarBuildAPI
 from binstar_build_client.utils.matrix import serialize_builds
 from binstar_build_client.utils.filter import ExcludeGit
-from binstar_build_client.utils.git_utils import is_giturl, clone_repo
+from binstar_build_client.utils.git_utils import is_url, get_urlpath
+from six.moves.urllib.parse import urlparse
+import re
+from argparse import RawDescriptionHelpFormatter
 
 log = logging.getLogger('binstar.build')
 
@@ -53,7 +60,6 @@ def mktemp(suffix=".tar.gz", prefix='binstar', dir=None):
 def submit_build(args):
 
     binstar = get_binstar(args, cls=BinstarBuildAPI)
-
     path = abspath(args.path)
 
     log.info('Getting build product: %s' % abspath(args.path))
@@ -67,17 +73,67 @@ def submit_build(args):
         log.info(' %i)' % i + ' %(platform)-10s  %(engine)-15s  %(env)-15s' % build)
 
     if not args.dry_run:
-        with mktemp() as tmp:
-            log.info("Archiving build directory for upload ...")
-            with tarfile.open(tmp, mode='w|bz2') as tf:
-                tf.add(path, '.', exclude=ExcludeGit(path, use_git_ignore=not args.dont_git_ignore))
+        if args.git_url:
+            log.info("Submitting the following repo for package creation: %s" % args.git_url)
 
-            log.info("Created archive; Uploading to binstar")
-            with open(tmp, mode='rb') as fd:
+        else:
+            with mktemp() as tmp:
+                log.info("Archiving build directory for upload ...")
+                with tarfile.open(tmp, mode='w|bz2') as tf:
+                    tf.add(path, '.', exclude=ExcludeGit(path, use_git_ignore=not args.dont_git_ignore))
 
-                build_no = binstar.submit_for_build(args.package.user, args.package.name, fd, builds,
-                                                    test_only=args.test_only, channels=args.channels,
-                                                    callback=upload_print_callback(args))
+                log.info("Created archive; Uploading to binstar")
+                with open(tmp, mode='rb') as fd:
+
+                    build_no = binstar.submit_for_build(args.package.user, args.package.name, fd, builds,
+                                                        channels=args.channels, queue=args.queue,
+                                                        test_only=args.test_only, callback=upload_print_callback(args))
+
+        log.info('')
+        log.info('To view this build go to http://alpha.binstar.org/%s/%s/builds/matrix/%s' % (args.package.user, args.package.name, build_no))
+        log.info('')
+        log.info('You may also run\n\n    binstar-build tail -f %s/%s %s\n' % (args.package.user, args.package.name, build_no))
+        log.info('')
+        log.info('Build %s submitted' % build_no)
+
+    else:
+        log.info('Build not submitted (dry-run)')
+
+def submit_git_build(args):
+
+    binstar = get_binstar(args, cls=BinstarBuildAPI)
+
+    try:
+        binstar_package = binstar.package(args.package.user, args.package.name)
+    except errors.NotFound:
+        print(args.package)
+        print("Package %s does not exist" % (args.package,))
+        raise errors.UserError("Package %s does not exist" % (args.package,))
+
+
+    if not args.dry_run:
+        log.info("Submitting the following repo for package creation: %s" % args.git_url)
+
+
+        # split branch from repo
+        url = urlparse(args.path)
+        print (url)
+        if url.netloc != 'github.com':
+            raise errors.UserError("Currently only github.com urls are supported (got %s)" % url.netloc)
+
+        pat = re.compile('^/(?P<repo>\w+/\w+)(/tree/(?P<branch>[\w/]+))?$')
+        match = pat.match(url.path)
+        if not match:
+            raise errors.UserError("URL path '%s' is not a git repo" % url.path)
+
+        groups = match.groupdict()
+        repo = groups.get('repo')
+        branch = groups.get('branch') or url.fragment or 'master'
+        builds = {'repo': repo, 'branch':branch}
+        build_no = binstar.submit_for_url_build(args.package.user, args.package.name, builds,
+                                                channels=args.channels, queue=args.queue, sub_dir=args.sub_dir,
+                                                test_only=args.test_only, callback=upload_print_callback(args),
+                                                )
 
         log.info('')
         log.info('To view this build go to http://alpha.binstar.org/%s/%s/builds/matrix/%s' % (args.package.user, args.package.name, build_no))
@@ -100,49 +156,65 @@ def main(args):
     package_name = None
     user_name = None
 
-    if is_giturl(args.path):
-        args.path = clone_repo(args.path)
+    if args.git_url:
+        args.path = args.git_url
+
+    if args.git_url or is_url(args.path):
+        args.git_url = args.path
+        args.git_url_path = get_urlpath(args.path)
         args.dont_git_ignore = True
+        user_name = user['login']
+        if not args.package:
+            package_name = args.git_url_path.split('/')[1]
+            log.info("Using repo name '%s' as the pkg name." % package_name)
+            args.package = PackageSpec(user_name, package_name)
 
 
-    binstar_yml = join(args.path, '.binstar.yml')
+        submit_git_build(args)
 
-    if not isfile(binstar_yml):
-        raise UserError("file %s does not exist\n perhaps you should run\n\n    binstar-build init\n" % binstar_yml)
 
-    with open(binstar_yml) as cfg:
-        for build in yaml.load_all(cfg):
-            package_name = build.get('package')
-            user_name = build.get('user')
-
-    # Force package to exist
-    if args.package:
-        if user_name and not args.package.user == user_name:
-            log.warn('User name does not match the user specified in the .binstar.yml file (%s != %s)', args.package.user, user_name)
-        user_name = args.package.user
-        if package_name and not args.package.name == package_name:
-            log.warn('Package name does not match the user specified in the .binstar.yml file (%s != %s)', args.package.name, package_name)
-        package_name = args.package.name
+    # not a github repo (must check for valid .binstar.yml file
     else:
-        if user_name is None:
-            user_name = user['login']
-        if not package_name:
-            raise UserError("You must specify the package name in the .binstar.yml file or the command line")
+        binstar_yml = join(args.path, '.binstar.yml')
 
-    try:
-        _ = binstar.package(user_name, package_name)
-    except errors.NotFound:
-        log.error("The package %s/%s does not exist." % (user_name, package_name))
-        log.error("Run: \n\n    binstar package --create %s/%s\n\n to create this package" % (user_name, package_name))
-        raise errors.NotFound('Package %s/%s' % (user_name, package_name))
-    args.package = PackageSpec(user_name, package_name)
+        if not isfile(binstar_yml):
+            raise UserError("file %s does not exist\n perhaps you should run\n\n    binstar-build init\n" % binstar_yml)
 
-    submit_build(args)
+        with open(binstar_yml) as cfg:
+            for build in yaml.load_all(cfg):
+                package_name = build.get('package')
+                user_name = build.get('user')
+
+        # Force package to exist
+        if args.package:
+            if user_name and not args.package.user == user_name:
+                log.warn('User name does not match the user specified in the .binstar.yml file (%s != %s)', args.package.user, user_name)
+            user_name = args.package.user
+            if package_name and not args.package.name == package_name:
+                log.warn('Package name does not match the user specified in the .binstar.yml file (%s != %s)', args.package.name, package_name)
+            package_name = args.package.name
+        else:
+            if user_name is None:
+                user_name = user['login']
+            if not package_name:
+                raise UserError("You must specify the package name in the .binstar.yml file or the command line")
+
+        try:
+            _ = binstar.package(user_name, package_name)
+        except errors.NotFound:
+            log.error("The package %s/%s does not exist." % (user_name, package_name))
+            log.error("Run: \n\n    binstar package --create %s/%s\n\n to create this package" % (user_name, package_name))
+            raise errors.NotFound('Package %s/%s' % (user_name, package_name))
+        args.package = PackageSpec(user_name, package_name)
+
+        submit_build(args)
+
 
 def add_parser(subparsers):
     parser = subparsers.add_parser('submit',
                                       help='Submit for building',
                                       description=__doc__,
+                                      formatter_class=RawDescriptionHelpFormatter,
                                       )
 
     parser.add_argument('path', default='.', nargs='?')
@@ -155,6 +227,11 @@ def add_parser(subparsers):
                        help="The binstar package namespace to upload the build to",
                        type=package_specs)
 
+    parser.add_argument('--git-url',
+                       help="The github url with valid .binstar.yml file to clone")
+    parser.add_argument('--sub-dir',
+                       help="The sub directory within the git repository (github url submits only)")
+
     parser.add_argument('-n', '--dry-run',
                        help="Parse the build file but don't submit", action='store_true')
 
@@ -166,6 +243,9 @@ def add_parser(subparsers):
 
     parser.add_argument('--channel', action='append', dest='channels',
                        help="Upload targets to this channel")
+
+    parser.add_argument('--queue',
+                       help="Build on this queue")
 
     parser.set_defaults(main=main)
 
