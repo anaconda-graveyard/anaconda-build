@@ -57,10 +57,18 @@ class BufferedPopen(Popen):
                 self._timeout_thread = Thread(target=self._io_timeout_loop, name='io_timeout_loop')
                 self._timeout_thread.start()
 
-    def wait(self):
+    def wait(self, timeout=None):
         """Wait for child process to terminate.  Returns returncode
-        attribute."""
+        attribute.
+        
+        If timeout is given, the process will be killed after timeout seconds if it is not finished 
+        """
+
+        if timeout:
+            self.kill_after(timeout)
+
         returncode = Popen.wait(self)
+
         self._finished_event.set()
         log.debug("returncode", returncode)
 
@@ -72,6 +80,21 @@ class BufferedPopen(Popen):
             self._timeout_thread.join()
 
         return returncode
+
+    def kill_after(self, timeout):
+        self._timeout_thread = Thread(target=self._kill_after, name='kill_after', args=(timeout,))
+        self._timeout_thread.start()
+
+    def _kill_after(self, timeout):
+
+        finished = self._finished_event.wait(timeout)
+        if not finished:
+
+            log.debug("term proc")
+            self._output.write("\nTimeout: build exceeded maximum build time of %s seconds\n" % timeout)
+            self._output.write("[Terminating]\n")
+
+            self.kill_tree()
 
     def _io_timeout_loop(self):
         """
