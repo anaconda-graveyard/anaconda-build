@@ -119,7 +119,7 @@ goto:eof
     echo.
     echo [Fetching Build Source]
 
-    rm -rf "%BINSTAR_OWNER%\%BINSTAR_PACKAGE%"
+    Rmdir /s /q "%BINSTAR_OWNER%\%BINSTAR_PACKAGE%"
     Mkdir "%BINSTAR_OWNER%"
 
     {% if git_info %}
@@ -128,8 +128,6 @@ goto:eof
         set "GIT_BRANCH={{git_info['branch']}}"
         set "GIT_COMMIT={{git_info['commit']}}"
 
-        rm -rf "%BINSTAR_OWNER%\%BINSTAR_PACKAGE%"
-        Mkdir "%BINSTAR_OWNER%\%BINSTAR_PACKAGE%"
         echo git clone --recursive --depth=50 --branch=%GIT_BRANCH% https://github.com/%GIT_REPO%.git "%BINSTAR_OWNER%\%BINSTAR_PACKAGE%"
 
         if "%GIT_OAUTH_TOKEN%" == "" (
@@ -182,7 +180,7 @@ goto:eof
     hostname
     echo [Setting engine]
     echo conda create -p "%BUILD_ENV_PATH%" --quiet --yes %BINSTAR_ENGINE%
-    rm -rf "%BUILD_ENV_PATH%"
+    Rmdir /s /q "%BUILD_ENV_PATH%"
     call conda create -p "%BUILD_ENV_PATH%" --quiet --yes %BINSTAR_ENGINE%
     
     :: Hack to build with the python set in BINSTAR_ENGINE
