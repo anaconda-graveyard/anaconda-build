@@ -18,7 +18,8 @@ setup(
     install_requires=['requests',
                       'pyyaml',
                       'python-dateutil',
-                      'pytz'],
+                      'pytz',
+                      'jinja2'],
 
     include_package_data=True,
     zip_safe=False,
