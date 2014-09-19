@@ -123,21 +123,23 @@ goto:eof
     Mkdir "%BINSTAR_OWNER%"
 
     {% if git_info %}
+        
         set "GIT_REPO={{git_info['full_name']}}"
         set "GIT_BRANCH={{git_info['branch']}}"
         set "GIT_COMMIT={{git_info['commit']}}"
 
-        rm -rf "%GIT_REPO%"
-        Mkdir "%GIT_REPO%"
-        echo git clone --recursive --depth=50 --branch=%GIT_BRANCH% https://github.com/%GIT_REPO%.git %GIT_REPO%
+        rm -rf "%BINSTAR_OWNER%\%BINSTAR_PACKAGE%"
+        Mkdir "%BINSTAR_OWNER%\%BINSTAR_PACKAGE%"
+        echo git clone --recursive --depth=50 --branch=%GIT_BRANCH% https://github.com/%GIT_REPO%.git "%BINSTAR_OWNER%\%BINSTAR_PACKAGE%"
 
-        if [ "%GIT_OAUTH_TOKEN%" == "" ]; then
+        if "%GIT_OAUTH_TOKEN%" == "" (
             git clone --recursive --depth=50 --branch="%GIT_BRANCH%" "https://github.com/%GIT_REPO%.git" "%BINSTAR_OWNER%\%BINSTAR_PACKAGE%"  || ( {{set_error()}} )
-        else
+        )
+        if NOT  "%GIT_OAUTH_TOKEN%" == "" (
             git clone --recursive --depth=50 --branch="%GIT_BRANCH%" "https://%GIT_OAUTH_TOKEN%:x-oauth-basic@github.com/%GIT_REPO%.git" "%BINSTAR_OWNER%\%BINSTAR_PACKAGE%"  || ( {{set_error()}} )
-        fi
+        )
         
-        cd "%GIT_REPO%"
+        cd "%BINSTAR_OWNER%\%BINSTAR_PACKAGE%"
 
         echo "git checkout --quiet %GIT_COMMIT%"
         git checkout --quiet "%GIT_COMMIT%"  || ( {{set_error()}} )
