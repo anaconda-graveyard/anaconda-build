@@ -4,7 +4,6 @@ The worker
 from contextlib import contextmanager
 import logging
 import os
-import signal
 import time
 import yaml
 
@@ -17,14 +16,6 @@ from .utils.script_generator import gen_build_script, \
 
 
 log = logging.getLogger('binstar.build')
-
-class Alarm(Exception):
-    pass
-
-def alarm_action(*args):
-    raise Alarm()
-
-signal.signal(signal.SIGALRM, alarm_action)
 
 class Worker(object):
     """
@@ -141,12 +132,8 @@ class Worker(object):
             log.info(" ".join(args))
 
             p0 = BufferedPopen(args, stdout=build_log, iotimeout=iotimeout)
-            try:
-                exit_code = p0.wait()
-            except Alarm:
-                log.info('Build %s exceeded maximum duration. Terminating.' % (job_data['job_name']))
-                p0.kill_tree()
-                exit_code = p0.wait()
+
+            exit_code = p0.wait(timeout=self.args.timeout)
 
             log.info("Build script exited with code %s" % exit_code)
             if exit_code == EXIT_CODE_OK:
@@ -233,14 +220,9 @@ class Worker(object):
 
         start_time = time.time()
         log.info('Setting alarm to terminate build after %i seconds' % self.args.timeout)
-        signal.alarm(self.args.timeout)
 
         try:
             yield
-        except Alarm as err:
-            journal.write('max build duration exceeded, %s, %s\n' % ctx)
-            log.exception(err)
-            time.sleep(self.SLEEP_TIME)
         except Exception as err:
             journal.write('build errored, %s, %s\n' % ctx)
             log.exception(err)
@@ -249,5 +231,5 @@ class Worker(object):
             journal.write('finished build, %s, %s\n' % ctx)
         finally:
             duration = time.time() - start_time
-            log.info('Build Duration %i seconds (removing alarm signal)' % duration)
-            signal.alarm(0)
+            log.info('Build Duration %i seconds' % duration)
+
