@@ -3,11 +3,11 @@
 """
 
 import logging
+import os
 import pipes
 import shlex
-import jinja2
 import sys
-import os
+import jinja2
 
 
 log = logging.getLogger(__name__)
@@ -123,6 +123,7 @@ def create_exports(build_data):
             'BINSTAR_OWNER': quote_str(build_data['owner']['login']),
             'BINSTAR_PACKAGE': quote_str(build_data['package']['name']),
             'BINSTAR_BUILD_ID': quote_str(build['_id']),
+            'CONDA_BUILD_DIR': os.path.join(sys.prefix, 'conda-bld', build_item.get('platform', 'linux-64')),
            }
 
     build_env = build_item.get('env')

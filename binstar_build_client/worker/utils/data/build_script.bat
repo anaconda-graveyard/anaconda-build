@@ -181,6 +181,9 @@ goto:eof
     echo [Setting engine]
     echo conda create -p "%BUILD_ENV_PATH%" --quiet --yes %BINSTAR_ENGINE%
     Rmdir /s /q "%BUILD_ENV_PATH%"
+    
+    conda-clean-build-dir
+    
     call conda create -p "%BUILD_ENV_PATH%" --quiet --yes %BINSTAR_ENGINE%
     
     :: Hack to build with the python set in BINSTAR_ENGINE

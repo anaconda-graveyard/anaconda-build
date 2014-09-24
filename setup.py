@@ -27,6 +27,7 @@ setup(
     entry_points={
           'console_scripts': [
               'binstar-build = binstar_build_client.scripts.build:main',
+              'conda-clean-build-dir = binstar_build_client.scripts.conda_clean_build_dir:main',
               ]
                  },
 
