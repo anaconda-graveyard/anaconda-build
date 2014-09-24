@@ -80,17 +80,30 @@ class Worker(object):
 
         try:
             failed, status = self.build(job_data)
+        except BaseException as err:
+            # Catch all exceptions here and submit a build error
+            log.exception(err)
+            failed = True
+            status = 'error'
+            self._finish_job(job_data, failed, status)
+            raise
         except Exception as err:
             # Catch all exceptions here and submit a build error
             log.exception(err)
             failed = True
             status = 'error'
+
+        self._finish_job(job_data, failed, status)
+
+    def _finish_job(self, job_data, failed, status):
+        bs = self.bs
+        args = self.args
+
         if args.push_back:
             bs.push_build_job(args.username, args.queue, self.worker_id, job_data['job']['_id'])
         else:
             job_data = bs.fininsh_build(args.username, args.queue, self.worker_id, job_data['job']['_id'],
                                         failed=failed, status=status)
-
 
     def _build_loop(self):
         """
@@ -133,7 +146,12 @@ class Worker(object):
 
             p0 = BufferedPopen(args, stdout=build_log, iotimeout=iotimeout)
 
-            exit_code = p0.wait(timeout=self.args.timeout)
+            try:
+                exit_code = p0.wait(timeout=self.args.timeout)
+            except BaseException:
+                p0.kill_tree()
+                p0.wait()
+                raise
 
             log.info("Build script exited with code %s" % exit_code)
             if exit_code == EXIT_CODE_OK:
