@@ -69,6 +69,7 @@ setup_build(){
     echo "conda create -p $BUILD_ENV_PATH --quiet --yes $BINSTAR_ENGINE"
     
     rm -rf "$BUILD_ENV_PATH"
+    echo "conda-clean-build-dir"
     conda-clean-build-dir
 
     conda create -p $BUILD_ENV_PATH --quiet --yes $BINSTAR_ENGINE

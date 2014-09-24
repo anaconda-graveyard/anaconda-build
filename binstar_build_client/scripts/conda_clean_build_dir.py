@@ -3,20 +3,22 @@ Remove all conda build artifacts
 """
 
 from __future__ import print_function
-import  conda_build.config
 import shutil
 from argparse import ArgumentParser
 import os
+from binstar_build_client.utils import get_conda_root_prefix
 
 def main():
     parser = ArgumentParser(description=__doc__)
     parser.parse_args()
-    if os.path.isdir(conda_build.config.croot):
-        print("Removing conda build root %s" % conda_build.config.croot)
-        shutil.rmtree(conda_build.config.croot)
-    else:
-        print("Conda build root %s does not exist" % conda_build.config.croot)
 
+    root_env = get_conda_root_prefix()
+    build_root = os.path.join(root_env, 'conda-bld')
+    if os.path.isdir(build_root):
+        print("Removing conda build root %s" % build_root)
+        shutil.rmtree(build_root)
+    else:
+        print("Conda build root %s does not exist" % build_root)
 
 
 if __name__ == '__main__':

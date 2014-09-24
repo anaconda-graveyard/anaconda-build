@@ -8,6 +8,7 @@ import pipes
 import shlex
 import sys
 import jinja2
+from binstar_build_client.utils import get_conda_root_prefix
 
 
 log = logging.getLogger(__name__)
@@ -69,7 +70,7 @@ def get_files(job_data):
     if 'conda' in build_targets:
         idx = build_targets.index('conda')
         platform = job_data['build_item_info']['platform']
-        build_targets[idx] = os.path.join(sys.prefix, 'conda-bld', platform, '*.tar.bz2')
+        build_targets[idx] = os.path.join(get_conda_root_prefix(), 'conda-bld', platform, '*.tar.bz2')
 
     if 'pypi' in build_targets:
         idx = build_targets.index('pypi')
@@ -103,6 +104,7 @@ def create_exports(build_data):
     """
     Create a dict of environment variables for the build script
     """
+    conda_root_prefix = get_conda_root_prefix()
     build_item = build_data['build_item_info']
     build = build_data['build_info']
 
@@ -118,12 +120,12 @@ def create_exports(build_data):
             'BINSTAR_ENGINE': build_item.get('engine'),
             # the platform from the platform tag
             'BINSTAR_PLATFORM': build_item.get('platform', 'linux-64'),
-            'BUILD_ENV_PATH': os.path.join(sys.prefix, "envs", "install"),
+            'BUILD_ENV_PATH': os.path.join(conda_root_prefix, "envs", "install"),
             'BINSTAR_API_SITE': quote_str(api_site),
             'BINSTAR_OWNER': quote_str(build_data['owner']['login']),
             'BINSTAR_PACKAGE': quote_str(build_data['package']['name']),
             'BINSTAR_BUILD_ID': quote_str(build['_id']),
-            'CONDA_BUILD_DIR': os.path.join(sys.prefix, 'conda-bld', build_item.get('platform', 'linux-64')),
+            'CONDA_BUILD_DIR': os.path.join(conda_root_prefix, 'conda-bld', build_item.get('platform', 'linux-64')),
            }
 
     build_env = build_item.get('env')
