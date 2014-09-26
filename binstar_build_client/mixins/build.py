@@ -34,10 +34,10 @@ class BuildMixin(object):
         return res.json()
 
     def submit_for_build(self, username, package, fd, instructions,
-                         test_only=False, channels=None, queue=None, callback=None):
+                         test_only=False, channels=None, queue=None, queue_tags=None, callback=None):
 
         url = '%s/build/%s/%s/stage' % (self.domain, username, package)
-        data, headers = jencode(instructions=instructions, test_only=test_only, channels=channels, queue_name=queue)
+        data, headers = jencode(instructions=instructions, test_only=test_only, channels=channels, queue_name=queue, queue_tags=queue_tags)
 
         res = self.session.post(url, data=data, headers=headers)
         self._check_response(res)
@@ -65,13 +65,17 @@ class BuildMixin(object):
 
     def submit_for_url_build(self, username, package, instructions,
                              test_only=False, callback=None,
-                             channels=None, queue=None, sub_dir=''):
+                             channels=None, queue=None, queue_tags=None, sub_dir='',
+                             only_on_platform=None):
 
         # /build/<owner_login>/<package_name>/submit-git-url
         url = '%s/build/%s/%s/submit-git-url' % (self.domain, username, package)
 
         data, headers = jencode(instructions=instructions, test_only=test_only,
-                                channels=channels, sub_dir=sub_dir, queue_name=queue)
+                                channels=channels, sub_dir=sub_dir,
+                                queue_name=queue, queue_tags=queue_tags,
+                                only_on_platform=only_on_platform)
+
         res = self.session.post(url, data=data, headers=headers)
 
         self._check_response(res, [201])

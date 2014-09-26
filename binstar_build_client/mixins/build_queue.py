@@ -5,9 +5,9 @@ import binstar_build_client
 
 class BuildQueueMixin(object):
 
-    def register_worker(self, username, queue_name, platform, hostname):
+    def register_worker(self, username, queue_name, platform, hostname, dist):
         url = '%s/build-worker/%s/%s' % (self.domain, username, queue_name)
-        data, headers = jencode(platform=platform, hostname=hostname,
+        data, headers = jencode(platform=platform, hostname=hostname, dist=dist,
                                 binstar_version=binstar_client.__version__,
                                 binstar_build_version=binstar_build_client.__version__)
         res = self.session.post(url, data=data, headers=headers)
@@ -69,4 +69,35 @@ class BuildQueueMixin(object):
 
         return res.raw
 
+    def build_queues(self, username):
+        url = '%s/build-queues/%s' % (self.domain, username)
+
+        res = self.session.get(url)
+        self._check_response(res)
+        return res.json()
+
+    def build_queue(self, username, queuename):
+        url = '%s/build-queues/%s/%s' % (self.domain, username, queuename)
+
+        res = self.session.get(url)
+        self._check_response(res)
+        return res.json()
+
+
+    def remove_build_queue(self, username, queuename):
+
+        url = '%s/build-queues/%s/%s' % (self.domain, username, queuename)
+        res = self.session.delete(url)
+        self._check_response(res, [201])
+        return
+
+    def add_build_queue(self, username, queuename, platforms):
+
+        url = '%s/build-queues/%s/%s' % (self.domain, username, queuename)
+
+        data, headers = jencode(platforms=platforms)
+        res = self.session.post(url, data=data, headers=headers)
+
+        self._check_response(res, [201])
+        return
 

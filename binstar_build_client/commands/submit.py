@@ -68,6 +68,18 @@ def submit_build(args):
         build_matrix = list(yaml.load_all(cfg))
 
     builds = list(serialize_builds(build_matrix))
+
+    if args.platform:
+
+        log.info("Only selecting builds on platform %s" % args.platform)
+        builds = [b for b in builds if b['platform'] == args.platform]
+
+    if not builds:
+        msg = "No build instructions found"
+        if args.platform:
+            msg += " for platform %s" % args.platform
+        raise errors.BinstarError(msg)
+
     log.info('Submitting %i sub builds' % len(builds))
     for i, build in enumerate(builds):
         log.info(' %i)' % i + ' %(platform)-10s  %(engine)-15s  %(env)-15s' % build)
@@ -83,10 +95,16 @@ def submit_build(args):
                     tf.add(path, '.', exclude=ExcludeGit(path, use_git_ignore=not args.dont_git_ignore))
 
                 log.info("Created archive; Uploading to binstar")
+                queue_tags = []
+                if args.buildhost:
+                    queue_tags.append('hostname:%s' % args.buildhost)
+                if args.dist:
+                    queue_tags.append('dist:%s' % args.dist)
                 with open(tmp, mode='rb') as fd:
 
                     build_no = binstar.submit_for_build(args.package.user, args.package.name, fd, builds,
-                                                        channels=args.channels, queue=args.queue,
+                                                        channels=args.channels,
+                                                        queue=args.queue, queue_tags=queue_tags,
                                                         test_only=args.test_only, callback=upload_print_callback(args))
 
         log.info('')
@@ -104,7 +122,7 @@ def submit_git_build(args):
     binstar = get_binstar(args, cls=BinstarBuildAPI)
 
     try:
-        binstar_package = binstar.package(args.package.user, args.package.name)
+        _ = binstar.package(args.package.user, args.package.name)
     except errors.NotFound:
         print(args.package)
         print("Package %s does not exist" % (args.package,))
@@ -133,6 +151,7 @@ def submit_git_build(args):
         build_no = binstar.submit_for_url_build(args.package.user, args.package.name, builds,
                                                 channels=args.channels, queue=args.queue, sub_dir=args.sub_dir,
                                                 test_only=args.test_only, callback=upload_print_callback(args),
+                                                only_on_platform=args.platform,
                                                 )
 
         log.info('')
@@ -246,6 +265,19 @@ def add_parser(subparsers):
 
     parser.add_argument('--queue',
                        help="Build on this queue")
+
+    parser.add_argument('--buildhost',
+                        help="The host name of the intended build worker")
+
+    parser.add_argument('--dist',
+                        help=("The os distribution of intended build worker (e.g centos, ubuntu) "
+                              "Use 'binstar-build queue' to view the workers")
+                        )
+
+    parser.add_argument('--platform',
+                        help=("The platform to run (e.g linux-64, win-64, osx-64, etc) "
+                              "(default: all the platforms in the .binstar.yaml file)")
+                        )
 
     parser.set_defaults(main=main)
 

@@ -6,13 +6,14 @@ import logging
 import os
 import time
 import yaml
-
+from requests import ConnectionError
 from binstar_client import errors
 
 from .utils.buffered_io import BufferedPopen
 from .utils.build_log import BuildLog
 from .utils.script_generator import gen_build_script, \
     EXIT_CODE_OK, EXIT_CODE_ERROR, EXIT_CODE_FAILED
+import sys
 
 
 log = logging.getLogger('binstar.build')
@@ -48,10 +49,15 @@ class Worker(object):
         """
         bs = self.bs
         args = self.args
+        worker_idle = False
         while 1:
             try:
                 job_data = bs.pop_build_job(args.username, args.queue, self.worker_id)
             except errors.NotFound:
+
+                if worker_idle:
+                    sys.stderr.write('\n');sys.stderr.flush()
+
                 if args.show_traceback:
                     raise
                 else:
@@ -59,9 +65,30 @@ class Worker(object):
                            "Did someone remove it manually?")
                     raise errors.BinstarError(msg)
 
+            except ConnectionError as err:
+                if worker_idle:
+                    sys.stderr.write('\n');sys.stderr.flush()
+
+                log.error("Trouble connecting to binstar at '%s' " % bs.domain)
+                log.error("Could not retrieve work items")
+                job_data = {}
+
             if job_data.get('job') is None:
+                if worker_idle:
+                    idle_msg = '.'
+                else:
+                    idle_msg = 'Worker is waiting for the next job '
+
+                sys.stderr.write(idle_msg);sys.stderr.flush()
+
+                worker_idle = True
                 time.sleep(self.SLEEP_TIME)
                 continue
+
+            if worker_idle:
+                sys.stderr.write('\n');sys.stderr.flush()
+
+            worker_idle = False
 
             yield job_data
 
@@ -211,7 +238,8 @@ class Worker(object):
             os.unlink(self.STATE_FILE)
             log.info("Removed worker.yaml")
 
-        worker_id = self.bs.register_worker(self.args.username, self.args.queue, self.args.platform, self.args.hostname)
+        worker_id = self.bs.register_worker(self.args.username, self.args.queue, self.args.platform,
+                                            self.args.hostname, self.args.dist)
         worker_data = {'worker_id': worker_id}
 
         with open(self.STATE_FILE, 'w') as fd:
@@ -220,8 +248,11 @@ class Worker(object):
             yield worker_id
         finally:
             log.info("Removing worker %s" % worker_id)
-            self.bs.remove_worker(self.args.username, self.args.queue, worker_id)
-            os.unlink(self.STATE_FILE)
+            try:
+                self.bs.remove_worker(self.args.username, self.args.queue, worker_id)
+                os.unlink(self.STATE_FILE)
+            except Exception as err:
+                log.exception(err)
             log.debug("Removed %s" % self.STATE_FILE)
 
     @contextmanager

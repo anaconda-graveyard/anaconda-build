@@ -42,6 +42,16 @@ def get_platform():
     arch = platform.machine().lower()
     return '%s-%s' % (OS_MAP.get(operating_system, operating_system),
                       ARCH_MAP.get(arch, arch))
+def get_dist():
+    if platform.dist()[0]:
+        return platform.dist()[0].lower()
+    elif platform.mac_ver()[0]:
+        darwin_version = platform.mac_ver()[0].rsplit('.', 1)[0]
+        return 'darwin%s' % darwin_version
+    elif platform.win32_ver()[0]:
+        return platform.win32_ver()[0].lower()
+    return 'unknown'
+
 
 def add_parser(subparsers):
     parser = subparsers.add_parser('worker',
@@ -54,8 +64,13 @@ def add_parser(subparsers):
     parser.add_argument('-p', '--platform',
                         default=get_platform(),
                         help='The platform this worker is running on (default: %(default)s)')
-    parser.add_argument('--hostname', default=platform.uname()[1],
+
+    parser.add_argument('--hostname', default=platform.node(),
                         help='The host name the worker should use (default: %(default)s)')
+
+    parser.add_argument('--dist', default=get_dist(),
+                        help='The operating system distribution the worker should use (default: %(default)s)')
+
     parser.add_argument('--cwd', default='.',
                         help='The root directory this build should use (default: "%(default)s")')
     parser.add_argument('-u', '--username', '--owner',
