@@ -14,6 +14,7 @@ from .utils.build_log import BuildLog
 from .utils.script_generator import gen_build_script, \
     EXIT_CODE_OK, EXIT_CODE_ERROR, EXIT_CODE_FAILED
 import sys
+import math
 
 
 log = logging.getLogger('binstar.build')
@@ -55,9 +56,6 @@ class Worker(object):
                 job_data = bs.pop_build_job(args.username, args.queue, self.worker_id)
             except errors.NotFound:
 
-                if worker_idle:
-                    sys.stderr.write('\n');sys.stderr.flush()
-
                 if args.show_traceback:
                     raise
                 else:
@@ -66,27 +64,18 @@ class Worker(object):
                     raise errors.BinstarError(msg)
 
             except ConnectionError as err:
-                if worker_idle:
-                    sys.stderr.write('\n');sys.stderr.flush()
 
                 log.error("Trouble connecting to binstar at '%s' " % bs.domain)
                 log.error("Could not retrieve work items")
                 job_data = {}
 
             if job_data.get('job') is None:
-                if worker_idle:
-                    idle_msg = '.'
-                else:
-                    idle_msg = 'Worker is waiting for the next job '
-
-                sys.stderr.write(idle_msg);sys.stderr.flush()
-
+                if not worker_idle:
+                    idle_msg = 'Worker is waiting for the next job'
+                    log.info(idle_msg)
                 worker_idle = True
                 time.sleep(self.SLEEP_TIME)
                 continue
-
-            if worker_idle:
-                sys.stderr.write('\n');sys.stderr.flush()
 
             worker_idle = False
 
