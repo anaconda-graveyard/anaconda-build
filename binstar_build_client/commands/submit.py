@@ -124,8 +124,6 @@ def submit_git_build(args):
     try:
         _ = binstar.package(args.package.user, args.package.name)
     except errors.NotFound:
-        print(args.package)
-        print("Package %s does not exist" % (args.package,))
         raise errors.UserError("Package %s does not exist" % (args.package,))
 
 
