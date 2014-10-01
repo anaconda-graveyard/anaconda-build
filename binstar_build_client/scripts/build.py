@@ -11,7 +11,7 @@ Submit a build:
 
     binstar-build submit
 
-Tail the output of a build untill it is complete:
+Tail the output of a build until it is complete:
 
     binstar-build tail user/package 1.0
 
@@ -23,13 +23,16 @@ from __future__ import (print_function, unicode_literals, division,
 import logging
 
 from binstar_build_client import __version__ as version
+from binstar_build_client import commands
 from binstar_client.scripts.cli import binstar_main
-
-from ..commands import sub_commands
 
 
 logger = logging.getLogger('binstar')
 
 def main(args=None, exit=True):
-    return binstar_main(sub_commands, args, exit,
+    return binstar_main(commands, args, exit,
                         description=__doc__, version=version)
+
+
+if __name__ == '__main__':
+    main()
