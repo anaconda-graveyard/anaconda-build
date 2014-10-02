@@ -153,7 +153,7 @@ class Worker(object):
 
             if job_data.get('git_oauth_token'):
                 args.extend(['--git-oauth-token', job_data.get('git_oauth_token')])
-            else:
+            elif not job_data.get('build_info', {}).get('github_info'):
                 build_filename = self.download_build_source(job_id)
                 args.extend(['--build-tarball', build_filename])
 
