@@ -54,6 +54,10 @@ class BuildLog(object):
         return self
 
     def __exit__(self, *args):
+
+        if args[0] is not None:
+            self.write("Build Error: An unhandled exception occurred in the build worker")
+
         self._running = False
         self.event.set()
         self._io_thread.join()
