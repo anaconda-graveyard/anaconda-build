@@ -137,7 +137,7 @@ def submit_git_build(args):
         if url.netloc != 'github.com':
             raise errors.UserError("Currently only github.com urls are supported (got %s)" % url.netloc)
 
-        pat = re.compile('^/(?P<repo>\w+/\w+)(/tree/(?P<branch>[\w/]+))?$')
+        pat = re.compile('^/(?P<repo>[\w-]+/[\w-]+)(/tree/(?P<branch>[\w/]+))?$')
         match = pat.match(url.path)
         if not match:
             raise errors.UserError("URL path '%s' is not a git repo" % url.path)
@@ -242,6 +242,7 @@ def add_parser(subparsers):
 
     parser.add_argument('-p', '--package',
                        help="The binstar package namespace to upload the build to",
+                       metavar='USER/PACKAGE',
                        type=package_specs)
 
     parser.add_argument('--git-url',
