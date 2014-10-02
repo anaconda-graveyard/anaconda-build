@@ -104,7 +104,7 @@ class BufferedPopen(Popen):
         then kill_tree will be called.
         """
 
-        while self.poll() is None:
+        while self.returncode is None:
             elapsed = time.time() - self._last_io
 
             if elapsed >= self._iotimeout:
@@ -145,7 +145,7 @@ class BufferedPopen(Popen):
         This should be run in a thread
         '''
 
-        while self.poll() is None:
+        while self.returncode is None:
             log.debug("readline...")
             data = self.stdout.readline()
             log.debug("done readline")
