@@ -95,7 +95,9 @@ def create_git_context(build):
     git_info = {}
     github_info = build.get('github_info', {})
     if github_info:
-        git_info['full_name'] = '%s/%s' % (github_info['repository']['owner']['name'], github_info['repository']['name'])
+        ghrepo = github_info['repository']
+        ghowner = ghrepo['owner'].get('name', ghrepo['owner'].get('login'))
+        git_info['full_name'] = '%s/%s' % (ghowner, ghrepo['name'])
         git_info['branch'] = github_info['ref'].split('/', 2)[-1]
         git_info['commit'] = github_info['after']
     return git_info
