@@ -6,7 +6,7 @@ platform:
   - osx-64
 
 install:
-  - conda install binstar
+  - conda install binstar pip setuptools
   - pip install coverage mock
 
 script:
