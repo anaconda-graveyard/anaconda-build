@@ -4,6 +4,7 @@ Write IO back to build log on the binstar server
 
 import sys
 from threading import Lock, Thread, Event
+import traceback
 
 class BuildLog(object):
     """
@@ -57,6 +58,7 @@ class BuildLog(object):
 
         if args[0] is not None:
             self.write("Build Error: An unhandled exception occurred in the build worker")
+            self.write('---\n' + ''.join(traceback.format_exception(*args)) + '\n---')
 
         self._running = False
         self.event.set()
