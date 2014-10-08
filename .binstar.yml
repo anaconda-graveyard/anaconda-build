@@ -4,6 +4,7 @@ engine:
 platform:
   - linux-64
   - osx-64
+  - win-64
 
 install:
   - conda install binstar pip setuptools
