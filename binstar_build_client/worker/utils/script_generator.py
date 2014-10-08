@@ -140,8 +140,7 @@ def create_exports(build_data):
                 _build_env[key] = value
 
         build_env = _build_env
-
-    if build_env:
+    elif isinstance(build_env, dict):
         exports.update(build_env)
     return exports
 

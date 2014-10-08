@@ -14,7 +14,11 @@ from binstar_client import Binstar
 
 log = logging.getLogger('binstar.build')
 
-from ._version import __version__
+try:
+    from ._version import __version__
+except ImportError:
+    __version__ = '0.8'
+
 
 class BinstarBuildAPI(BuildMixin, BuildQueueMixin, Binstar):
     '''

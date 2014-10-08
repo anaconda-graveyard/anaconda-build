@@ -11,6 +11,7 @@ from binstar_client.utils import jencode, compute_hash
 from binstar_client.requests_ext import stream_multipart
 import requests
 from binstar_client.errors import BinstarError
+
 class BuildMixin(object):
     '''
     Add build functionality to binstar client
@@ -66,7 +67,7 @@ class BuildMixin(object):
     def submit_for_url_build(self, username, package, instructions,
                              test_only=False, callback=None,
                              channels=None, queue=None, queue_tags=None, sub_dir='',
-                             only_on_platform=None):
+                             filter_platform=None):
 
         # /build/<owner_login>/<package_name>/submit-git-url
         url = '%s/build/%s/%s/submit-git-url' % (self.domain, username, package)
@@ -74,7 +75,7 @@ class BuildMixin(object):
         data, headers = jencode(instructions=instructions, test_only=test_only,
                                 channels=channels, sub_dir=sub_dir,
                                 queue_name=queue, queue_tags=queue_tags,
-                                only_on_platform=only_on_platform)
+                                filter_platform=filter_platform)
 
         res = self.session.post(url, data=data, headers=headers)
 
@@ -108,3 +109,38 @@ class BuildMixin(object):
         res = self.session.post(url)
         self._check_response(res, [201])
         return
+
+    def add_ci(self, username, package,
+                   ghowner, ghrepo,
+                   channels, queue=None, sub_dir=None,
+                   branch='master', email=None):
+
+        url = '%s/build/%s/%s/ci' % (self.domain, username, package)
+        data, headers = jencode(ghowner=ghowner, ghrepo=ghrepo,
+                                channels=channels, queue_name=queue, sub_dir=sub_dir,
+                                branch=branch,
+                                email=email,
+                                )
+        res = self.session.post(url, data=data, headers=headers)
+        self._check_response(res, [201])
+
+    def remove_ci(self, username, package):
+        url = '%s/build/%s/%s/ci' % (self.domain, username, package)
+        res = self.session.delete(url)
+        self._check_response(res, [201])
+
+    def trigger_build(self, username, package, channels=None,
+                      queue_name=None, branch=None, test_only=False,
+                      filter_platform=None):
+        url = '%s/build/%s/%s/trigger' % (self.domain, username, package)
+
+        data, headers = jencode(channels=channels, queue_name=queue_name,
+                                branch=branch, test_only=test_only,
+                                filter_platform=filter_platform)
+
+        res = self.session.post(url, data=data, headers=headers)
+        self._check_response(res, [201])
+
+        obj = res.json()
+        return obj['build_no']
+

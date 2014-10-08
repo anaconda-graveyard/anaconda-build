@@ -148,7 +148,7 @@ class Worker(object):
             script_filename = gen_build_script(job_data)
 
 
-            iotimeout = job_data['build_item_info'].get('instructions').get('iotimeout', 60)
+            iotimeout = job_data['build_item_info'].get('instructions').get('iotimeout', 10)
             args = [script_filename, '--api-token', job_data['upload_token']]
 
             if job_data.get('git_oauth_token'):
