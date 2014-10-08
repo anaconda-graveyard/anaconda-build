@@ -2,7 +2,12 @@ import make_version
 from setuptools import setup, find_packages
 
 ctx = {}
-version = make_version.pypi_version()
+try:
+    with open('binstar_build_client/_version.py') as fd:
+        exec(open('binstar_build_client/_version.py').read(), ctx)
+    version = ctx.get('__version__', 'dev')
+except IOError:
+    version = '0.8'
 
 setup(
     name='binstar-build',
