@@ -10,7 +10,6 @@ install:
   - pip install coverage mock
 
 script:
-  - touch build.sh # FIX: for conda issue
-  - conda build .
+  - conda build conda.recipe
 
 build_targets: conda

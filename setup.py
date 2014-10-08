@@ -1,12 +1,8 @@
-'''
-@author: sean
-'''
-
+import make_version
 from setuptools import setup, find_packages
 
 ctx = {}
-exec(open('binstar_build_client/_version.py').read(), ctx)
-version = ctx.get('__version__', 'dev')
+version = make_version.pypi_version()
 
 setup(
     name='binstar-build',
