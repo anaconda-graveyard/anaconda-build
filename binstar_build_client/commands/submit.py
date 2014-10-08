@@ -149,7 +149,7 @@ def submit_git_build(args):
         build_no = binstar.submit_for_url_build(args.package.user, args.package.name, builds,
                                                 channels=args.channels, queue=args.queue, sub_dir=args.sub_dir,
                                                 test_only=args.test_only, callback=upload_print_callback(args),
-                                                only_on_platform=args.platform,
+                                                filter_platform=args.platform,
                                                 )
 
         log.info('')
