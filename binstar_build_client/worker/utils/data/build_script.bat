@@ -155,9 +155,7 @@ goto:eof
         echo tar jxf %BUILD_TARBALL%
 
         :: tar jxf "%BUILD_TARBALL%" || {{set_error()}}
-        echo GOT HERE
         python -c "import tarfile; tarfile.open(r'%BUILD_TARBALL%', 'r|bz2').extractall()" || ( {{set_error()}} )
-        echo GOT HERE
     {% endif %}
 
     {% if sub_dir %}
