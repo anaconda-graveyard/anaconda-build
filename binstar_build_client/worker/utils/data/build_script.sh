@@ -85,27 +85,25 @@ fetch_build_source(){
     echo -e '\n[Fetching Build Source]'
 
     rm -rf "$BINSTAR_OWNER/$BINSTAR_PACKAGE"
-    mkdir -p "$BINSTAR_OWNER/$BINSTAR_PACKAGE"
-    cd "$BINSTAR_OWNER/$BINSTAR_PACKAGE"
+    mkdir -p "$BINSTAR_OWNER"
+    
 
     {% if git_info %}
         export GIT_REPO="{{git_info['full_name']}}"
         export GIT_BRANCH="{{git_info['branch']}}"
         export GIT_COMMIT="{{git_info['commit']}}"
 
-        rm -rf "$GIT_REPO"
-        mkdir -p "$GIT_REPO"
-        echo "git clone --recursive --depth=50 --branch=$GIT_BRANCH https://github.com/${GIT_REPO}.git $GIT_REPO"
+        echo "git clone --recursive --depth=50 --branch=$GIT_BRANCH https://github.com/${GIT_REPO}.git $BINSTAR_OWNER/$BINSTAR_PACKAGE"
 
         if [ "$GIT_OAUTH_TOKEN" == "" ]; then
-            git clone --recursive --depth=50 --branch="$GIT_BRANCH" "https://github.com/${GIT_REPO}.git" "$GIT_REPO"
+            git clone --recursive --depth=50 --branch="$GIT_BRANCH" "https://github.com/${GIT_REPO}.git" "$BINSTAR_OWNER/$BINSTAR_PACKAGE"
                 eval $bb_check_command_error
         else
-            git clone --recursive --depth=50 --branch="$GIT_BRANCH" "https://${GIT_OAUTH_TOKEN}:x-oauth-basic@github.com/${GIT_REPO}.git" "$GIT_REPO"
+            git clone --recursive --depth=50 --branch="$GIT_BRANCH" "https://${GIT_OAUTH_TOKEN}:x-oauth-basic@github.com/${GIT_REPO}.git" "$BINSTAR_OWNER/$BINSTAR_PACKAGE"
                 eval $bb_check_command_error
         fi
         
-        cd "$GIT_REPO"
+        cd "$BINSTAR_OWNER/$BINSTAR_PACKAGE"
 
         echo "git checkout --quiet $GIT_COMMIT"
         git checkout --quiet "$GIT_COMMIT"
@@ -123,6 +121,10 @@ fetch_build_source(){
 
 
     {% else %}
+
+        mkdir -p "$BINSTAR_OWNER/$BINSTAR_PACKAGE"
+        cd "$BINSTAR_OWNER/$BINSTAR_PACKAGE"
+
         echo "ls  -al $BUILD_TARBALL"
         ls  -al "$BUILD_TARBALL"
         echo "Extracting Package"
