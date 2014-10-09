@@ -114,13 +114,15 @@ goto:eof
 :: #######################################################
 
 :fetch_build_source
+    
+    set "BUILD_DIR=%BUILD_BASE%\%BINSTAR_OWNER%\%BINSTAR_PACKAGE%"
+
     @echo off
 
     echo.
     echo [Fetching Build Source]
 
-    Rmdir /s /q "%BINSTAR_OWNER%\%BINSTAR_PACKAGE%"
-    Mkdir "%BINSTAR_OWNER%"
+    Rmdir /s /q "%BUILD_DIR%"
 
     {% if git_info %}
         
@@ -128,16 +130,16 @@ goto:eof
         set "GIT_BRANCH={{git_info['branch']}}"
         set "GIT_COMMIT={{git_info['commit']}}"
 
-        echo git clone --recursive --depth=50 --branch=%GIT_BRANCH% https://github.com/%GIT_REPO%.git "%BINSTAR_OWNER%\%BINSTAR_PACKAGE%"
+        echo git clone --recursive --depth=50 --branch=%GIT_BRANCH% https://github.com/%GIT_REPO%.git "%BUILD_DIR%"
 
         if "%GIT_OAUTH_TOKEN%" == "" (
-            git clone --recursive --depth=50 --branch="%GIT_BRANCH%" "https://github.com/%GIT_REPO%.git" "%BINSTAR_OWNER%\%BINSTAR_PACKAGE%"  || ( {{set_error()}} )
+            git clone --recursive --depth=50 --branch="%GIT_BRANCH%" "https://github.com/%GIT_REPO%.git" "%BUILD_DIR%"  || ( {{set_error()}} )
         )
         if NOT  "%GIT_OAUTH_TOKEN%" == "" (
-            git clone --recursive --depth=50 --branch="%GIT_BRANCH%" "https://%GIT_OAUTH_TOKEN%:x-oauth-basic@github.com/%GIT_REPO%.git" "%BINSTAR_OWNER%\%BINSTAR_PACKAGE%"  || ( {{set_error()}} )
+            git clone --recursive --depth=50 --branch="%GIT_BRANCH%" "https://%GIT_OAUTH_TOKEN%:x-oauth-basic@github.com/%GIT_REPO%.git" "%BUILD_DIR%"  || ( {{set_error()}} )
         )
         
-        cd "%BINSTAR_OWNER%\%BINSTAR_PACKAGE%"
+        cd "%BUILD_DIR%"
 
         echo "git checkout --quiet %GIT_COMMIT%"
         git checkout --quiet "%GIT_COMMIT%"  || ( {{set_error()}} )
@@ -147,8 +149,8 @@ goto:eof
 
     {% else %}
 
-        Mkdir "%BINSTAR_OWNER%\%BINSTAR_PACKAGE%"
-        cd "%BINSTAR_OWNER%\%BINSTAR_PACKAGE%"
+        Mkdir "%BUILD_DIR%"
+        cd "%BUILD_DIR%"
         echo ls  -al %BUILD_TARBALL%
         ls  %BUILD_TARBALL%
         echo "Extracting Package"
@@ -174,6 +176,9 @@ goto:eof
 
 :setup_build
 
+    set "BUILD_ENV_PATH=%BUILD_ENV_DIR%\%BINSTAR_OWNER%\%BINSTAR_PACKAGE%"
+
+    echo [Setup Build]
     echo|set /p "noNewline=Host: "
     hostname
     echo [Setting engine]

@@ -63,6 +63,8 @@ export {{key}}={{value}}
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### 
 setup_build(){
 
+    BUILD_ENV_PATH="$BUILD_ENV_DIR/$BINSTAR_OWNER/$BINSTAR_PACKAGE"
+    
     echo -e "\n[Setup Build]"
     echo "Host:" `hostname`
     echo 'Setting engine'
@@ -82,10 +84,13 @@ setup_build(){
 }
 
 fetch_build_source(){
+
+
     echo -e '\n[Fetching Build Source]'
 
-    rm -rf "$BINSTAR_OWNER/$BINSTAR_PACKAGE"
-    mkdir -p "$BINSTAR_OWNER"
+    BUILD_DIR="$BUILD_BASE/$BINSTAR_OWNER/$BINSTAR_PACKAGE"
+
+    rm -rf "$BUILD_DIR"
     
 
     {% if git_info %}
@@ -93,17 +98,17 @@ fetch_build_source(){
         export GIT_BRANCH="{{git_info['branch']}}"
         export GIT_COMMIT="{{git_info['commit']}}"
 
-        echo "git clone --recursive --depth=50 --branch=$GIT_BRANCH https://github.com/${GIT_REPO}.git $BINSTAR_OWNER/$BINSTAR_PACKAGE"
+        echo "git clone --recursive --depth=50 --branch=$GIT_BRANCH https://github.com/${GIT_REPO}.git $BUILD_DIR"
 
         if [ "$GIT_OAUTH_TOKEN" == "" ]; then
-            git clone --recursive --depth=50 --branch="$GIT_BRANCH" "https://github.com/${GIT_REPO}.git" "$BINSTAR_OWNER/$BINSTAR_PACKAGE"
+            git clone --recursive --depth=50 --branch="$GIT_BRANCH" "https://github.com/${GIT_REPO}.git" "$BUILD_DIR"
                 eval $bb_check_command_error
         else
-            git clone --recursive --depth=50 --branch="$GIT_BRANCH" "https://${GIT_OAUTH_TOKEN}:x-oauth-basic@github.com/${GIT_REPO}.git" "$BINSTAR_OWNER/$BINSTAR_PACKAGE"
+            git clone --recursive --depth=50 --branch="$GIT_BRANCH" "https://${GIT_OAUTH_TOKEN}:x-oauth-basic@github.com/${GIT_REPO}.git" "$BUILD_DIR"
                 eval $bb_check_command_error
         fi
         
-        cd "$BINSTAR_OWNER/$BINSTAR_PACKAGE"
+        cd "$BUILD_DIR"
 
         echo "git checkout --quiet $GIT_COMMIT"
         git checkout --quiet "$GIT_COMMIT"
@@ -122,8 +127,8 @@ fetch_build_source(){
 
     {% else %}
 
-        mkdir -p "$BINSTAR_OWNER/$BINSTAR_PACKAGE"
-        cd "$BINSTAR_OWNER/$BINSTAR_PACKAGE"
+        mkdir -p "$BUILD_DIR"
+        cd "$BUILD_DIR"
 
         echo "ls  -al $BUILD_TARBALL"
         ls  -al "$BUILD_TARBALL"

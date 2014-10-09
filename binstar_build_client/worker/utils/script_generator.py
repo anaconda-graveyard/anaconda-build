@@ -122,12 +122,13 @@ def create_exports(build_data):
             'BINSTAR_ENGINE': build_item.get('engine'),
             # the platform from the platform tag
             'BINSTAR_PLATFORM': build_item.get('platform', 'linux-64'),
-            'BUILD_ENV_PATH': os.path.join(conda_root_prefix, "envs", "install"),
             'BINSTAR_API_SITE': quote_str(api_site),
             'BINSTAR_OWNER': quote_str(build_data['owner']['login']),
             'BINSTAR_PACKAGE': quote_str(build_data['package']['name']),
             'BINSTAR_BUILD_ID': quote_str(build['_id']),
             'CONDA_BUILD_DIR': os.path.join(conda_root_prefix, 'conda-bld', build_item.get('platform', 'linux-64')),
+            'BUILD_BASE': os.path.abspath('builds'),
+            'BUILD_ENV_DIR': os.path.abspath('build_envs'),
            }
 
     build_env = build_item.get('env')
