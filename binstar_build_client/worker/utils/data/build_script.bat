@@ -191,9 +191,12 @@ goto:eof
     echo activate %BUILD_ENV_PATH%
 
     :: activate does not work within this batch file
-    call activate %BUILD_ENV_PATH%
-    :: set "CONDA_DEFAULT_ENV=%BUILD_ENV_PATH%"
-    :: set "PATH=%BUILD_ENV_PATH%;%BUILD_ENV_PATH%\Scripts;%PATH%"
+    :: call activate %BUILD_ENV_PATH%
+    set "DEACTIVATE_PATH=%PATH%"
+    set "DEACTIVATE_ENV=%CONDA_DEFAULT_ENV%"
+
+    set "CONDA_DEFAULT_ENV=%BUILD_ENV_PATH%"
+    set "PATH=%BUILD_ENV_PATH%;%BUILD_ENV_PATH%\Scripts;%PATH%"
 
 
 goto:eof
@@ -292,7 +295,10 @@ goto:eof
 
     {% else %}
 
-    call deactivate
+    :: call deactivate    
+    set "CONDA_DEFAULT_ENV=%DEACTIVATE_ENV%"
+    set "PATH=%DEACTIVATE_PATH%"
+
 
     echo .
     echo [Build Targets]
