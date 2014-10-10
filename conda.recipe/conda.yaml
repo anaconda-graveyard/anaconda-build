@@ -17,6 +17,7 @@ requirements:
   run:
     - python
     - binstar
+    - pywin32 [win]
 
 about:
   home: {{data.get('url')}}
