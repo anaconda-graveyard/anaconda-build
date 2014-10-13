@@ -93,6 +93,7 @@ class Test(unittest.TestCase):
         worker = MyWorker()
         worker.args.push_back = False
         worker.worker_id = 'worker_id'
+
         worker._handle_job({'job':{'_id':'test_job_id'}})
 
         self.assertEqual(worker.build.call_count, 1)

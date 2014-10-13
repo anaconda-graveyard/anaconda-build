@@ -28,7 +28,7 @@ class Test(unittest.TestCase):
         p0 = BufferedPopen(['cmd', '/c', 'echo hello & bad-command'], stdout=stdout)
         return_code = p0.wait()
         self.assertNotEqual(return_code, 0)
-        
+
         self.assertTrue(stdout.getvalue().startswith('hello'))
 
     @skipWindows
@@ -45,7 +45,7 @@ class Test(unittest.TestCase):
         self.assertNotEqual(p0.wait(), 0)
         self.assertIn('hello', stdout.getvalue())
         self.assertIn('Timeout: No output from program for 1 seconds', stdout.getvalue())
-        self.assertFalse(p0._io_thread.isAlive())
+        self.assertFalse(p0._iostream.isAlive())
 
 
     @skipPosix
@@ -54,7 +54,7 @@ class Test(unittest.TestCase):
         p0 = BufferedPopen(['cmd', '/c', 'echo hello && sleep 100 && echo goodby'], stdout=stdout, iotimeout=1)
         returncode = p0.wait()
         print("returncode", returncode)
-        #self.assertNotEqual(returncode, 0)
+        # self.assertNotEqual(returncode, 0)
         self.assertIn('hello', stdout.getvalue())
         self.assertIn('Timeout: No output from program for 1 seconds', stdout.getvalue())
         self.assertFalse(p0._io_thread.isAlive())
