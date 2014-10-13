@@ -48,12 +48,15 @@ class IOStream(Thread):
 
     def run(self):
         'Loop over lines in self.line_iterator and write them to outstream'
-        for line in self.line_iterator:
-            self._last_io = time.time()
-            self.outstream.write(line)
-            self.outstream.flush()
+        try:
 
-        self.finished_event.set()
+            for line in self.line_iterator:
+                self._last_io = time.time()
+                self.outstream.write(line)
+                self.outstream.flush()
+
+        finally:
+            self.finished_event.set()
 
     def start(self):
 

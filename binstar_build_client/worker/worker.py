@@ -1,23 +1,35 @@
 """
 The worker 
 """
+from __future__ import print_function, absolute_import, unicode_literals
+
 from contextlib import contextmanager
 import logging
 import os
 import time
-import yaml
-from requests import ConnectionError
+
 from binstar_client import errors
+from requests import ConnectionError
+import yaml
 
 from .utils.buffered_io import BufferedPopen
 from .utils.build_log import BuildLog
 from .utils.script_generator import gen_build_script, \
     EXIT_CODE_OK, EXIT_CODE_ERROR, EXIT_CODE_FAILED
-import sys
-import math
 
 
 log = logging.getLogger('binstar.build')
+
+@contextmanager
+def remove_files_after(files):
+    try:
+        yield
+    finally:
+        for filename in files:
+            if os.path.isfile(filename):
+                os.unlink(filename)
+
+
 
 class Worker(object):
     """
@@ -91,11 +103,14 @@ class Worker(object):
         Handle a single build job
         only catches build script level errors
         """
-        bs = self.bs
-        args = self.args
 
         try:
             failed, status = self.build(job_data)
+        except Exception as err:
+            # Catch all exceptions here and submit a build error
+            log.exception(err)
+            failed = True
+            status = 'error'
         except BaseException as err:
             # Catch all exceptions here and submit a build error
             log.exception(err)
@@ -103,11 +118,6 @@ class Worker(object):
             status = 'error'
             self._finish_job(job_data, failed, status)
             raise
-        except Exception as err:
-            # Catch all exceptions here and submit a build error
-            log.exception(err)
-            failed = True
-            status = 'error'
 
         self._finish_job(job_data, failed, status)
 
@@ -145,31 +155,28 @@ class Worker(object):
             if not os.path.exists('build_scripts'):
                 os.mkdir('build_scripts')
 
-            script_filename = gen_build_script(job_data)
-
+            script_filename = gen_build_script(job_data,
+                                               conda_build_dir=self.args.conda_build_dir)
 
             iotimeout = job_data['build_item_info'].get('instructions').get('iotimeout', 60)
+            timeout = self.args.timeout
 
-            args = [script_filename, '--api-token', job_data['upload_token']]
+            api_token = job_data['upload_token']
 
-            if job_data.get('git_oauth_token'):
-                args.extend(['--git-oauth-token', job_data.get('git_oauth_token')])
-            elif not job_data.get('build_info', {}).get('github_info'):
+            files = [script_filename]
+
+            git_oauth_token = job_data.get('git_oauth_token')
+            if not job_data.get('build_info', {}).get('github_info'):
                 build_filename = self.download_build_source(job_id)
-                args.extend(['--build-tarball', build_filename])
+                files.append(build_filename)
+            else:
+                build_filename
 
-            log.info("Running command: (iotimeout=%s)" % iotimeout)
-            log.info(" ".join(args))
-
-            p0 = BufferedPopen(args, stdout=build_log, iotimeout=iotimeout)
-
-            try:
-                exit_code = p0.wait(timeout=self.args.timeout)
-            except BaseException:
-                log.error("Binstar build process caught an exception while waiting for the build to finish")
-                p0.kill_tree()
-                p0.wait()
-                raise
+            with remove_files_after(files):
+#                 exit_code = self.run(script_filename, build_log, timeout, iotimeout)
+                exit_code = self.run(script_filename, build_log,
+                                     timeout, iotimeout,
+                                     api_token, git_oauth_token, build_filename)
 
             log.info("Build script exited with code %s" % exit_code)
             if exit_code == EXIT_CODE_OK:
@@ -190,6 +197,33 @@ class Worker(object):
                 log.error("Unknown build exit status %s for build %s" % (exit_code, job_data['job_name']))
 
             return failed, status
+
+    def run(self, script_filename, build_log, timeout, iotimeout,
+            api_token=None, git_oauth_token=None, build_filename=None):
+
+        args = [script_filename, '--api-token', api_token]
+
+
+        if git_oauth_token:
+            args.extend(['--git-oauth-token', git_oauth_token])
+
+        elif build_filename:
+#             build_filename = self.download_build_source(job_id)
+#             files.append(build_filename)
+            args.extend(['--build-tarball', build_filename])
+
+        log.info("Running command: (iotimeout=%s)" % iotimeout)
+        log.info(" ".join(args))
+        p0 = BufferedPopen(args, stdout=build_log, iotimeout=iotimeout)
+
+        try:
+            exit_code = p0.wait()
+        except BaseException:
+            log.error("Binstar build process caught an exception while waiting for the build to finish")
+            p0.kill_tree()
+            p0.wait()
+            raise
+        return exit_code
 
     def download_build_source(self, job_id):
         """

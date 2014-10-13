@@ -11,6 +11,8 @@ import platform
 from binstar_build_client import BinstarBuildAPI
 from binstar_build_client.worker.worker import Worker
 from binstar_client.utils import get_binstar
+import os
+from binstar_build_client.utils import get_conda_root_prefix
 
 
 log = logging.getLogger('binstar.build')
@@ -53,16 +55,17 @@ def get_dist():
     return 'unknown'
 
 
-def add_parser(subparsers):
-    parser = subparsers.add_parser('worker',
-                                      help='Build Worker',
-                                      description=__doc__,
+def add_parser(subparsers, name='worker', help='Build Worker', description=__doc__):
+    parser = subparsers.add_parser(name,
+                                   help=help,
+                                   description=description,
                                       )
 
+    conda_platform = get_platform()
     parser.add_argument('queue',
                         help='The queue to pull builds from')
     parser.add_argument('-p', '--platform',
-                        default=get_platform(),
+                        default=conda_platform,
                         help='The platform this worker is running on (default: %(default)s)')
 
     parser.add_argument('--hostname', default=platform.node(),
@@ -87,5 +90,11 @@ def add_parser(subparsers):
     parser.add_argument('--push-back', action='store_true',
                         help='Developers only, always push the build *back* onto the build queue')
 
+    parser.add_argument("--conda-build-dir", default=os.path.join(get_conda_root_prefix(), 'conda-bld', conda_platform),
+                        help="[Advanced] The conda build directory (default: %(default)s)",
+                        )
+
     parser.set_defaults(main=main)
+
+    return parser
 

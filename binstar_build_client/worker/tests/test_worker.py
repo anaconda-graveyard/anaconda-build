@@ -167,7 +167,7 @@ class Test(unittest.TestCase):
         worker.worker_id = 'worker_id'
         worker.args.one = False
         job_data = {'job':{'_id':'test_job_id'}, 'job_name':'job_name'}
-        journal = io.BytesIO()
+        journal = io.StringIO()
 
         with worker.job_context(journal, job_data):
             pass
@@ -182,7 +182,7 @@ class Test(unittest.TestCase):
         worker.worker_id = 'worker_id'
         worker.args.one = False
         job_data = {'job':{'_id':'test_job_id'}, 'job_name':'job_name'}
-        journal = io.BytesIO()
+        journal = io.StringIO()
 
         with worker.job_context(journal, job_data):
             raise TypeError("hai")

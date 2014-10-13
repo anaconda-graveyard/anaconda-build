@@ -6,8 +6,8 @@ import logging
 import os
 import pipes
 import shlex
-import sys
 import jinja2
+
 from binstar_build_client.utils import get_conda_root_prefix
 
 
@@ -54,7 +54,7 @@ def get_channels(job_data):
     return channels
 
 
-def get_files(job_data):
+def get_files(context, job_data):
     """
     Return a list of files to run binstar upload on
     """
@@ -69,8 +69,8 @@ def get_files(job_data):
 
     if 'conda' in build_targets:
         idx = build_targets.index('conda')
-        platform = job_data['build_item_info']['platform']
-        build_targets[idx] = os.path.join(get_conda_root_prefix(), 'conda-bld', platform, '*.tar.bz2')
+        conda_build_dir = context['conda_build_dir']
+        build_targets[idx] = os.path.join(conda_build_dir, '*.tar.bz2')
 
     if 'pypi' in build_targets:
         idx = build_targets.index('pypi')
@@ -127,8 +127,8 @@ def create_exports(build_data):
             'BINSTAR_PACKAGE': quote_str(build_data['package']['name']),
             'BINSTAR_BUILD_ID': quote_str(build['_id']),
             'CONDA_BUILD_DIR': os.path.join(conda_root_prefix, 'conda-bld', build_item.get('platform', 'linux-64')),
-            'BUILD_BASE': os.path.abspath('builds'),
-            'BUILD_ENV_DIR': os.path.abspath('build_envs'),
+            'BUILD_BASE': 'builds',
+            'BUILD_ENV_DIR': 'build_envs',
            }
 
     build_env = build_item.get('env')
@@ -178,7 +178,7 @@ def gen_build_script(build_data, **context):
                     'test_only': build_data['build_info'].get('test_only', False),
                     'sub_dir': build_data['build_info'].get('sub_dir'),
                     'channels': get_channels(build_data),
-                    'files': get_files(build_data),
+                    'files': get_files(context, build_data),
                     'EXIT_CODE_OK': 0,
                     'EXIT_CODE_ERROR': 11,
                     'EXIT_CODE_FAILED': 12,
@@ -191,7 +191,7 @@ def gen_build_script(build_data, **context):
         fd.write(build_script)
 
     if os.name != 'nt':
-        os.chmod(script_filename, 0700)
+        os.chmod(script_filename, 0777)
 
     return script_filename
 

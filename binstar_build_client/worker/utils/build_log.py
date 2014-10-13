@@ -35,14 +35,14 @@ class BuildLog(object):
         The if the io thread is running, msg will be appended an internal message buffer
         """
 
+        n = sys.stdout.write(msg)
+
         if self._running:
             with self._write_lock:
                 self._buffer += msg
         else:
-            pass
             self.bs.log_build_output(self.username, self.queue, self.worker_id, self.job_id, msg)
 
-        n = sys.stdout.write(msg)
         return n
 
     def __enter__(self):
