@@ -172,7 +172,7 @@ class Worker(object):
                 build_filename = self.download_build_source(job_id)
                 files.append(build_filename)
             else:
-                build_filename
+                build_filename = None
 
             with remove_files_after(files):
 #                 exit_code = self.run(script_filename, build_log, timeout, iotimeout)
