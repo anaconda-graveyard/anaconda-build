@@ -83,17 +83,17 @@ class DockerWorker(Worker):
         else:
             if instructions and instructions.get('docker_image'):
                 build_log.write("WARNING: User specified images are not allowed on this build worker\n")
-                build_log.write("Using default docker image")
+                build_log.write("Using default docker image\n")
 
         command = " ".join(args)
         log.info(command)
         build_log.write("Docker Image: %s\n" % image)
         log.info("Volumes: %r" % volumes)
 
-        build_log.write("Docker: Create container")
+        build_log.write("Docker: Create container\n")
         cont = cli.create_container(image, command=command, volumes=volumes)
 
-        build_log.write("Docker: Attach output")
+        build_log.write("Docker: Attach output\n")
         stream = cli.attach(cont, stream=True, stdout=True, stderr=True)
 
         def timeout_callback(iotimeout=False):
@@ -111,7 +111,7 @@ class DockerWorker(Worker):
 
         ios = IOStream(stream, build_log, iotimeout, timeout, timeout_callback)
 
-        build_log.write("Docker: Start")
+        build_log.write("Docker: Start\n")
 
         ios.start()
 
