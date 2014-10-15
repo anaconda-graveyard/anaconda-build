@@ -46,6 +46,11 @@ def add_parser(subparsers):
     parser.add_argument("-i", "--image", default="binstar/linux-64",
                         help="Docker image to use (default %(default)s)",
                         )
-    parser.set_defaults(platform="linux-64", main=main,
+    parser.add_argument('--allow-user-images', action='store_true', default=False,
+                        help="Allow user defined images")
+
+    parser.set_defaults(main=main,
+                        platform="linux-64",
                         conda_build_dir="/opt/miniconda/conda-bld/linux-64")
+
 

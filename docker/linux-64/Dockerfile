@@ -1,4 +1,4 @@
-FROM binstar/miniconda
+FROM binstar/build-base:centos6
 
 MAINTAINER Sean Ross-Ross <srossross@gmail.com>
 

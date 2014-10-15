@@ -149,6 +149,8 @@ class Worker(object):
         job_id = job_data['job']['_id']
         with BuildLog(self.bs, self.args.username, self.args.queue, self.worker_id, job_id) as build_log:
 
+
+            instructions = job_data['build_item_info'].get('instructions')
             build_log.write("Building on worker %s (platform %s)\n" % (self.args.hostname, self.args.platform))
             build_log.write("Starting build %s\n" % job_data['job_name'])
 
@@ -158,7 +160,7 @@ class Worker(object):
             script_filename = gen_build_script(job_data,
                                                conda_build_dir=self.args.conda_build_dir)
 
-            iotimeout = job_data['build_item_info'].get('instructions').get('iotimeout', 60)
+            iotimeout = instructions.get('iotimeout', 60)
             timeout = self.args.timeout
 
             api_token = job_data['upload_token']
@@ -176,7 +178,8 @@ class Worker(object):
 #                 exit_code = self.run(script_filename, build_log, timeout, iotimeout)
                 exit_code = self.run(script_filename, build_log,
                                      timeout, iotimeout,
-                                     api_token, git_oauth_token, build_filename)
+                                     api_token, git_oauth_token, build_filename,
+                                     instructions=instructions)
 
             log.info("Build script exited with code %s" % exit_code)
             if exit_code == EXIT_CODE_OK:
@@ -199,7 +202,7 @@ class Worker(object):
             return failed, status
 
     def run(self, script_filename, build_log, timeout, iotimeout,
-            api_token=None, git_oauth_token=None, build_filename=None):
+            api_token=None, git_oauth_token=None, build_filename=None, instructions=None):
 
         args = [script_filename, '--api-token', api_token]
 
