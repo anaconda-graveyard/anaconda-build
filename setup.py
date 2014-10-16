@@ -1,4 +1,3 @@
-import make_version
 from setuptools import setup, find_packages
 
 ctx = {}
