@@ -66,6 +66,7 @@ setup_build(){
     BUILD_ENV_PATH="$BUILD_ENV_DIR/$BINSTAR_OWNER/$BINSTAR_PACKAGE"
     
     echo -e "\n[Setup Build]"
+
     echo "Host:" `hostname`
     echo 'Setting engine'
     echo "conda create -p $BUILD_ENV_PATH --quiet --yes $BINSTAR_ENGINE"
@@ -80,6 +81,21 @@ setup_build(){
     echo "source activate $BUILD_ENV_PATH"
     source activate $BUILD_ENV_PATH
         eval $bb_check_command_error
+    
+    pushd "$BUILD_ENV_PATH"
+    export CONDARC=`pwd`/"condarc"
+    popd
+    echo export CONDARC="$CONDARC"
+    touch "$CONDARC"
+
+    conda config --file "$CONDARC" \
+                 --set binstar_upload no \
+                 --set always_yes yes \
+                 --set show_channel_urls yes
+
+    conda config --file "$CONDARC" \
+                 --add channels binstar
+
 
 }
 
@@ -236,6 +252,7 @@ upload_build_targets(){
     echo -e '\nRunning Build in "Test Only" mode, not uploading build targets'
     {% else %}
     
+    unset CONDARC
     source deactivate
 
     echo -e '\n[Build Targets]'
