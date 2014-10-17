@@ -210,7 +210,10 @@ goto:eof
     set /p CONDARC=<%TEMP%\CONDA_RC
 
     :: Touch file
-    touch %CONDARC%
+    touch "%CONDARC%"
+
+    conda config --file "%CONDARC%" --set binstar_upload no --set always_yes yes --set show_channel_urls yes
+    conda config --file "%CONDARC%" --add channels binstar
 
 
 goto:eof
