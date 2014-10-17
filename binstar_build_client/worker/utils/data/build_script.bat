@@ -203,6 +203,15 @@ goto:eof
     set "CONDA_DEFAULT_ENV=%BUILD_ENV_PATH%"
     set "PATH=%BUILD_ENV_PATH%;%BUILD_ENV_PATH%\Scripts;%PATH%"
 
+    pushd %BUILD_ENV_PATH%
+    python -c "import os, sys; sys.stdout.write(os.path.abspath('condarc'))" > %TEMP%\CONDA_RC
+    popd
+
+    set /p CONDARC=<%TEMP%\CONDA_RC
+
+    :: Touch file
+    touch %CONDARC%
+
 
 goto:eof
 
@@ -303,7 +312,7 @@ goto:eof
     :: call deactivate    
     set "CONDA_DEFAULT_ENV=%DEACTIVATE_ENV%"
     set "PATH=%DEACTIVATE_PATH%"
-
+    set "CONDARC="
 
     echo .
     echo [Build Targets]
