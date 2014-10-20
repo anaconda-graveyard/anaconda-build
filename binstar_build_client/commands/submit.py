@@ -26,24 +26,25 @@ See also:
 from __future__ import (print_function, unicode_literals, division,
     absolute_import)
 
-
-from binstar_client.utils import get_binstar, PackageSpec, upload_print_callback
-import logging, yaml
-from os.path import abspath, join, isfile
-from binstar_client.errors import UserError
-import tempfile
-import tarfile
+from argparse import RawDescriptionHelpFormatter
 from contextlib import contextmanager
+import logging, yaml
 import os
-from binstar_client.utils import package_specs
-from binstar_client import errors
+from os.path import abspath, join, isfile
+import re
+import tarfile
+import tempfile
+
 from binstar_build_client import BinstarBuildAPI
-from binstar_build_client.utils.matrix import serialize_builds
 from binstar_build_client.utils.filter import ExcludeGit
 from binstar_build_client.utils.git_utils import is_url, get_urlpath
+from binstar_build_client.utils.matrix import serialize_builds
+from binstar_client import errors
+from binstar_client.errors import UserError
+from binstar_client.utils import get_binstar, PackageSpec, upload_print_callback
+from binstar_client.utils import package_specs
 from six.moves.urllib.parse import urlparse
-import re
-from argparse import RawDescriptionHelpFormatter
+
 
 log = logging.getLogger('binstar.build')
 
@@ -102,20 +103,28 @@ def submit_build(args):
                     queue_tags.append('dist:%s' % args.dist)
                 with open(tmp, mode='rb') as fd:
 
-                    build_no = binstar.submit_for_build(args.package.user, args.package.name, fd, builds,
-                                                        channels=args.channels,
-                                                        queue=args.queue, queue_tags=queue_tags,
-                                                        test_only=args.test_only, callback=upload_print_callback(args))
+                    build = binstar.submit_for_build(args.package.user, args.package.name, fd, builds,
+                                                     channels=args.channels,
+                                                     queue=args.queue, queue_tags=queue_tags,
+                                                     test_only=args.test_only, callback=upload_print_callback(args))
 
-        log.info('')
-        log.info('To view this build go to http://alpha.binstar.org/%s/%s/builds/matrix/%s' % (args.package.user, args.package.name, build_no))
-        log.info('')
-        log.info('You may also run\n\n    binstar-build tail -f %s/%s %s\n' % (args.package.user, args.package.name, build_no))
-        log.info('')
-        log.info('Build %s submitted' % build_no)
+                print_build_results(args, build)
 
     else:
         log.info('Build not submitted (dry-run)')
+
+def print_build_results(args, build):
+
+    log.info('')
+    build_result_url = build.get('url')
+    if not build_result_url:
+        build_result_url = 'http://alpha.binstar.org/%s/%s/builds/matrix/%s' % (args.package.user, args.package.name, build['build_no'])
+    log.info('To view this build go to %s' % build_result_url)
+    log.info('')
+    log.info('You may also run\n\n    binstar-build tail -f %s/%s %s\n' % (args.package.user, args.package.name, build['build_no']))
+    log.info('')
+    log.info('Build %s submitted' % build['build_no'])
+
 
 def submit_git_build(args):
 
@@ -133,7 +142,6 @@ def submit_git_build(args):
 
         # split branch from repo
         url = urlparse(args.path)
-        print (url)
         if url.netloc != 'github.com':
             raise errors.UserError("Currently only github.com urls are supported (got %s)" % url.netloc)
 
@@ -146,18 +154,13 @@ def submit_git_build(args):
         repo = groups.get('repo')
         branch = groups.get('branch') or url.fragment or 'master'
         builds = {'repo': repo, 'branch':branch}
-        build_no = binstar.submit_for_url_build(args.package.user, args.package.name, builds,
-                                                channels=args.channels, queue=args.queue, sub_dir=args.sub_dir,
-                                                test_only=args.test_only, callback=upload_print_callback(args),
-                                                filter_platform=args.platform,
+        build = binstar.submit_for_url_build(args.package.user, args.package.name, builds,
+                                             channels=args.channels, queue=args.queue, sub_dir=args.sub_dir,
+                                             test_only=args.test_only, callback=upload_print_callback(args),
+                                             filter_platform=args.platform,
                                                 )
 
-        log.info('')
-        log.info('To view this build go to http://alpha.binstar.org/%s/%s/builds/matrix/%s' % (args.package.user, args.package.name, build_no))
-        log.info('')
-        log.info('You may also run\n\n    binstar-build tail -f %s/%s %s\n' % (args.package.user, args.package.name, build_no))
-        log.info('')
-        log.info('Build %s submitted' % build_no)
+        print_build_results(args, build)
 
     else:
         log.info('Build not submitted (dry-run)')

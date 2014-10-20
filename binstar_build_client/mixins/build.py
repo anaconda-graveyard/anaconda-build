@@ -62,7 +62,7 @@ class BuildMixin(object):
         url = '%s/build/%s/%s/commit/%s' % (self.domain, username, package, obj['build_id'])
         res = self.session.post(url, verify=True)
         self._check_response(res, [201])
-        return obj['build_no']
+        return obj
 
     def submit_for_url_build(self, username, package, instructions,
                              test_only=False, callback=None,
@@ -81,7 +81,7 @@ class BuildMixin(object):
 
         self._check_response(res, [201])
         obj = res.json()
-        return obj['build_no']
+        return obj
 
     def builds(self, username, package, build_no=None):
         if build_no:

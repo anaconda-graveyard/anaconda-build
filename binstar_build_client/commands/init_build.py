@@ -20,16 +20,17 @@ Tail the output of a build untill it is complete:
 from __future__ import (print_function, unicode_literals, division,
     absolute_import)
 
-from binstar_client.utils import get_binstar, bool_input
 import logging
-from os.path import abspath, join, basename
 import os
-from binstar_client import errors
-from binstar_build_client.utils.build_file import initial_build_config
+from os.path import abspath, join, basename
 import sys
-from binstar_build_client import BinstarBuildAPI
 
+from binstar_build_client import BinstarBuildAPI
+from binstar_build_client.utils.build_file import initial_build_config
+from binstar_client import errors
+from binstar_client.utils import get_binstar, bool_input
 from six.moves import input
+
 
 log = logging.getLogger('binstar.build')
 

@@ -1,16 +1,13 @@
-'''
-Created on May 15, 2014
-
-@author: sean
-'''
-
 from __future__ import (print_function, unicode_literals, division,
     absolute_import)
 
-from six.moves.urllib.parse import urlparse, urlunparse
+import atexit
 from logging import getLogger
 import shutil
-import atexit
+
+from six.moves.urllib.parse import urlparse, urlunparse
+
+
 log = getLogger('binstar.git')
 
 def is_url(path):
@@ -30,7 +27,6 @@ def clone_repo(path):
     scheme = url.scheme[4:]
 
     git_url = urlunparse((scheme, url.netloc, url.path, '', '', ''))
-    print("clone_repo!", git_url)
     import tempfile
     from subprocess import check_call
     tmp_dir = tempfile.mkdtemp('.git', 'binstar-build')
