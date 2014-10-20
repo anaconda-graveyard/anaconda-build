@@ -19,6 +19,8 @@ log = logging.getLogger('binstar.build')
 
 
 def main(args):
+
+    args.conda_build_dir = args.conda_build_dir.format(args=args)
     bs = get_binstar(args, cls=BinstarBuildAPI)
 
     if not args.username:
@@ -44,6 +46,7 @@ def get_platform():
     arch = platform.machine().lower()
     return '%s-%s' % (OS_MAP.get(operating_system, operating_system),
                       ARCH_MAP.get(arch, arch))
+
 def get_dist():
     if platform.dist()[0]:
         return platform.dist()[0].lower()
@@ -90,7 +93,7 @@ def add_parser(subparsers, name='worker', help='Build Worker', description=__doc
     parser.add_argument('--push-back', action='store_true',
                         help='Developers only, always push the build *back* onto the build queue')
 
-    parser.add_argument("--conda-build-dir", default=os.path.join(get_conda_root_prefix(), 'conda-bld', conda_platform),
+    parser.add_argument("--conda-build-dir", default=os.path.join(get_conda_root_prefix(), 'conda-bld', '{args.platform}'),
                         help="[Advanced] The conda build directory (default: %(default)s)",
                         )
 
