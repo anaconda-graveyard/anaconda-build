@@ -1,10 +1,15 @@
 """
 Write IO back to build log on the binstar server
 """
-
+import logging
 import sys
 from threading import Lock, Thread, Event
 import traceback
+
+from binstar_client import errors
+
+
+log = logging.getLogger(__name__)
 
 class BuildLog(object):
     """
@@ -72,7 +77,11 @@ class BuildLog(object):
             msg = self._buffer
             self._buffer = ''
 
-        self.bs.log_build_output(self.username, self.queue, self.worker_id, self.job_id, msg)
+        try:
+            self.bs.log_build_output(self.username, self.queue, self.worker_id, self.job_id, msg)
+        except errors.BinstarError as err:
+            log.exception(err)
+
 
     def _io_loop(self):
         """
