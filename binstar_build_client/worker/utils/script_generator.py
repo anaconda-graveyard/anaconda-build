@@ -191,7 +191,7 @@ def gen_build_script(build_data, **context):
         fd.write(build_script)
 
     if os.name != 'nt':
-        os.chmod(script_filename, 0777)
+        os.chmod(script_filename, 777)
 
     return script_filename
 
