@@ -15,10 +15,7 @@ setup(
     author_email='srossross@gmail.com',
     url='http://github.com/Binstar/binstar_client',
     packages=find_packages(),
-    install_requires=['requests',
-                      'pyyaml',
-                      'python-dateutil',
-                      'pytz',
+    install_requires=['binstar',
                       'jinja2'],
 
     include_package_data=True,
