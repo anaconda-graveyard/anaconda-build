@@ -37,8 +37,9 @@ def main(args):
 
 OS_MAP = {'darwin': 'osx', 'windows':'win'}
 ARCH_MAP = {'x86': '32',
+            'i686': '32',
             'x86_64': '64',
-			'amd64' : '64'
+			'amd64' : '64',
             }
 
 def get_platform():
