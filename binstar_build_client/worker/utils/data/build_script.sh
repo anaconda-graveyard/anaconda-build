@@ -69,12 +69,16 @@ setup_build(){
 
     echo "Host:" `hostname`
     echo 'Setting engine'
-    echo "conda create -p $BUILD_ENV_PATH --quiet --yes $BINSTAR_ENGINE"
+    
     
     rm -rf "$BUILD_ENV_PATH"
     echo "conda-clean-build-dir"
     conda-clean-build-dir
 
+    echo "conda clean --lock"
+    conda clean --lock
+
+    echo "conda create -p $BUILD_ENV_PATH --quiet --yes $BINSTAR_ENGINE"
     conda create -p $BUILD_ENV_PATH --quiet --yes $BINSTAR_ENGINE
         eval $bb_check_command_error
     export CONDA_PY=`python -c 'import sys; sys.stdout.write("{0}{1}".format(sys.version_info[0], sys.version_info[1]))'`

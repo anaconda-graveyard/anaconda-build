@@ -187,6 +187,9 @@ goto:eof
     
     conda-clean-build-dir
     
+    echo conda clean --lock
+    conda clean --lock
+
     call conda create -p "%BUILD_ENV_PATH%" --quiet --yes %BINSTAR_ENGINE%
     
     :: Hack to build with the python set in BINSTAR_ENGINE
