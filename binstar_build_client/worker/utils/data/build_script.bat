@@ -192,10 +192,6 @@ goto:eof
 
     call conda create -p "%BUILD_ENV_PATH%" --quiet --yes %BINSTAR_ENGINE%
     
-    :: Hack to build with the python set in BINSTAR_ENGINE
-    python -c "import sys; sys.stdout.write('{0}{1}'.format(sys.version_info[0], sys.version_info[1]))" > %TEMP%\CONDA_PY 
- 
-    set /p CONDA_PY=<%TEMP%\CONDA_PY 
     echo activate %BUILD_ENV_PATH%
 
     :: activate does not work within this batch file
@@ -205,6 +201,9 @@ goto:eof
 
     set "CONDA_DEFAULT_ENV=%BUILD_ENV_PATH%"
     set "PATH=%BUILD_ENV_PATH%;%BUILD_ENV_PATH%\Scripts;%PATH%"
+
+    echo where conda 
+    where conda
 
     pushd %BUILD_ENV_PATH%
     python -c "import os, sys; sys.stdout.write(os.path.abspath('condarc'))" > %TEMP%\CONDA_RC
@@ -216,7 +215,14 @@ goto:eof
     touch "%CONDARC%"
 
     conda config --file "%CONDARC%" --set binstar_upload no --set always_yes yes --set show_channel_urls yes
-    conda config --file "%CONDARC%" --add channels binstar
+
+    :: Hack to build with the python set in BINSTAR_ENGINE
+    python -c "import sys; sys.stdout.write('{0}{1}'.format(sys.version_info[0], sys.version_info[1]))" > %TEMP%\CONDA_PY 
+ 
+    set /p CONDA_PY=<%TEMP%\CONDA_PY 
+
+    echo CONDARC %CONDARC%
+    echo CONDA_PY %CONDA_PY%
 
 
 goto:eof

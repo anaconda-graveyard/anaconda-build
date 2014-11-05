@@ -81,25 +81,26 @@ setup_build(){
     echo "conda create -p $BUILD_ENV_PATH --quiet --yes $BINSTAR_ENGINE"
     conda create -p $BUILD_ENV_PATH --quiet --yes $BINSTAR_ENGINE
         eval $bb_check_command_error
-    export CONDA_PY=`python -c 'import sys; sys.stdout.write("{0}{1}".format(sys.version_info[0], sys.version_info[1]))'`
     echo "source activate $BUILD_ENV_PATH"
     source activate $BUILD_ENV_PATH
         eval $bb_check_command_error
-    
+
+    echo "which conda"
+    which conda
+
+    export CONDA_PY=`python -c 'import sys; sys.stdout.write("{0}{1}".format(sys.version_info[0], sys.version_info[1]))'`
+    echo "CONDA_PY=$CONDA_PY"
+
     pushd "$BUILD_ENV_PATH"
     export CONDARC=`pwd`/"condarc"
     popd
-    echo export CONDARC="$CONDARC"
+    echo "export CONDARC=$CONDARC"
     touch "$CONDARC"
 
     conda config --file "$CONDARC" \
                  --set binstar_upload no \
                  --set always_yes yes \
                  --set show_channel_urls yes
-
-    conda config --file "$CONDARC" \
-                 --add channels binstar
-
 
 }
 
