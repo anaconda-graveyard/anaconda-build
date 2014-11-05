@@ -30,8 +30,10 @@ from binstar_client.scripts.cli import binstar_main
 logger = logging.getLogger('binstar')
 
 def main(args=None, exit=True):
+    description = 'Binstar build client for continuous integration, testing and building packages'
     return binstar_main(commands, args, exit,
-                        description=__doc__, version=version)
+                        epilog=__doc__, description=description,
+                        version=version)
 
 
 if __name__ == '__main__':
