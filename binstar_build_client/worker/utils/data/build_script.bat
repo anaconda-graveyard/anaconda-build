@@ -19,8 +19,6 @@ goto:eof
 
 :parse_options
 
-  echo parse_options
-
   :parse_options_loop
     IF NOT "%1"=="" (
 
@@ -65,7 +63,6 @@ goto:eof
     {% if ignore_setup_build %}
     echo [ignore setup_build]
     {% else %}
-    echo [setup_build]
     call:setup_build;
     {% endif %}
 
@@ -78,7 +75,6 @@ goto:eof
     {% if ignore_fetch_build_source %}
     echo [ignore fetch_build_source]
     {% else %}
-    echo [fetch_build_source]
     call:fetch_build_source
     {% endif %}
 
@@ -178,6 +174,13 @@ goto:eof
 
     set "BUILD_ENV_PATH=%BUILD_ENV_DIR%\%BINSTAR_OWNER%\%BINSTAR_PACKAGE%"
 
+    :: Make BUILD_ENV_PATH an absolute path
+    pushd %BUILD_ENV_PATH%
+    set "BUILD_ENV_PATH=%CD%"
+    popd
+
+    set /p BUILD_ENV_PATH=<%TEMP%\ABS_BUILD_ENV
+
     echo [Setup Build]
     echo|set /p "noNewline=Host: "
     hostname
@@ -209,7 +212,7 @@ goto:eof
     python -c "import os, sys; sys.stdout.write(os.path.abspath('condarc'))" > %TEMP%\CONDA_RC
     popd
 
-    set /p CONDARC=<%TEMP%\CONDA_RC
+    set "CONDARC=%BUILD_ENV_PATH%\condarc"
 
     :: Touch file
     touch "%CONDARC%"
