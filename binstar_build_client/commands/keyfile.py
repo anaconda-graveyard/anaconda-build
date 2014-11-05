@@ -31,9 +31,10 @@ def keyfiles(args):
 
 
 def add_parser(subparsers):
+    description = '[Advanced] Not documented yet'
     parser = subparsers.add_parser('keyfiles',
-                                      help='[Advanced] Not documented yet',
-                                      description=__doc__,
+                                      help=description, description=description,
+                                      epilog=__doc__,
                                       )
 
     parser.add_argument('package', metavar='OWNER/PACKAGE',
@@ -43,8 +44,8 @@ def add_parser(subparsers):
     parser.set_defaults(main=keyfiles)
 
     parser = subparsers.add_parser('keyfile',
-                                      help='[Advanced] Not documented yet',
-                                      description=__doc__,
+                                      help=description, description=description,
+                                      epilog=__doc__,
                                       )
 
     parser.add_argument('package', metavar='OWNER/PACKAGE',
