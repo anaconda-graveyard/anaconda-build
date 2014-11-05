@@ -172,20 +172,20 @@ goto:eof
 
 :setup_build
 
-    set "BUILD_ENV_PATH=%BUILD_ENV_DIR%\%BINSTAR_OWNER%\%BINSTAR_PACKAGE%"
-
-    :: Make BUILD_ENV_PATH an absolute path
-    pushd %BUILD_ENV_PATH%
-    set "BUILD_ENV_PATH=%CD%"
-    popd
-
-    set /p BUILD_ENV_PATH=<%TEMP%\ABS_BUILD_ENV
-
     echo [Setup Build]
     echo|set /p "noNewline=Host: "
     hostname
-    echo [Setting engine]
     
+
+    :: set "BUILD_ENV_PATH=%BUILD_ENV_DIR%\%BINSTAR_OWNER%\%BINSTAR_PACKAGE%"
+
+    :: Make BUILD_ENV_PATH an absolute path
+    pushd "%BUILD_ENV_DIR%\%BINSTAR_OWNER%\%BINSTAR_PACKAGE%"
+    set "BUILD_ENV_PATH=%CD%"
+    popd
+
+    echo [Setting engine]
+
     echo conda-clean-build-dir
     conda-clean-build-dir
     
@@ -193,13 +193,14 @@ goto:eof
     conda clean --lock
 
 
-    echo conda create -p "%BUILD_ENV_PATH%" --quiet --yes %BINSTAR_ENGINE%
+    echo Rmdir /s /q "%BUILD_ENV_PATH%"
     Rmdir /s /q "%BUILD_ENV_PATH%"
-    call conda create -p "%BUILD_ENV_PATH%" --quiet --yes %BINSTAR_ENGINE%
+    echo conda create -p "%BUILD_ENV_PATH%" --quiet --yes %BINSTAR_ENGINE%
+    call conda create -p "%BUILD_ENV_PATH%" --quiet --yes %BINSTAR_ENGINE% || ( {{set_error()}} )
     
     echo activate %BUILD_ENV_PATH%
 
-    :: activate does not work within this batch file
+    :: activate does not work with paths
     :: call activate %BUILD_ENV_PATH%
     set "DEACTIVATE_PATH=%PATH%"
     set "DEACTIVATE_ENV=%CONDA_DEFAULT_ENV%"
