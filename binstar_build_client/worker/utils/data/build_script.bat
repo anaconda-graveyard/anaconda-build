@@ -185,14 +185,16 @@ goto:eof
     echo|set /p "noNewline=Host: "
     hostname
     echo [Setting engine]
-    echo conda create -p "%BUILD_ENV_PATH%" --quiet --yes %BINSTAR_ENGINE%
-    Rmdir /s /q "%BUILD_ENV_PATH%"
     
+    echo conda-clean-build-dir
     conda-clean-build-dir
     
     echo conda clean --lock
     conda clean --lock
 
+
+    echo conda create -p "%BUILD_ENV_PATH%" --quiet --yes %BINSTAR_ENGINE%
+    Rmdir /s /q "%BUILD_ENV_PATH%"
     call conda create -p "%BUILD_ENV_PATH%" --quiet --yes %BINSTAR_ENGINE%
     
     echo activate %BUILD_ENV_PATH%
