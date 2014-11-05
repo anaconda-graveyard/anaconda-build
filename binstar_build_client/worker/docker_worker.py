@@ -24,7 +24,7 @@ class DockerWorker(Worker):
         Worker.__init__(self, bs, args)
 
         self.client = docker.Client(base_url=os.environ.get('DOCKER_HOST'))
-
+        log.info('Connecting to docker daemon ...')
         try:
             images = self.client.images(args.image)
         except ConnectionError as err:

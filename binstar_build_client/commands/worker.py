@@ -13,6 +13,7 @@ from binstar_build_client.worker.worker import Worker
 from binstar_client.utils import get_binstar
 import os
 from binstar_build_client.utils import get_conda_root_prefix
+from binstar_client import errors
 
 
 log = logging.getLogger('binstar.build')
@@ -23,9 +24,16 @@ def main(args):
     args.conda_build_dir = args.conda_build_dir.format(args=args)
     bs = get_binstar(args, cls=BinstarBuildAPI)
 
-    if not args.username:
-        current_user = bs.user()
-        args.username = current_user['login']
+    if args.queue.count('/') == 1:
+        username, queue = args.queue.split('/', 1)
+        args.username = username
+        args.queue = queue
+    elif args.queue.count('-') == 2:
+        _, username, queue = args.queue.split('-', 2)
+        args.username = username
+        args.queue = queue
+    else:
+        raise errors.UserError("Build queue must be of the form build-USERNAME-QUEUENAME or USERNAME/QUEUENAME")
 
     log.info('Starting worker:')
     log.info('User: %s' % args.username)
@@ -69,7 +77,7 @@ def add_parser(subparsers, name='worker',
                                    )
 
     conda_platform = get_platform()
-    parser.add_argument('queue',
+    parser.add_argument('queue', metavar='OWNER/QUEUE',
                         help='The queue to pull builds from')
     parser.add_argument('-p', '--platform',
                         default=conda_platform,
@@ -83,8 +91,6 @@ def add_parser(subparsers, name='worker',
 
     parser.add_argument('--cwd', default='.',
                         help='The root directory this build should use (default: "%(default)s")')
-    parser.add_argument('-u', '--username', '--owner',
-                        help='The queue\'s owner (defaults to your currently logged in binstar user account)')
     parser.add_argument('-t', '--max-job-duration', type=int, metavar='SECONDS',
                         dest='timeout',
                         help='Force jobs to stop after they exceed duration (default: %(default)s)', default=60 * 60 * 60)

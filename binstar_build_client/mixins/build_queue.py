@@ -69,8 +69,11 @@ class BuildQueueMixin(object):
 
         return res.raw
 
-    def build_queues(self, username):
-        url = '%s/build-queues/%s' % (self.domain, username)
+    def build_queues(self, username=None):
+        if username:
+            url = '%s/build-queues/%s' % (self.domain, username)
+        else:
+            url = '%s/build-queues' % (self.domain)
 
         res = self.session.get(url)
         self._check_response(res)
@@ -91,11 +94,11 @@ class BuildQueueMixin(object):
         self._check_response(res, [201])
         return
 
-    def add_build_queue(self, username, queuename, platforms):
+    def add_build_queue(self, username, queuename):
 
         url = '%s/build-queues/%s/%s' % (self.domain, username, queuename)
 
-        data, headers = jencode(platforms=platforms)
+        data, headers = jencode()
         res = self.session.post(url, data=data, headers=headers)
 
         self._check_response(res, [201])

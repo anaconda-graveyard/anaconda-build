@@ -29,9 +29,16 @@ def main(args):
 
     bs = get_binstar(args, cls=BinstarBuildAPI)
 
-    if not args.username:
-        current_user = bs.user()
-        args.username = current_user['login']
+    if args.queue.count('/') == 1:
+        username, queue = args.queue.split('/', 1)
+        args.username = username
+        args.queue = queue
+    elif args.queue.count('-') == 2:
+        _, username, queue = args.queue.split('-', 2)
+        args.username = username
+        args.queue = queue
+    else:
+        raise errors.UserError("Build queue must be of the form build-USERNAME-QUEUENAME or USERNAME/QUEUENAME")
 
     log.info('Starting worker:')
     log.info('User: %s' % args.username)

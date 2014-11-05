@@ -14,10 +14,8 @@ def show_queue(queue):
     queue_owner = queue.get('owner')
     platforms = ', '.join(queue.get('platforms', []))
 
-    if queue_owner:
-        queue_name = '{0}/{1}'.format(queue_owner['login'], queue['_id'])
-    else:
-        queue_name = queue['_id']
+    queue_name = queue['_id']
+
     print('{queue_name:30} [{platforms}]'.format(**locals()))
     for worker in queue.get('workers', []):
         print(' + Worker hostname:{worker[hostname]:15} platform:{worker[platform]:15} dist:{worker[dist]:15}'.format(**locals()))
@@ -43,23 +41,27 @@ def show_queues(bs, username):
 def main(args):
     bs = get_binstar(args, cls=BinstarBuildAPI)
 
-    if args.organization:
-        username = args.organization
+    if args.queue is None:
+        username = queue_name = None
+    elif args.queue.count('/') == 1:
+        username, queue_name = args.queue.split('/', 1)
+    elif args.queue.count('/') == 2:
+        _, username, queue_name = args.queue.split('/', 2)
+    elif args.queue.count('-') == 2:
+        _, username, queue_name = args.queue.split('-', 2)
     else:
-        user = bs.user()
-        username = user['login']
+        raise errors.UserError("Build queue must be of the form build-USERNAME-QUEUENAME or USERNAME/QUEUENAME")
 
     if args.create:
 
-        if not args.platform:
-            raise errors.BinstarError("Must specify at least one platform")
-
-        bs.add_build_queue(username, args.queue, args.platform)
-        print("Created queue %s" % args.queue)
+        if queue_name is None:
+            raise errors.BinstarError("Must specify a queue name to create")
+        bs.add_build_queue(username, queue_name)
+        print("Created queue %s" % queue_name)
         return
 
-    if args.queue:
-        queue = bs.build_queue(username, args.queue)
+    if queue_name:
+        queue = bs.build_queue(username, queue_name)
 
     if args.remove:
         if queue.get('workers'):
@@ -68,17 +70,17 @@ def main(args):
             if not bool_input(prompt, False):
                 print("Not removing queue")
                 return
-        bs.remove_build_queue(username, args.queue)
-        print("Removed queue %s" % args.queue)
+        bs.remove_build_queue(username, queue_name)
+        print("Removed queue %s" % queue_name)
         return
 
     if args.remove_worker:
-        bs.remove_worker(username, args.queue, args.remove_worker)
-        print("Removed worker %s from queue %s" % (args.remove_worker, args.queue))
+        bs.remove_worker(username, queue_name, args.remove_worker)
+        print("Removed worker %s from queue %s" % (args.remove_worker, queue_name))
         return
 
 
-    if args.queue:
+    if queue_name:
         print()
         show_queue(queue)
     else:
@@ -91,16 +93,12 @@ def add_parser(subparsers):
                                       formatter_class=RawDescriptionHelpFormatter,
                                       )
 
-    parser.add_argument('-o', '--organization',
-                        help='Act as an organization')
-    parser.add_argument('-q', '--queue', metavar='Q',
+    parser.add_argument('queue', nargs='?', metavar='USERNAME/QUEUENAME',
                         help='Specify a queue to perform an operation on')
     parser.add_argument('-r', '--remove', action='store_true',
                         help='Remove the queue specified with the -q/--queue option')
     parser.add_argument('-c', '--create', action='store_true',
                         help='Create a new queue')
-    parser.add_argument('-p', '--platform', action='append', default=[],
-                        help='Append a platform to the list (use with -c/--create option)')
     parser.add_argument('--remove-worker', metavar='WORKER_ID',
                         help='Remove a worker from a queue')
 
