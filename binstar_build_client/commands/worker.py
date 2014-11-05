@@ -59,11 +59,14 @@ def get_dist():
     return 'unknown'
 
 
-def add_parser(subparsers, name='worker', help='Build Worker', description=__doc__):
+def add_parser(subparsers, name='worker',
+               description='Run a build worker to build jobs off of a binstar build queue',
+               epilog=__doc__):
+
     parser = subparsers.add_parser(name,
-                                   help=help,
-                                   description=description,
-                                      )
+                                   help=description, description=description,
+                                   epilog=epilog
+                                   )
 
     conda_platform = get_platform()
     parser.add_argument('queue',
@@ -85,18 +88,21 @@ def add_parser(subparsers, name='worker', help='Build Worker', description=__doc
     parser.add_argument('-t', '--max-job-duration', type=int, metavar='SECONDS',
                         dest='timeout',
                         help='Force jobs to stop after they exceed duration (default: %(default)s)', default=60 * 60 * 60)
-    parser.add_argument('-c', '--clean', action='store_true',
-                        help='Clean up an existing workers session')
-    parser.add_argument('-f', '--fail', action='store_true',
-                        help='Exit main loop on any un-handled exception')
-    parser.add_argument('-1', '--one', action='store_true',
-                        help='Exit main loop after only one build')
-    parser.add_argument('--push-back', action='store_true',
-                        help='Developers only, always push the build *back* onto the build queue')
 
-    parser.add_argument("--conda-build-dir", default=os.path.join(get_conda_root_prefix(), 'conda-bld', '{args.platform}'),
+    dgroup = parser.add_argument_group('development options')
+
+    dgroup.add_argument("--conda-build-dir",
+                        default=os.path.join(get_conda_root_prefix(), 'conda-bld', '{args.platform}'),
                         help="[Advanced] The conda build directory (default: %(default)s)",
                         )
+    dgroup.add_argument('-c', '--clean', action='store_true',
+                        help='Clean up an existing workers session')
+    dgroup.add_argument('-f', '--fail', action='store_true',
+                        help='Exit main loop on any un-handled exception')
+    dgroup.add_argument('-1', '--one', action='store_true',
+                        help='Exit main loop after only one build')
+    dgroup.add_argument('--push-back', action='store_true',
+                        help='Developers only, always push the build *back* onto the build queue')
 
     parser.set_defaults(main=main)
 

@@ -41,12 +41,16 @@ def main(args):
     woker.work_forever()
 
 def add_parser(subparsers):
+    description = 'Run a build worker in a docker container to build jobs off of a binstar build queue'
+
     parser = add_worker_parser(subparsers, 'docker-worker',
-                               'Build worker', __doc__)
-    parser.add_argument("-i", "--image", default="binstar/linux-64",
+                               description, __doc__)
+
+    dgroup = parser.add_argument_group('docker arguments')
+    dgroup.add_argument("-i", "--image", default="binstar/linux-64",
                         help="Docker image to use (default %(default)s)",
                         )
-    parser.add_argument('--allow-user-images', action='store_true', default=False,
+    dgroup.add_argument('--allow-user-images', action='store_true', default=False,
                         help="Allow user defined images")
 
     parser.set_defaults(main=main,

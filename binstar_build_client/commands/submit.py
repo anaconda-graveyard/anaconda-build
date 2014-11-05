@@ -58,9 +58,8 @@ def mktemp(suffix=".tar.gz", prefix='binstar', dir=None):
         log.debug('Removing temp file: %s' % tmp)
         os.unlink(tmp)
 
-def submit_build(args):
+def submit_build(binstar, args):
 
-    binstar = get_binstar(args, cls=BinstarBuildAPI)
     path = abspath(args.path)
 
     log.info('Getting build product: %s' % abspath(args.path))
@@ -93,14 +92,17 @@ def submit_build(args):
             with mktemp() as tmp:
                 log.info("Archiving build directory for upload ...")
                 with tarfile.open(tmp, mode='w|bz2') as tf:
-                    tf.add(path, '.', exclude=ExcludeGit(path, use_git_ignore=not args.dont_git_ignore))
+                    exclude = ExcludeGit(path, use_git_ignore=not args.dont_git_ignore)
+                    tf.add(path, '.', exclude=exclude)
 
-                log.info("Created archive; Uploading to binstar")
+                log.info("Created archive (%i files); Uploading to binstar" % exclude.num_included)
                 queue_tags = []
                 if args.buildhost:
                     queue_tags.append('hostname:%s' % args.buildhost)
+
                 if args.dist:
                     queue_tags.append('dist:%s' % args.dist)
+
                 with open(tmp, mode='rb') as fd:
 
                     build = binstar.submit_for_build(args.package.user, args.package.name, fd, builds,
@@ -126,9 +128,8 @@ def print_build_results(args, build):
     log.info('Build %s submitted' % build['build_no'])
 
 
-def submit_git_build(args):
+def submit_git_build(binstar, args):
 
-    binstar = get_binstar(args, cls=BinstarBuildAPI)
 
     try:
         _ = binstar.package(args.package.user, args.package.name)
@@ -190,7 +191,7 @@ def main(args):
             args.package = PackageSpec(user_name, package_name)
 
 
-        submit_git_build(args)
+        submit_git_build(binstar, args)
 
 
     # not a github repo (must check for valid .binstar.yml file
@@ -227,31 +228,22 @@ def main(args):
             raise errors.NotFound('Package %s/%s' % (user_name, package_name))
         args.package = PackageSpec(user_name, package_name)
 
-        submit_build(args)
+        submit_build(binstar, args)
 
 
 def add_parser(subparsers):
+    description = 'Submit a diectory or github repo for building'
     parser = subparsers.add_parser('submit',
-                                      help='Submit for building',
-                                      description=__doc__,
-                                      formatter_class=RawDescriptionHelpFormatter,
-                                      )
+                                   help=description, description=description,
+                                   epilog=__doc__,
+                                   formatter_class=RawDescriptionHelpFormatter,
+                                   )
 
-    parser.add_argument('path', default='.', nargs='?')
-
-    parser.add_argument('--test-only', '--no-upload', action='store_true',
-                        dest='test_only',
-                        help="Don't upload the build targets to binstar, but run everything else")
-
-    parser.add_argument('-p', '--package',
-                       help="The binstar package namespace to upload the build to",
-                       metavar='USER/PACKAGE',
-                       type=package_specs)
+    parser.add_argument('path', default='.', nargs='?',
+                        help='filepath or github url to submit')
 
     parser.add_argument('--git-url',
                        help="The github url with valid .binstar.yml file to clone")
-    parser.add_argument('--sub-dir',
-                       help="The sub directory within the git repository (github url submits only)")
 
     parser.add_argument('-n', '--dry-run',
                        help="Parse the build file but don't submit", action='store_true')
@@ -262,24 +254,38 @@ def add_parser(subparsers):
     parser.add_argument('--dont-git-ignore',
                        help="Don't ignore files from .gitignore", action='store_true')
 
-    parser.add_argument('--channel', action='append', dest='channels',
-                       help="Upload targets to this channel")
 
-    parser.add_argument('--queue',
-                       help="Build on this queue")
+    fgroup = parser.add_argument_group('filters')
 
-    parser.add_argument('--buildhost',
+    fgroup.add_argument('--buildhost',
                         help="The host name of the intended build worker")
 
-    parser.add_argument('--dist',
+    fgroup.add_argument('--dist',
                         help=("The os distribution of intended build worker (e.g centos, ubuntu) "
                               "Use 'binstar-build queue' to view the workers")
                         )
 
-    parser.add_argument('--platform',
+    fgroup.add_argument('--platform',
                         help=("The platform to run (e.g linux-64, win-64, osx-64, etc) "
                               "(default: all the platforms in the .binstar.yaml file)")
                         )
+
+    cgroup = parser.add_argument_group('build control')
+    parser.add_argument('--queue',
+                       help="Build on this queue")
+
+    cgroup.add_argument('--channel', action='append', dest='channels',
+                       help="Upload targets to this channel")
+    cgroup.add_argument('--test-only', '--no-upload', action='store_true',
+                        dest='test_only',
+                        help="Don't upload the build targets to binstar, but run everything else")
+    cgroup.add_argument('-p', '--package',
+                       help="The binstar package namespace to upload the build to",
+                       metavar='USER/PACKAGE',
+                       type=package_specs)
+
+    cgroup.add_argument('--sub-dir',
+                       help="The sub directory within the git repository (github url submits only)")
 
     parser.set_defaults(main=main)
 

@@ -32,7 +32,7 @@ def keyfiles(args):
 
 def add_parser(subparsers):
     parser = subparsers.add_parser('keyfiles',
-                                      help='list the builds for package',
+                                      help='[Advanced] Not documented yet',
                                       description=__doc__,
                                       )
 
@@ -43,7 +43,7 @@ def add_parser(subparsers):
     parser.set_defaults(main=keyfiles)
 
     parser = subparsers.add_parser('keyfile',
-                                      help='list the builds for package',
+                                      help='[Advanced] Not documented yet',
                                       description=__doc__,
                                       )
 
