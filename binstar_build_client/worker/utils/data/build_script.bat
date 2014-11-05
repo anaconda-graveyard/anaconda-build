@@ -177,10 +177,9 @@ goto:eof
     hostname
     
 
-    :: set "BUILD_ENV_PATH=%BUILD_ENV_DIR%\%BINSTAR_OWNER%\%BINSTAR_PACKAGE%"
-
     :: Make BUILD_ENV_PATH an absolute path
-    pushd "%BUILD_ENV_DIR%\%BINSTAR_OWNER%\%BINSTAR_PACKAGE%"
+    mkdir %BUILD_ENV_DIR%\%BINSTAR_OWNER%\%BINSTAR_PACKAGE%
+    pushd %BUILD_ENV_DIR%\%BINSTAR_OWNER%\%BINSTAR_PACKAGE%
     set "BUILD_ENV_PATH=%CD%"
     popd
 
