@@ -219,6 +219,7 @@ goto:eof
     :: Touch file
     touch "%CONDARC%"
 
+    conda config --file "%CONDARC$" --add channels defaults
     conda config --file "%CONDARC%" --set binstar_upload no --set always_yes yes --set show_channel_urls yes
 
     :: Hack to build with the python set in BINSTAR_ENGINE
