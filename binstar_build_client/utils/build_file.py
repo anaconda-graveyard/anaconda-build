@@ -31,7 +31,7 @@ package: %(PACKAGE_NAME)s
 #  - python=2
 #  - python=3
 ## The env param is an environment variable list 
-# engine:
+# env:
 #  - MY_ENV=A CC=gcc
 #  - MY_ENV=B
 
@@ -64,15 +64,6 @@ script:
 # You may omit either key and stiff have a successfull build
 # They may be a string, list and contain any bash glob
 #===============================================================================
-
-## Build Artifacts: upload anything you want!
-## Your build artifacts will be put into the website
-## http://artifacts.build.binstar.info/USERNAME/PACKGE_NAME/BUILD_NO
-## You can store all logs or any derived data here
-## Remember, the site http://artifacts.build.binstar.info is NOT secure and does not
-## require a user to log in to view
-# build_artifacts:
-#   - *.log
 
 ## Build Targets: Upload these files to your binstar package
 ## build targets may be a list of files (globs allows) to upload
