@@ -14,6 +14,7 @@ from binstar_client import errors
 from binstar_client.utils import get_binstar, PackageSpec
 from binstar_client.utils import package_specs
 from six.moves.urllib.parse import urlparse
+from binstar_build_client.utils.git_utils import get_gitrepo
 
 log = logging.getLogger('binstar.build')
 
@@ -26,10 +27,11 @@ def main(args):
     package_name = None
 
     url = urlparse(args.url)
-
+    builds = get_gitrepo(url)
+    ghowner, ghrepo = builds['repo'].split('/', 1)
 
     if not args.package:
-        package_name = url.split('/')[1]
+        package_name = ghrepo
         log.info("Using repo name '%s' as the pkg name." % package_name)
         user = binstar.user()
         user_name = user['login']
@@ -44,17 +46,6 @@ def main(args):
 
     log.info("Submitting the following repo for package creation: %s" % args.url)
 
-    if url.netloc != 'github.com':
-        raise errors.UserError("Currently only github.com urls are supported (got %s)" % url.netloc)
-
-    pat = re.compile('^/(?P<repo>[\w-]+/[\w-]+)$')
-    match = pat.match(url.path)
-    if not match:
-        raise errors.UserError("URL path '%s' is not a git repo" % url.path)
-
-    groups = match.groupdict()
-    repo = groups.get('repo')
-    ghowner, ghrepo = repo.split('/', 1)
 
     binstar.add_ci(args.package.user, args.package.name,
                    ghowner=ghowner, ghrepo=ghrepo,
@@ -87,18 +78,6 @@ def add_parser(subparsers):
     parser.add_argument('--queue',
                        help="Build on this queue")
 
-#     parser.add_argument('--buildhost',
-#                         help="The host name of the intended build worker")
-#
-#     parser.add_argument('--dist',
-#                         help=("The os distribution of intended build worker (e.g centos, ubuntu) "
-#                               "Use 'binstar-build queue' to view the workers")
-#                         )
-#
-#     parser.add_argument('--platform',
-#                         help=("The platform to run (e.g linux-64, win-64, osx-64, etc) "
-#                               "(default: all the platforms in the .binstar.yaml file)")
-#                         )
     parser.add_argument('--email', action='append',
                         help="Binstar usernames or email adresses to email when the build completes"
                         )

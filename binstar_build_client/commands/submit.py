@@ -31,20 +31,19 @@ from contextlib import contextmanager
 import logging, yaml
 import os
 from os.path import abspath, join, isfile
-import re
 import tarfile
 import tempfile
 
 from binstar_build_client import BinstarBuildAPI
 from binstar_build_client.utils.filter import ExcludeGit
-from binstar_build_client.utils.git_utils import is_url, get_urlpath
+from binstar_build_client.utils.git_utils import is_url, get_urlpath, \
+    get_gitrepo
 from binstar_build_client.utils.matrix import serialize_builds
 from binstar_client import errors
 from binstar_client.errors import UserError
 from binstar_client.utils import get_binstar, PackageSpec, upload_print_callback
 from binstar_client.utils import package_specs
 from six.moves.urllib.parse import urlparse
-
 
 log = logging.getLogger('binstar.build')
 
@@ -130,6 +129,15 @@ def print_build_results(args, build):
 
 def submit_git_build(binstar, args):
 
+    log.info("Submitting the following repo for package creation: %s" % args.git_url)
+    builds = get_gitrepo(urlparse(args.git_url))
+
+    if not args.package:
+        user = binstar.user()
+        user_name = user['login']
+        package_name = builds['repo'].split('/')[1]
+        log.info("Using repo name '%s' as the pkg name." % package_name)
+        args.package = PackageSpec(user_name, package_name)
 
     try:
         _ = binstar.package(args.package.user, args.package.name)
@@ -139,22 +147,7 @@ def submit_git_build(binstar, args):
 
     if not args.dry_run:
         log.info("Submitting the following repo for package creation: %s" % args.git_url)
-
-
-        # split branch from repo
-        url = urlparse(args.path)
-        if url.netloc != 'github.com':
-            raise errors.UserError("Currently only github.com urls are supported (got %s)" % url.netloc)
-
-        pat = re.compile('^/(?P<repo>[\w-]+/[\w-]+)(/tree/(?P<branch>[\w/]+))?$')
-        match = pat.match(url.path)
-        if not match:
-            raise errors.UserError("URL path '%s' is not a git repo" % url.path)
-
-        groups = match.groupdict()
-        repo = groups.get('repo')
-        branch = groups.get('branch') or url.fragment or 'master'
-        builds = {'repo': repo, 'branch':branch}
+        builds = get_gitrepo(urlparse(args.path))
         build = binstar.submit_for_url_build(args.package.user, args.package.name, builds,
                                              channels=args.channels, queue=args.queue, sub_dir=args.sub_dir,
                                              test_only=args.test_only, callback=upload_print_callback(args),
@@ -171,9 +164,6 @@ def main(args):
 
     binstar = get_binstar(args, cls=BinstarBuildAPI)
 
-    # Force user auth
-    user = binstar.user()
-
     package_name = None
     user_name = None
 
@@ -184,12 +174,6 @@ def main(args):
         args.git_url = args.path
         args.git_url_path = get_urlpath(args.path)
         args.dont_git_ignore = True
-        user_name = user['login']
-        if not args.package:
-            package_name = args.git_url_path.split('/')[1]
-            log.info("Using repo name '%s' as the pkg name." % package_name)
-            args.package = PackageSpec(user_name, package_name)
-
 
         submit_git_build(binstar, args)
 
@@ -216,6 +200,7 @@ def main(args):
             package_name = args.package.name
         else:
             if user_name is None:
+                user = binstar.user()
                 user_name = user['login']
             if not package_name:
                 raise UserError("You must specify the package name in the .binstar.yml file or the command line")
