@@ -1,25 +1,12 @@
 '''
 Build command
 
-Submit a build:
+Submit a build from your local path or  via a git url:
 
-    binstar-build submit [path]
+See also: 
 
-You may also submit a build via a git url:
-
-     binstar-build submit git+<git-url>[#branch]
-
-    For example if I have the git repo https://github.com/srossross/testci:
-
-        binstar-build submit git+https://github.com/srossross/testci
-
-    Or to test a branch:
-
-        binstar-build submit git+https://github.com/srossross/testci#feature/testing
-
-See also:
-
-    binstar-build tail -h
+  * [Submit Your First Build](http://docs.binstar.org/examples.html#SubmitYourFirstBuild)
+  * [Submit A Build From Github](http://docs.binstar.org/examples.html#SubmitABuildFromGithub)
 
 '''
 

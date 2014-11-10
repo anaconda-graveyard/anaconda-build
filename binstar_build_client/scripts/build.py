@@ -1,20 +1,15 @@
 '''
 Binstar Build command
 
-Initialize the build directory:
+To get started with binstar build run:
 
     binstar-build init
-
-This will create a default .binstar.yml file in the current directory
-
-Submit a build:
-
     binstar-build submit
 
-Tail the output of a build until it is complete:
+See also: 
 
-    binstar-build tail user/package 1.0
-
+  * [Binstar Build](http://docs.binstar.org/examples.html#BinstarBuild)
+  
 '''
 
 from __future__ import (print_function, unicode_literals, division,

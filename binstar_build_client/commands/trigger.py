@@ -1,5 +1,9 @@
 '''
 Trigger a build that has been saved
+
+See also: 
+
+  * [Save and Trigger Your Builds](http://docs.binstar.org/examples.html#SaveAndTriggerYourBuilds)
 '''
 
 from __future__ import (print_function, unicode_literals, division,
@@ -32,9 +36,11 @@ def main(args):
 
 
 def add_parser(subparsers):
+    description = 'Trigger a build that has been saved'
     parser = subparsers.add_parser('trigger',
-                                      help='Trigger a build that has been saved',
-                                      description=__doc__,
+                                      help=description,
+                                      description=description,
+                                      epilog=__doc__,
                                       formatter_class=RawDescriptionHelpFormatter,
                                       )
 

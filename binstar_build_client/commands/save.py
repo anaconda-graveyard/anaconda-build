@@ -1,5 +1,10 @@
 '''
-Save build info
+Save build info to be triggered later
+
+See also: 
+
+  * [Save and Trigger Your Builds](http://docs.binstar.org/examples.html#SaveAndTriggerYourBuilds)
+
 '''
 
 from __future__ import (print_function, unicode_literals, division,
@@ -55,9 +60,12 @@ def main(args):
     log.info("CI Added to package %s", args.package)
 
 def add_parser(subparsers):
+
+    description = 'Save build info to be triggered later'
     parser = subparsers.add_parser('save',
-                                      help='Save build info',
-                                      description=__doc__,
+                                      help=description,
+                                      description=description,
+                                      epilog=__doc__,
                                       formatter_class=RawDescriptionHelpFormatter,
                                       )
 
