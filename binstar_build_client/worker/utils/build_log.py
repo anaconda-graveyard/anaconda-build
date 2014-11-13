@@ -8,6 +8,7 @@ import traceback
 
 from binstar_client import errors
 
+from requests import ConnectionError
 
 log = logging.getLogger(__name__)
 
@@ -79,7 +80,7 @@ class BuildLog(object):
 
         try:
             self.bs.log_build_output(self.username, self.queue, self.worker_id, self.job_id, msg)
-        except errors.BinstarError as err:
+        except Exception as err:
             log.exception(err)
             # Insert data back to buffer for next write attempt
             with self._write_lock:
