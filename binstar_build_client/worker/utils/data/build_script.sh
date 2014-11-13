@@ -186,6 +186,9 @@ fetch_build_source(){
     {%- endif -%}
 {%- endmacro %}
 
+bb_before_environment() {
+    {{format_instructions('before_environment')}}
+}
 
 bb_install() {
     {{format_instructions('install')}}
@@ -276,6 +279,8 @@ upload_build_targets(){
 }
 
 main(){
+    
+    bb_before_environment;
     
     {% if ignore_setup_build %}
     echo "[Ignore Setup Build]"

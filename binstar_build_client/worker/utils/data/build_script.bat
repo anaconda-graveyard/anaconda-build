@@ -53,12 +53,10 @@ goto:eof
 
 :main
 
-    :: echo GIT_OAUTH_TOKEN=%GIT_OAUTH_TOKEN%
-    :: echo BUILD_TARBALL=%BUILD_TARBALL%
-    :: echo BINSTAR_API_TOKEN=%BINSTAR_API_TOKEN%
-
     set BINSTAR_BUILD_RESULT=
     
+    call:bb_before_environment
+    {{check_result()}}
 
     {% if ignore_setup_build %}
     echo [ignore setup_build]
@@ -268,6 +266,8 @@ goto:eof
 {%macro check_result() -%}
 if not "%BINSTAR_BUILD_RESULT%" == "" (goto:eof)
 {%- endmacro %}
+
+{{ format_instructions('before_environment') }}
 
 {{ format_instructions('install') }}
 {{ format_instructions('test', 'failure') }}
