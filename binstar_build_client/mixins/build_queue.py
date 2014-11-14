@@ -39,8 +39,14 @@ class BuildQueueMixin(object):
     def log_build_output(self, username, queue_name, worker_id, job_id, msg):
         url = '%s/build-worker/%s/%s/%s/jobs/%s/log' % (self.domain, username, queue_name, worker_id, job_id)
         res = self.session.post(url, data=msg)
-        self._check_response(res, [201])
+        self._check_response(res, [201, 200])
 
+        try:
+            result = res.json().get('terminate_build', False)
+        except ValueError:
+            result = False
+
+        return result
 
     def fininsh_build(self, username, queue_name, worker_id, job_id, status='success', failed=False):
         url = '%s/build-worker/%s/%s/%s/jobs/%s/finish' % (self.domain, username, queue_name, worker_id, job_id)
