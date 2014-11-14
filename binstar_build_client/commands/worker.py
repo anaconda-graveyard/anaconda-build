@@ -101,6 +101,10 @@ def add_parser(subparsers, name='worker',
                         default=os.path.join(get_conda_root_prefix(), 'conda-bld', '{args.platform}'),
                         help="[Advanced] The conda build directory (default: %(default)s)",
                         )
+    dgroup.add_argument('--show-new-procs', action='store_true', dest='show_new_procs',
+                        help='Print any process that started during the build '
+                             'and is still running after the build finished')
+
     dgroup.add_argument('-c', '--clean', action='store_true',
                         help='Clean up an existing workers session')
     dgroup.add_argument('-f', '--fail', action='store_true',

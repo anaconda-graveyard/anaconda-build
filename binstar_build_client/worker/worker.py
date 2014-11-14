@@ -8,7 +8,9 @@ import logging
 import os
 import time
 
+from binstar_build_client.utils.rm import rm_rf
 from binstar_client import errors
+import psutil
 from requests import ConnectionError
 import yaml
 
@@ -16,22 +18,24 @@ from .utils.buffered_io import BufferedPopen
 from .utils.build_log import BuildLog
 from .utils.script_generator import gen_build_script, \
     EXIT_CODE_OK, EXIT_CODE_ERROR, EXIT_CODE_FAILED
-import psutil
-from binstar_build_client.utils.rm import rm_rf
-import shutil
 
 
 log = logging.getLogger('binstar.build')
 
 def get_my_procs():
 
-    myusername = psutil.Process().username()
+    this_proc = psutil.Process()
 
-    def ismyproc(proc):
-        try:
-            return proc.username() == myusername
-        except psutil.AccessDenied:
-            return False
+    if os.name == 'nt':
+        myusername = this_proc.username()
+        def ismyproc(proc):
+            try:
+                return proc.username() == myusername
+            except psutil.AccessDenied:
+                return False
+    else:
+        def ismyproc(proc):
+            return proc.uids.real == this_proc.uids.real
 
 
     return {proc.pid for proc in psutil.process_iter() if ismyproc(proc)}
@@ -234,16 +238,13 @@ class Worker(object):
             args.extend(['--git-oauth-token', git_oauth_token])
 
         elif build_filename:
-#             build_filename = self.download_build_source(job_id)
-#             files.append(build_filename)
             args.extend(['--build-tarball', build_filename])
 
         log.info("Running command: (iotimeout=%s)" % iotimeout)
         log.info(" ".join(args))
 
-        myusername = psutil.Process().username()
-
-        already_running_procs = get_my_procs()
+        if self.args.show_new_procs:
+            already_running_procs = get_my_procs()
 
         p0 = BufferedPopen(args, stdout=build_log, iotimeout=iotimeout, cwd=working_dir)
 
@@ -255,18 +256,19 @@ class Worker(object):
             p0.wait()
             raise
         finally:
-            currently_running_procs = get_my_procs()
-            new_procs = [psutil.Process(pid) for pid in currently_running_procs - already_running_procs]
-            if new_procs:
-                build_log.write("WARNING: There are processes that were started during the build and are still running\n")
-                for proc in new_procs:
-                    build_log.write(" - Process name:%s pid:%s\n" % (proc.name, proc.pid))
-                    try:
-                        cmdline = ' '.join(proc.cmdline)
-                    except:
-                        pass
-                    else:
-                        build_log.write("    + %s\n" % cmdline)
+            if self.args.show_new_procs:
+                currently_running_procs = get_my_procs()
+                new_procs = [psutil.Process(pid) for pid in currently_running_procs - already_running_procs]
+                if new_procs:
+                    build_log.write("WARNING: There are processes that were started during the build and are still running\n")
+                    for proc in new_procs:
+                        build_log.write(" - Process name:%s pid:%s\n" % (proc.name, proc.pid))
+                        try:
+                            cmdline = ' '.join(proc.cmdline)
+                        except:
+                            pass
+                        else:
+                            build_log.write("    + %s\n" % cmdline)
 
 
         return exit_code
