@@ -53,7 +53,10 @@ class IOStream(Thread):
             for line in self.line_iterator:
                 self._last_io = time.time()
                 self.outstream.write(line)
-                self.outstream.flush()
+                # self.outstream.flush()
+
+                if getattr(self.outstream, 'terminate_build', False):
+                    self.timeout_callback(reason='user_request')
 
         finally:
             self.finished_event.set()
@@ -73,10 +76,10 @@ class IOStream(Thread):
             elapsed_io = time.time() - self._last_io
 
             if self.iotimeout and elapsed_io >= self.iotimeout:
-                self.timeout_callback(iotimeout=True)
+                self.timeout_callback(reason='iotimeout')
                 return
 
             elapsed_total = time.time() - self._start_time
             if self.timeout and elapsed_total >= self.timeout:
-                self.timeout_callback(iotimeout=False)
+                self.timeout_callback(reason='timeout')
                 return

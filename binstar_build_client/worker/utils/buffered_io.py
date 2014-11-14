@@ -42,13 +42,6 @@ class BufferedPopen(Popen):
         self._iostream = IOStream(self.stdout, self._output, iotimeout, timeout, self.timeout_callback)
         self._iostream.start()
 
-#             self._io_thread = Thread(target=self._io_loop, name='io_loop')
-#             self._io_thread.start()
-#
-#             if self._iotimeout:
-#                 self._timeout_thread = Thread(target=self._io_timeout_loop, name='io_timeout_loop')
-#                 self._timeout_thread.start()
-
     def wait(self):
         """Wait for child process to terminate.  Returns returncode
         attribute.
@@ -70,18 +63,21 @@ class BufferedPopen(Popen):
 
         return returncode
 
-    def timeout_callback(self, iotimeout=False):
+    def timeout_callback(self, reason='iotimeout'):
         self.kill_tree()
 
         log.debug("timeout_callback")
 
-        if iotimeout:
+        if reason == 'iotimeout':
             self._output.write("\nTimeout: No output from program for %s seconds\n" % self._iostream.iotimeout)
             self._output.write("\nTimeout: If you require a longer timeout you "
                       "may set the 'iotimeout' variable in your .binstar.yml file\n")
             self._output.write("[Terminating]\n")
-        else:
+        elif reason == 'timeout':
             self._output.write("\nTimeout: build exceeded maximum build time of %s seconds\n" % self._iostream.timeout)
+            self._output.write("[Terminating]\n")
+        else:
+            self._output.write("\nTerminate: User requested build to be terminated\n")
             self._output.write("[Terminating]\n")
 
     def kill_tree(self):

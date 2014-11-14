@@ -40,15 +40,14 @@ class BuildLog(object):
         
         The if the io thread is running, msg will be appended an internal message buffer
         """
-
         n = sys.stdout.write(msg)
 
         if self._running:
             with self._write_lock:
                 self._buffer += msg
         else:
-            self.bs.log_build_output(self.username, self.queue, self.worker_id, self.job_id, msg)
-
+            terminate_build = self.bs.log_build_output(self.username, self.queue, self.worker_id, self.job_id, msg)
+            self.terminate_build = terminate_build
         return n
 
     def __enter__(self):
@@ -58,6 +57,7 @@ class BuildLog(object):
         self._running = True
         self._io_thread = Thread(target=self._io_loop, name='io_loop')
         self._io_thread.start()
+        self.terminate_build = False
         return self
 
     def __exit__(self, *args):
@@ -78,8 +78,12 @@ class BuildLog(object):
             msg = self._buffer
             self._buffer = ''
 
+        if not msg:
+            return
+
         try:
-            self.bs.log_build_output(self.username, self.queue, self.worker_id, self.job_id, msg)
+            terminate_build = self.bs.log_build_output(self.username, self.queue, self.worker_id, self.job_id, msg)
+            self.terminate_build = terminate_build
         except Exception as err:
             log.exception(err)
             # Insert data back to buffer for next write attempt
@@ -93,10 +97,8 @@ class BuildLog(object):
         every self.INTERVAL seconds
         """
         while self._running:
-            if self._buffer:
-                self.flush()
-            else:
-                self.event.wait(self.INTERVAL)
+            self.flush()
+            self.event.wait(self.INTERVAL)
 
         self.flush()
 
