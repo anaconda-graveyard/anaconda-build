@@ -55,8 +55,6 @@ goto:eof
 
     set BINSTAR_BUILD_RESULT=
     
-    call:bb_before_environment
-    {{check_result()}}
 
     {% if ignore_setup_build %}
     echo [ignore setup_build]
@@ -109,14 +107,14 @@ goto:eof
 
 :fetch_build_source
     
-    set "BUILD_DIR=%BUILD_BASE%\%BINSTAR_OWNER%\%BINSTAR_PACKAGE%"
+    set "SOURCE_DIR=%CD%\source"
 
     @echo off
 
     echo.
     echo [Fetching Build Source]
 
-    Rmdir /s /q "%BUILD_DIR%"
+    Rmdir /s /q "%SOURCE_DIR%"
 
     {% if git_info %}
         
@@ -124,16 +122,16 @@ goto:eof
         set "GIT_BRANCH={{git_info['branch']}}"
         set "GIT_COMMIT={{git_info['commit']}}"
 
-        echo git clone --recursive --depth=50 --branch=%GIT_BRANCH% https://github.com/%GIT_REPO%.git "%BUILD_DIR%"
+        echo git clone --recursive --depth=50 --branch=%GIT_BRANCH% https://github.com/%GIT_REPO%.git "%SOURCE_DIR%"
 
         if "%GIT_OAUTH_TOKEN%" == "" (
-            git clone --recursive --depth=50 --branch="%GIT_BRANCH%" "https://github.com/%GIT_REPO%.git" "%BUILD_DIR%"  || ( {{set_error()}} )
+            git clone --recursive --depth=50 --branch="%GIT_BRANCH%" "https://github.com/%GIT_REPO%.git" "%SOURCE_DIR%"  || ( {{set_error()}} )
         )
         if NOT  "%GIT_OAUTH_TOKEN%" == "" (
-            git clone --recursive --depth=50 --branch="%GIT_BRANCH%" "https://%GIT_OAUTH_TOKEN%:x-oauth-basic@github.com/%GIT_REPO%.git" "%BUILD_DIR%"  || ( {{set_error()}} )
+            git clone --recursive --depth=50 --branch="%GIT_BRANCH%" "https://%GIT_OAUTH_TOKEN%:x-oauth-basic@github.com/%GIT_REPO%.git" "%SOURCE_DIR%"  || ( {{set_error()}} )
         )
         
-        cd "%BUILD_DIR%"
+        cd "%SOURCE_DIR%"
 
         echo "git checkout --quiet %GIT_COMMIT%"
         git checkout --quiet "%GIT_COMMIT%"  || ( {{set_error()}} )
@@ -143,8 +141,8 @@ goto:eof
 
     {% else %}
 
-        Mkdir "%BUILD_DIR%"
-        cd "%BUILD_DIR%"
+        Mkdir "%SOURCE_DIR%"
+        cd "%SOURCE_DIR%"
         echo ls  -al %BUILD_TARBALL%
         ls  %BUILD_TARBALL%
         echo "Extracting Package"
@@ -176,10 +174,7 @@ goto:eof
     
 
     :: Make BUILD_ENV_PATH an absolute path
-    mkdir %BUILD_ENV_DIR%\%BINSTAR_OWNER%\%BINSTAR_PACKAGE%
-    pushd %BUILD_ENV_DIR%\%BINSTAR_OWNER%\%BINSTAR_PACKAGE%
-    set "BUILD_ENV_PATH=%CD%"
-    popd
+    set "BUILD_ENV_PATH=%CD%\env"
 
     echo [Setting engine]
 
@@ -189,6 +184,17 @@ goto:eof
     echo conda clean --lock
     conda clean --lock
 
+
+    set "CONDARC=%CD%\condarc"
+
+    :: Touch file
+    touch "%CONDARC%"
+
+    conda config --file "%CONDARC%" --add channels defaults
+    conda config --file "%CONDARC%" --set binstar_upload no --set always_yes yes --set show_channel_urls yes
+
+    call:bb_before_environment
+    {{check_result()}}
 
     echo Rmdir /s /q "%BUILD_ENV_PATH%"
     Rmdir /s /q "%BUILD_ENV_PATH%"
@@ -207,18 +213,6 @@ goto:eof
 
     echo where conda 
     where conda
-
-    pushd %BUILD_ENV_PATH%
-    python -c "import os, sys; sys.stdout.write(os.path.abspath('condarc'))" > %TEMP%\CONDA_RC
-    popd
-
-    set "CONDARC=%BUILD_ENV_PATH%\condarc"
-
-    :: Touch file
-    touch "%CONDARC%"
-
-    conda config --file "%CONDARC%" --add channels defaults
-    conda config --file "%CONDARC%" --set binstar_upload no --set always_yes yes --set show_channel_urls yes
 
     :: Hack to build with the python set in BINSTAR_ENGINE
     python -c "import sys; sys.stdout.write('{0}{1}'.format(sys.version_info[0], sys.version_info[1]))" > %TEMP%\CONDA_PY 

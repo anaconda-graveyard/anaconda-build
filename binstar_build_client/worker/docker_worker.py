@@ -38,7 +38,7 @@ class DockerWorker(Worker):
             log.warn("Allowing users to specify docker images")
 
 
-    def run(self, script_filename, build_log, timeout, iotimeout,
+    def run(self, build_data, script_filename, build_log, timeout, iotimeout,
             api_token=None, git_oauth_token=None, build_filename=None, instructions=None):
         """
         """

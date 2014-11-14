@@ -16,6 +16,9 @@ from .utils.buffered_io import BufferedPopen
 from .utils.build_log import BuildLog
 from .utils.script_generator import gen_build_script, \
     EXIT_CODE_OK, EXIT_CODE_ERROR, EXIT_CODE_FAILED
+import psutil
+from binstar_build_client.utils.rm import rm_rf
+import shutil
 
 
 log = logging.getLogger('binstar.build')
@@ -175,8 +178,7 @@ class Worker(object):
                 build_filename = None
 
             with remove_files_after(files):
-#                 exit_code = self.run(script_filename, build_log, timeout, iotimeout)
-                exit_code = self.run(script_filename, build_log,
+                exit_code = self.run(job_data, script_filename, build_log,
                                      timeout, iotimeout,
                                      api_token, git_oauth_token, build_filename,
                                      instructions=instructions)
@@ -201,10 +203,18 @@ class Worker(object):
 
             return failed, status
 
-    def run(self, script_filename, build_log, timeout, iotimeout,
+    def run(self, build_data, script_filename, build_log, timeout, iotimeout,
             api_token=None, git_oauth_token=None, build_filename=None, instructions=None):
 
-        args = [script_filename, '--api-token', api_token]
+
+        owner = build_data['owner']['login']
+        package = build_data['package']['name']
+
+        working_dir = os.path.abspath(os.path.join(owner, package))
+        rm_rf(working_dir)
+        os.makedirs(working_dir)
+
+        args = [os.path.abspath(script_filename), '--api-token', api_token]
 
 
         if git_oauth_token:
@@ -217,7 +227,12 @@ class Worker(object):
 
         log.info("Running command: (iotimeout=%s)" % iotimeout)
         log.info(" ".join(args))
-        p0 = BufferedPopen(args, stdout=build_log, iotimeout=iotimeout)
+
+        myuid = os.getuid()
+
+        already_running_procs = {proc.pid for proc in psutil.process_iter() if proc.uids.real == myuid}
+
+        p0 = BufferedPopen(args, stdout=build_log, iotimeout=iotimeout, cwd=working_dir)
 
         try:
             exit_code = p0.wait()
@@ -226,6 +241,21 @@ class Worker(object):
             p0.kill_tree()
             p0.wait()
             raise
+        finally:
+            currently_running_procs = {proc.pid for proc in psutil.process_iter() if proc.uids.real == myuid}
+            new_procs = [psutil.Process(pid) for pid in currently_running_procs - already_running_procs]
+            if new_procs:
+                build_log.write("WARNING: There are processes that were started during the build and are still running\n")
+                for proc in new_procs:
+                    build_log.write(" - Process name:%s pid:%s\n" % (proc.name, proc.pid))
+                    try:
+                        cmdline = ' '.join(proc.cmdline)
+                    except:
+                        pass
+                    else:
+                        build_log.write("    + %s\n" % cmdline)
+
+
         return exit_code
 
     def download_build_source(self, job_id):

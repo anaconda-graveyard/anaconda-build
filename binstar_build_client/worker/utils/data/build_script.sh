@@ -63,7 +63,8 @@ export {{key}}={{value}}
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### 
 setup_build(){
 
-    BUILD_ENV_PATH="$BUILD_ENV_DIR/$BINSTAR_OWNER/$BINSTAR_PACKAGE"
+
+    export BUILD_ENV_PATH=`pwd`"/env"
     
     echo -e "\n[Setup Build]"
 
@@ -71,13 +72,26 @@ setup_build(){
     echo 'Setting engine'
     
     
-    rm -rf "$BUILD_ENV_PATH"
     echo "conda-clean-build-dir"
     conda-clean-build-dir
 
     echo "conda clean --lock"
     conda clean --lock
 
+    export CONDARC=`pwd`/"condarc"
+
+    echo "export CONDARC=$CONDARC"
+    touch "$CONDARC"
+
+    conda config --file "$CONDARC" --add channels defaults
+    conda config --file "$CONDARC" \
+                 --set binstar_upload no \
+                 --set always_yes yes \
+                 --set show_channel_urls yes
+
+
+    bb_before_environment;
+    
     echo "conda create -p $BUILD_ENV_PATH --quiet --yes $BINSTAR_ENGINE"
     conda create -p $BUILD_ENV_PATH --quiet --yes $BINSTAR_ENGINE
         eval $bb_check_command_error
@@ -91,18 +105,6 @@ setup_build(){
     export CONDA_PY=`python -c 'import sys; sys.stdout.write("{0}{1}".format(sys.version_info[0], sys.version_info[1]))'`
     echo "CONDA_PY=$CONDA_PY"
 
-    pushd "$BUILD_ENV_PATH"
-    export CONDARC=`pwd`/"condarc"
-    popd
-    echo "export CONDARC=$CONDARC"
-    touch "$CONDARC"
-
-    conda config --file "$CONDARC" --add channels defaults
-    conda config --file "$CONDARC" \
-                 --set binstar_upload no \
-                 --set always_yes yes \
-                 --set show_channel_urls yes
-
 }
 
 fetch_build_source(){
@@ -110,9 +112,10 @@ fetch_build_source(){
 
     echo -e '\n[Fetching Build Source]'
 
-    BUILD_DIR="$BUILD_BASE/$BINSTAR_OWNER/$BINSTAR_PACKAGE"
+    SOURCE_DIR=`pwd`"/source"
+    echo "SOURCE_DIR=$SOURCE_DIR"
 
-    rm -rf "$BUILD_DIR"
+    rm -rf "$SOURCE_DIR"
     
 
     {% if git_info %}
@@ -120,17 +123,17 @@ fetch_build_source(){
         export GIT_BRANCH="{{git_info['branch']}}"
         export GIT_COMMIT="{{git_info['commit']}}"
 
-        echo "git clone --recursive --depth=50 --branch=$GIT_BRANCH https://github.com/${GIT_REPO}.git $BUILD_DIR"
+        echo "git clone --recursive --depth=50 --branch=$GIT_BRANCH https://github.com/${GIT_REPO}.git $SOURCE_DIR"
 
         if [ "$GIT_OAUTH_TOKEN" == "" ]; then
-            git clone --recursive --depth=50 --branch="$GIT_BRANCH" "https://github.com/${GIT_REPO}.git" "$BUILD_DIR"
+            git clone --recursive --depth=50 --branch="$GIT_BRANCH" "https://github.com/${GIT_REPO}.git" "$SOURCE_DIR"
                 eval $bb_check_command_error
         else
-            git clone --recursive --depth=50 --branch="$GIT_BRANCH" "https://${GIT_OAUTH_TOKEN}:x-oauth-basic@github.com/${GIT_REPO}.git" "$BUILD_DIR"
+            git clone --recursive --depth=50 --branch="$GIT_BRANCH" "https://${GIT_OAUTH_TOKEN}:x-oauth-basic@github.com/${GIT_REPO}.git" "$SOURCE_DIR"
                 eval $bb_check_command_error
         fi
         
-        cd "$BUILD_DIR"
+        cd "$SOURCE_DIR"
 
         echo "git checkout --quiet $GIT_COMMIT"
         git checkout --quiet "$GIT_COMMIT"
@@ -149,8 +152,8 @@ fetch_build_source(){
 
     {% else %}
 
-        mkdir -p "$BUILD_DIR"
-        cd "$BUILD_DIR"
+        mkdir -p "$SOURCE_DIR"
+        cd "$SOURCE_DIR"
 
         echo "ls  -al $BUILD_TARBALL"
         ls  -al "$BUILD_TARBALL"
@@ -279,9 +282,7 @@ upload_build_targets(){
 }
 
 main(){
-    
-    bb_before_environment;
-    
+        
     {% if ignore_setup_build %}
     echo "[Ignore Setup Build]"
     {% else %}
