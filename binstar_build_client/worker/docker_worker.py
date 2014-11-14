@@ -96,18 +96,22 @@ class DockerWorker(Worker):
         build_log.write("Docker: Attach output\n")
         stream = cli.attach(cont, stream=True, stdout=True, stderr=True)
 
-        def timeout_callback(iotimeout=False):
+        def timeout_callback(reason='iotimeout'):
 
             cli.kill(cont)
 
-            if iotimeout:
+            if reason == 'iotimeout':
                 build_log.write("\nTimeout: No output from program for %s seconds\n" % iotimeout)
                 build_log.write("\nTimeout: If you require a longer timeout you "
                           "may set the 'iotimeout' variable in your .binstar.yml file\n")
                 self._output.write("[Terminating]\n")
-            else:
+            elif reason == 'timeout':
                 build_log.write("\nTimeout: build exceeded maximum build time of %s seconds\n" % timeout)
                 build_log.write("[Terminating]\n")
+            else:
+                build_log.write("\nTerminate: User requested build to be terminated\n")
+                build_log.write("[Terminating]\n")
+
 
         ios = IOStream(stream, build_log, iotimeout, timeout, timeout_callback)
 
