@@ -227,7 +227,7 @@ class Worker(object):
         owner = build_data['owner']['login']
         package = build_data['package']['name']
 
-        working_dir = os.path.abspath(os.path.join(owner, package))
+        working_dir = os.path.abspath(os.path.join('builds', owner, package))
         rm_rf(working_dir)
         os.makedirs(working_dir)
 
