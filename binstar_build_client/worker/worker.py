@@ -23,6 +23,19 @@ import shutil
 
 log = logging.getLogger('binstar.build')
 
+def get_my_procs():
+
+    myusername = psutil.Process().username()
+
+    def ismyproc(proc):
+        try:
+            return proc.username() == myusername
+        except psutil.AccessDenied:
+            return False
+
+
+    return {proc.pid for proc in psutil.process_iter() if ismyproc(proc)}
+
 @contextmanager
 def remove_files_after(files):
     try:
@@ -228,9 +241,9 @@ class Worker(object):
         log.info("Running command: (iotimeout=%s)" % iotimeout)
         log.info(" ".join(args))
 
-        myuid = os.getuid()
+        myusername = psutil.Process().username()
 
-        already_running_procs = {proc.pid for proc in psutil.process_iter() if proc.uids.real == myuid}
+        already_running_procs = get_my_procs()
 
         p0 = BufferedPopen(args, stdout=build_log, iotimeout=iotimeout, cwd=working_dir)
 
@@ -242,7 +255,7 @@ class Worker(object):
             p0.wait()
             raise
         finally:
-            currently_running_procs = {proc.pid for proc in psutil.process_iter() if proc.uids.real == myuid}
+            currently_running_procs = get_my_procs()
             new_procs = [psutil.Process(pid) for pid in currently_running_procs - already_running_procs]
             if new_procs:
                 build_log.write("WARNING: There are processes that were started during the build and are still running\n")

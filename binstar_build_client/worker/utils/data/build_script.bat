@@ -4,6 +4,11 @@
 set "BINSTAR_BUILD_RESULT={{fail_type}}" & goto:eof
 {%- endmacro %}
 
+{%macro check_result() -%}
+if not "%BINSTAR_BUILD_RESULT%" == "" (goto:eof)
+{%- endmacro %}
+
+
 {% for key, value in exports %}
 set {{key}}={{value}}
 {% endfor %}
@@ -256,10 +261,6 @@ goto:eof
 goto:eof
 
 {% endmacro %}
-
-{%macro check_result() -%}
-if not "%BINSTAR_BUILD_RESULT%" == "" (goto:eof)
-{%- endmacro %}
 
 {{ format_instructions('before_environment') }}
 
