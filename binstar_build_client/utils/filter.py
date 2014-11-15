@@ -9,7 +9,7 @@ class ExcludeGit(object):
     def __init__(self, path, use_git_ignore=True):
         self.path = os.path.abspath(path)
         try:
-            filelist = check_output(['git', 'ls-files'], cwd=self.path).split()
+            filelist = check_output(['git', 'ls-files'], cwd=self.path).decode().split()
             self.to_include = [os.path.join(self.path, fn) for fn in filelist]
         except CalledProcessError as err:
             self.to_include = None
