@@ -83,8 +83,10 @@ class BufferedPopen(Popen):
     def kill_tree(self):
         'Kill all processes and child processes'
         try:
+            log.warn("Kill Tree parent pid:%s" % self.pid)
             parent = psutil.Process(self.pid)
         except psutil.NoSuchProcess:
+            log.warn("Parent pid %s is already dead" % self.pid)
             # Already dead
             return
 
@@ -93,5 +95,6 @@ class BufferedPopen(Popen):
         self.kill()
         for child in children:
             if child.is_running():
+                log.warn(" - Kill child pid %s" % child.pid)
                 child.kill()
 
