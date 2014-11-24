@@ -31,7 +31,6 @@ def add_parser(subparsers):
                                       )
     # ArgumentParser.add_subparsers(self)
     parser.add_argument('action',
-                   metavar='RESULT-TYPE',
                    choices=['testsuite', 'summary'])
 
     parser.add_argument('package',
