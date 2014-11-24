@@ -311,6 +311,24 @@ goto:eof
 
 
 :upload_build_targets
+
+    :: call deactivate    
+    set "CONDA_DEFAULT_ENV=%DEACTIVATE_ENV%"
+    set "PATH=%DEACTIVATE_PATH%"
+    set "CONDARC="
+
+    {% if instructions.get('test_results') %}
+    echo
+    echo [Test Results]
+    {% endif %}
+
+    {%for test_result, filename in instructions.get('test_results', {}).items() %}
+    
+    echo binstar-build -q -t %%TOKEN%% results {{test_result}} "%BINSTAR_OWNER%/%BINSTAR_PACKAGE%" "%BINSTAR_BUILD%" {{filename}}
+    binstar-build -q -t "%BINSTAR_API_TOKEN%" results {{test_result}} "%BINSTAR_OWNER%/%BINSTAR_PACKAGE%" "%BINSTAR_BUILD%" {{filename}}
+        
+    {% endfor %}
+
     if not "%BINSTAR_BUILD_RESULT%" == "success" (
         goto:eof
     )
@@ -322,10 +340,6 @@ goto:eof
 
     {% else %}
 
-    :: call deactivate    
-    set "CONDA_DEFAULT_ENV=%DEACTIVATE_ENV%"
-    set "PATH=%DEACTIVATE_PATH%"
-    set "CONDARC="
 
     echo .
     echo [Build Targets]
