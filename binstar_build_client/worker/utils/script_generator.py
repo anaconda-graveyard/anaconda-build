@@ -112,20 +112,19 @@ def create_exports(build_data):
 
     api_site = build['api_endpoint']
 
-    quote_str = lambda item: pipes.quote(str(item))
     exports = {
             # The build number as MAJOR.MINOR
-            'BINSTAR_BUILD': quote_str(build_item['build_no']),
-            'BINSTAR_BUILD_MAJOR': quote_str(build['build_no']),
-            'BINSTAR_BUILD_MINOR': quote_str(build_item['sub_build_no']),
+            'BINSTAR_BUILD': build_item['build_no'],
+            'BINSTAR_BUILD_MAJOR': build['build_no'],
+            'BINSTAR_BUILD_MINOR': build_item['sub_build_no'],
             # the engine from the engine tag
-            'BINSTAR_ENGINE': quote_str(build_item.get('engine')),
+            'BINSTAR_ENGINE': build_item.get('engine'),
             # the platform from the platform tag
             'BINSTAR_PLATFORM': build_item.get('platform', 'linux-64'),
-            'BINSTAR_API_SITE': quote_str(api_site),
-            'BINSTAR_OWNER': quote_str(build_data['owner']['login']),
-            'BINSTAR_PACKAGE': quote_str(build_data['package']['name']),
-            'BINSTAR_BUILD_ID': quote_str(build['_id']),
+            'BINSTAR_API_SITE': api_site,
+            'BINSTAR_OWNER': build_data['owner']['login'],
+            'BINSTAR_PACKAGE': build_data['package']['name'],
+            'BINSTAR_BUILD_ID': build['_id'],
             'CONDA_BUILD_DIR': os.path.join(conda_root_prefix, 'conda-bld', build_item.get('platform', 'linux-64')),
             'BUILD_BASE': 'builds',
             'BUILD_ENV_DIR': 'build_envs',
@@ -160,7 +159,7 @@ def gen_build_script(build_data, **context):
     job_id = build_data['job']['_id']
 
     env = jinja2.Environment(loader=jinja2.PackageLoader(__name__, 'data'))
-    env.globals.update(get_list=get_list, quote=pipes.quote)
+    env.globals.update(get_list=get_list, quote=lambda item: pipes.quote(str(item)))
 
     if platform in ['win-32', 'win-64']:
         build_script_template = env.get_or_select_template('build_script.bat')

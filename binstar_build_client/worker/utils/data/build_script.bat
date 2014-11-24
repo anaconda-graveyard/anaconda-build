@@ -10,7 +10,7 @@ if not "%BINSTAR_BUILD_RESULT%" == "" (goto:eof)
 
 
 {% for key, value in exports %}
-set {{key}}={{value}}
+set "{{key}}={{value}}"
 {% endfor %}
 
 

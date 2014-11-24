@@ -55,7 +55,7 @@ bb_check_result='if [ "$BINSTAR_BUILD_RESULT" != "" ]; then return 1; fi'
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### 
 
 {% for key, value in exports %}
-export {{key}}={{value}}
+export {{key}}={{quote(value)}}
 {% endfor %}
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### 
