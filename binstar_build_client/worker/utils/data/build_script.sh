@@ -257,6 +257,23 @@ binstar_post_build(){
 }
 
 upload_build_targets(){
+
+    unset CONDARC
+    source deactivate
+
+    {% if instructions.get('test_results') %}
+    echo -e "\n[Test Results]"
+    {% endif %}
+
+    {%for test_result, filename in instructions.get('test_results', {}).items() %}
+    
+    echo binstar-build -q -t \$TOKEN results {{test_result}} "$BINSTAR_OWNER/$BINSTAR_PACKAGE" "$BINSTAR_BUILD" {{filename}}
+    binstar-build -q -t "$BINSTAR_API_TOKEN" results {{test_result}} "$BINSTAR_OWNER/$BINSTAR_PACKAGE" "$BINSTAR_BUILD" {{filename}}
+        
+    {% endfor %}
+
+
+
     if [ "$BINSTAR_BUILD_RESULT" != "success" ]; then    
         return 1;
     fi
@@ -264,13 +281,10 @@ upload_build_targets(){
     echo -e '\nRunning Build in "Test Only" mode, not uploading build targets'
     {% else %}
     
-    unset CONDARC
-    source deactivate
-
     echo -e '\n[Build Targets]'
     eval $bb_check_command_error
     {% for tgt in files %}
-    echo "binstar -q -t \$TOKEN upload --force --user $BINSTAR_OWNER --package $BINSTAR_PACKAGE {{channels}} {{tgt}} --build-id $BINSTAR_BUILD_MAJOR"
+    echo "binstar -q -t \$TOKEN upload --force --user $BINSTAR_OWNER --package $BINSTAR_PACKAGE {{channels}} {{tgt}} --build-id $BINSTAR_BUILD"
     
     binstar -q -t "$BINSTAR_API_TOKEN" upload --force --user "$BINSTAR_OWNER" --package "$BINSTAR_PACKAGE" {{channels}} {{tgt}} --build-id "$BINSTAR_BUILD"
     eval $bb_check_command_error
