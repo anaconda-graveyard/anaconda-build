@@ -144,3 +144,12 @@ class BuildMixin(object):
         obj = res.json()
         return obj['build_no']
 
+
+    def upload_test_results(self, action, username, package, major, minor, fd):
+        url = '%s/build/%s/%s/results/%i/%i/%s' % (self.domain, username, package, major, minor, action)
+        headers = {'Content-Type': 'application/xml'}
+        res = self.session.post(url, data=fd.read(), headers=headers)
+        self._check_response(res)
+
+        return
+
