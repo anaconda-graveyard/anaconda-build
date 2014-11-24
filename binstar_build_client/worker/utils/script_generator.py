@@ -119,7 +119,7 @@ def create_exports(build_data):
             'BINSTAR_BUILD_MAJOR': quote_str(build['build_no']),
             'BINSTAR_BUILD_MINOR': quote_str(build_item['sub_build_no']),
             # the engine from the engine tag
-            'BINSTAR_ENGINE': build_item.get('engine'),
+            'BINSTAR_ENGINE': quote_str(build_item.get('engine')),
             # the platform from the platform tag
             'BINSTAR_PLATFORM': build_item.get('platform', 'linux-64'),
             'BINSTAR_API_SITE': quote_str(api_site),
