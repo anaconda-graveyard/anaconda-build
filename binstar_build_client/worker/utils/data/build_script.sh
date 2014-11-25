@@ -99,10 +99,10 @@ setup_build(){
     source activate $BUILD_ENV_PATH
         eval $bb_check_command_error
 
-    echo "which conda"
-    which conda
-
-    export CONDA_PY=`python -c 'import sys; sys.stdout.write("{0}{1}".format(sys.version_info[0], sys.version_info[1]))'`
+    if ["$CONDA_PY" == ""]; then
+        export CONDA_PY=`python -c 'import sys; sys.stdout.write("{0}{1}".format(sys.version_info[0], sys.version_info[1]))'`
+    fi
+    
     echo "CONDA_PY=$CONDA_PY"
 
 }

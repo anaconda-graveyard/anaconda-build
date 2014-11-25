@@ -219,10 +219,11 @@ goto:eof
     echo where conda 
     where conda
 
-    :: Hack to build with the python set in BINSTAR_ENGINE
-    python -c "import sys; sys.stdout.write('{0}{1}'.format(sys.version_info[0], sys.version_info[1]))" > %TEMP%\CONDA_PY 
- 
-    set /p CONDA_PY=<%TEMP%\CONDA_PY 
+    if "%CONDA_PY%" == "" (
+        :: Hack to build with the python set in BINSTAR_ENGINE
+        python -c "import sys; sys.stdout.write('{0}{1}'.format(sys.version_info[0], sys.version_info[1]))" > %TEMP%\CONDA_PY 
+        set /p CONDA_PY=<%TEMP%\CONDA_PY        
+    )
 
     echo CONDARC %CONDARC%
     echo CONDA_PY %CONDA_PY%
