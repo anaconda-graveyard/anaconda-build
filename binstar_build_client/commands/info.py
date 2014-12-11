@@ -90,7 +90,6 @@ def add_parser(subparsers):
 
     parser.add_argument('package', metavar='OWNER/PACKAGE',
                        help='build to the package OWNER/PACKAGE',
-                       nargs='?',
                        type=package_specs)
 
     parser.add_argument('build_no',
@@ -128,7 +127,6 @@ def add_parser(subparsers):
                                       )
     parser.add_argument('package', metavar='OWNER/PACKAGE',
                        help='build to the package OWNER/PACKAGE',
-                       nargs='?',
                        type=package_specs)
 
     parser.add_argument('build_no',
