@@ -172,10 +172,14 @@ def main(args):
         if not isfile(binstar_yml):
             raise UserError("file %s does not exist\n perhaps you should run\n\n    binstar-build init\n" % binstar_yml)
 
+        package_name = None
+        user_name = None
         with open(binstar_yml) as cfg:
             for build in yaml.load_all(cfg):
-                package_name = build.get('package')
-                user_name = build.get('user')
+                if build.get('package'):
+                    package_name = build.get('package')
+                if build.get('user'):
+                    user_name = build.get('user')
 
         # Force package to exist
         if args.package:
