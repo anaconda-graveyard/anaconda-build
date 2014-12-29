@@ -127,6 +127,9 @@ class DockerWorker(Worker):
 
         ios.join()
 
+        log.info("Remove Container: %r" % cont)
+        cli.remove_container(cont, v=True)
+
         return exit_code
 
 
