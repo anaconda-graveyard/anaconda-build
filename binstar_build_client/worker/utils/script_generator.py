@@ -10,6 +10,10 @@ import jinja2
 
 from binstar_build_client.utils import get_conda_root_prefix
 
+try:
+    unicode
+except NameError:
+    unicode = str
 
 log = logging.getLogger(__name__)
 
@@ -130,9 +134,9 @@ def create_exports(build_data):
             'BUILD_ENV_DIR': 'build_envs',
            }
 
-    build_env = build_item.get('env')
 
-    if isinstance(build_env, str):
+    build_env = build_item.get('env')
+    if isinstance(build_env, (str, unicode)):
         _build_env = {}
         for item in shlex.split(build_env):
             if '=' in item:
@@ -140,8 +144,10 @@ def create_exports(build_data):
                 _build_env[key] = value
 
         build_env = _build_env
-    elif isinstance(build_env, dict):
+
+    if isinstance(build_env, dict):
         exports.update(build_env)
+
     return exports
 
 #===============================================================================
