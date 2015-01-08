@@ -11,7 +11,7 @@ import time
 from binstar_build_client.utils.rm import rm_rf
 from binstar_client import errors
 import psutil
-from requests import ConnectionError
+import requests
 import yaml
 
 from .utils.buffered_io import BufferedPopen
@@ -95,9 +95,14 @@ class Worker(object):
                            "Did someone remove it manually?")
                     raise errors.BinstarError(msg)
 
-            except ConnectionError as err:
-
+            except requests.ConnectionError as err:
                 log.error("Trouble connecting to binstar at '%s' " % bs.domain)
+                log.error("Could not retrieve work items")
+                job_data = {}
+            except getattr(errors, 'ServerError', errors.BinstarError) as err:
+                # Note: ServerError introduced in binstar v0.10
+                log.exception(err)
+                log.error("There server '%s' returned an error response " % bs.domain)
                 log.error("Could not retrieve work items")
                 job_data = {}
 
