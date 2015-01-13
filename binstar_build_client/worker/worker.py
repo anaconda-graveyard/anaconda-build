@@ -99,8 +99,7 @@ class Worker(object):
                 log.error("Trouble connecting to binstar at '%s' " % bs.domain)
                 log.error("Could not retrieve work items")
                 job_data = {}
-            except getattr(errors, 'ServerError', errors.BinstarError) as err:
-                # Note: ServerError introduced in binstar v0.10
+            except errors.ServerError as err:
                 log.exception(err)
                 log.error("There server '%s' returned an error response " % bs.domain)
                 log.error("Could not retrieve work items")
