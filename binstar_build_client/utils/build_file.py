@@ -6,7 +6,7 @@ Created on Feb 18, 2014
 
 
 initial_build_config = '''
-## The package attribure specifies a binstar package namespace to build the package to. 
+## The package attribute specifies a binstar package namespace to build the package to. 
 ## This can be specified here or on the command line
 package: %(PACKAGE_NAME)s
 
@@ -17,7 +17,7 @@ package: %(PACKAGE_NAME)s
 
 #===============================================================================
 # Build Matrix Options
-# Thes options may be a single item, a list or empty
+# These options may be a single item, a list or empty
 # The resulting number of builds is [platform * engine * env] 
 #===============================================================================
 
@@ -36,8 +36,8 @@ package: %(PACKAGE_NAME)s
 #  - MY_ENV=B
 
 #===============================================================================
-# Scrip options
-# Thes options may be broken out into the before_script, script and after_script
+# Script options
+# These options may be broken out into the before_script, script and after_script
 # or not, that is up to you 
 #===============================================================================
 
@@ -51,7 +51,7 @@ script:
 ## BINSTAR_BUILD_RESULT=[succcess|failure] 
 # after_script:
 #   - echo "The build was a $BINSTAR_BUILD_RESULT" | tee artifact1.txt
-## This will be run only after a successfull build
+## This will be run only after a successful build
 # after_success:
 #   - echo "after_success!"
 ## This will be run only after a build failure
@@ -61,7 +61,7 @@ script:
 #===============================================================================
 # Build Results
 # Build results are split into two categories: artifacts and targets
-# You may omit either key and stiff have a successfull build
+# You may omit either key and stiff have a successful build
 # They may be a string, list and contain any bash glob
 #===============================================================================
 
