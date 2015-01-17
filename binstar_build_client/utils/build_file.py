@@ -51,7 +51,7 @@ script:
 ## BINSTAR_BUILD_RESULT=[succcess|failure] 
 # after_script:
 #   - echo "The build was a $BINSTAR_BUILD_RESULT" | tee artifact1.txt
-## This will be run only after a successfull build
+## This will be run only after a successful build
 # after_success:
 #   - echo "after_success!"
 ## This will be run only after a build failure
