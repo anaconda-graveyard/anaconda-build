@@ -17,7 +17,7 @@ package: %(PACKAGE_NAME)s
 
 #===============================================================================
 # Build Matrix Options
-# Thes options may be a single item, a list or empty
+# These options may be a single item, a list or empty
 # The resulting number of builds is [platform * engine * env] 
 #===============================================================================
 
