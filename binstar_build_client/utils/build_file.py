@@ -36,8 +36,8 @@ package: %(PACKAGE_NAME)s
 #  - MY_ENV=B
 
 #===============================================================================
-# Scrip options
-# Thes options may be broken out into the before_script, script and after_script
+# Script options
+# These options may be broken out into the before_script, script and after_script
 # or not, that is up to you 
 #===============================================================================
 
