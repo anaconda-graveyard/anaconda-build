@@ -61,7 +61,7 @@ script:
 #===============================================================================
 # Build Results
 # Build results are split into two categories: artifacts and targets
-# You may omit either key and stiff have a successfull build
+# You may omit either key and stiff have a successful build
 # They may be a string, list and contain any bash glob
 #===============================================================================
 
