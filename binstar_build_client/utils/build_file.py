@@ -6,7 +6,7 @@ Created on Feb 18, 2014
 
 
 initial_build_config = '''
-## The package attribure specifies a binstar package namespace to build the package to. 
+## The package attribute specifies a binstar package namespace to build the package to. 
 ## This can be specified here or on the command line
 package: %(PACKAGE_NAME)s
 
