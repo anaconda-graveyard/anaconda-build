@@ -19,6 +19,8 @@ requirements:
   run:
     - python
     - binstar
+    - setuptools
+    - psutil
     - pywin32 [win]
 
 about:
