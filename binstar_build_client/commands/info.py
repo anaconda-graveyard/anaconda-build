@@ -11,7 +11,7 @@ Submit a build:
 
     binstar build --submit
 
-Tail the output of a build untill it is complete:
+Tail the output of a build until it is complete:
 
     binstar build --tail 1.0
 
@@ -51,7 +51,7 @@ def tail(args):
         if log_items['failed']:
             log.error('Build Failed')
         else:
-            log.info('Build Succedded')
+            log.info('Build Succeeded')
     else:
         log.info('... Build still running ...')
 

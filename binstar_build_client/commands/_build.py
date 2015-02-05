@@ -11,7 +11,7 @@ Submit a build:
 
     binstar build --submit
 
-Tail the output of a build untill it is complete:
+Tail the output of a build until it is complete:
 
     binstar build --tail 1.0
 
@@ -71,7 +71,7 @@ def tail(binstar, args):
         if log_items['failed']:
             log.error('Build Failed')
         else:
-            log.info('Build Succedded')
+            log.info('Build Succeeded')
     else:
         log.info('... Build still running ...')
 
@@ -185,7 +185,7 @@ def init_build(args):
         result = bool_input("The file '%s' already exists. Would you like to overwrite it?" % binstar_yml,
                             default=False)
         if not result:
-            log.error('goodby')
+            log.error('goodbye')
             sys.exit(1)
 
     name = basename(abspath(args.path))
@@ -287,7 +287,7 @@ def add_parser(subparsers):
     group.add_argument('-s', '--submit',
                        help='Submit the build', action='store_true')
     group.add_argument('--resubmit',
-                       help='Res-ubmit an old sub build', type=float)
+                       help='Re-submit an old sub build', type=float)
     group.add_argument('--dry-run',
                        help="Parse the build file but don't submit", action='store_true')
 
