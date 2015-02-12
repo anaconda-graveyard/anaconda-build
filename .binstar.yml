@@ -11,6 +11,7 @@ install:
   - pip install coverage mock
 
 test: 
+  python setup.py develop
   python -m unittest discover -v
 
 
