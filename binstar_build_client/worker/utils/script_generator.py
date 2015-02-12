@@ -190,7 +190,11 @@ def gen_build_script(build_data, **context):
                })
 
 
+
     build_script = build_script_template.render(**context)
+
+    if not os.path.isdir('build_scripts'):
+        os.mkdir('build_scripts')
 
     with open(script_filename, 'w') as fd:
         fd.write(build_script)

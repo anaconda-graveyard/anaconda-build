@@ -48,10 +48,6 @@ class BufferedPopen(Popen):
         
         If timeout is given, the process will be killed after timeout seconds if it is not finished 
         """
-#
-#         if timeout:
-#             self.kill_after(timeout)
-
         returncode = Popen.wait(self)
 
 #         self._finished_event.set()
@@ -64,7 +60,6 @@ class BufferedPopen(Popen):
         return returncode
 
     def timeout_callback(self, reason='iotimeout'):
-        self.kill_tree()
 
         log.debug("timeout_callback")
 
@@ -79,6 +74,8 @@ class BufferedPopen(Popen):
         else:
             self._output.write("\nTerminate: User requested build to be terminated\n")
             self._output.write("[Terminating]\n")
+
+        self.kill_tree()
 
     def kill_tree(self):
         'Kill all processes and child processes'

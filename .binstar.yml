@@ -4,15 +4,15 @@ engine:
 platform:
   - linux-64
   - osx-64
-  - win-64
+ # - win-64
 
 install:
   - conda install binstar pip setuptools
   - pip install coverage mock
 
 test: 
-  python setup.py develop
-  python -m unittest discover -v
+  - python setup.py develop
+  - python -m unittest discover -v
 
 
 script:
