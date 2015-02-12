@@ -10,6 +10,10 @@ install:
   - conda install binstar pip setuptools
   - pip install coverage mock
 
+test: 
+  python -m unittest discover -v
+
+
 script:
   - conda build conda.recipe
 
