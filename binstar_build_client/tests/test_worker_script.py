@@ -22,7 +22,7 @@ class Test(CLITestCase):
     @patch('binstar_build_client.commands.worker.Worker')
     def test_worker_simple(self, urls, Worker):
 
-        main(['--show-traceback', 'worker', '-u', 'username', 'build-queue-1'], False)
+        main(['--show-traceback', 'worker', 'username/queue-1'], False)
         self.assertEqual(Worker().work_forever.call_count, 1)
 
 if __name__ == '__main__':
