@@ -18,6 +18,7 @@ from .utils.buffered_io import BufferedPopen
 from .utils.build_log import BuildLog
 from .utils.script_generator import gen_build_script, \
     EXIT_CODE_OK, EXIT_CODE_ERROR, EXIT_CODE_FAILED
+import inspect
 
 
 log = logging.getLogger('binstar.build')
@@ -35,7 +36,12 @@ def get_my_procs():
                 return False
     else:
         def ismyproc(proc):
-            return proc.uids.real == this_proc.uids.real
+            if inspect.isroutine(this_proc.uids):
+                # psutil >= 2
+                return proc.uids().real == this_proc.uids().real
+            else:
+                # psutil < 2
+                return proc.uids.real == this_proc.uids.real
 
 
     return {proc.pid for proc in psutil.process_iter() if ismyproc(proc)}
