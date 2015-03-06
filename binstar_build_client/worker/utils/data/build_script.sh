@@ -2,6 +2,7 @@
 set +e
 
 export BINSTAR_BUILD_RESULT=""
+export PYTHONUNBUFFERED="TRUE"
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### #### 
 # Binstar defined build helper functions

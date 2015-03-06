@@ -1,5 +1,7 @@
 @echo off
 
+set "PYTHONUNBUFFERED=TRUE"
+
 {% macro set_error(fail_type='error') -%}
 set "BINSTAR_BUILD_RESULT={{fail_type}}" & goto:eof
 {%- endmacro %}
