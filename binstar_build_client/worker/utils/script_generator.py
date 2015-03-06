@@ -54,7 +54,7 @@ def get_channels(job_data):
         except (KeyError, ValueError):
             log.info('Bad channel value %r' % ch)
 
-    channels = ' --channel ' + ' --channel '.join(_channels) if _channels else ''
+    channels = ' --channel ' + ' --channel '.join(_channels) if _channels else 'dev'
     return channels
 
 
