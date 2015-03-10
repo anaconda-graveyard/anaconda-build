@@ -279,6 +279,9 @@ class Worker(object):
                             pass
                         else:
                             build_log.write("    + %s\n" % cmdline)
+            if p0.stdout and not p0.stdout.closed:
+                log.info("Closing subprocess stdout PIPE")
+                p0.stdout.close()
 
 
         return exit_code
