@@ -72,7 +72,9 @@ setup_build(){
     echo "Host:" `hostname`
     echo 'Setting engine'
     
-    
+    echo "conda clean -pt"
+    conda clean -pt
+
     echo "conda-clean-build-dir"
     conda-clean-build-dir
 

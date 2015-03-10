@@ -185,6 +185,9 @@ goto:eof
 
     echo [Setting engine]
 
+    echo conda clean -pt
+    conda clean -pt
+
     echo conda-clean-build-dir
     conda-clean-build-dir
     
