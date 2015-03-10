@@ -279,6 +279,11 @@ class Worker(object):
                             pass
                         else:
                             build_log.write("    + %s\n" % cmdline)
+            print("Close? ", p0.stdout , not p0.stdout.closed)
+            if p0.stdout and not p0.stdout.closed:
+                log.info("Closing PIPE")
+                p0.stdout.close()
+                print("Closed")
 
 
         return exit_code
