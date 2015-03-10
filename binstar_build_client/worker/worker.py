@@ -367,4 +367,4 @@ class Worker(object):
         finally:
             duration = time.time() - start_time
             log.info('Build Duration %i seconds' % duration)
-p
+
