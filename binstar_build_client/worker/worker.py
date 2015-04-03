@@ -81,7 +81,7 @@ class Worker(object):
     def write_status(self, ok=True, msg='ok'):
         if self.args.status_file:
             with open(self.args.status_file, 'w') as fd:
-                fd.write("%i %i '%s'\n" % (int(ok), time.time(), msg))
+                fd.write("%i %i '%s'\n" % (int(not ok), time.time(), msg))
 
     def job_loop(self):
         """
