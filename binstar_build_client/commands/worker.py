@@ -14,6 +14,7 @@ from binstar_client.utils import get_binstar
 import os
 from binstar_build_client.utils import get_conda_root_prefix
 from binstar_client import errors
+import time
 
 
 log = logging.getLogger('binstar.build')
@@ -39,8 +40,13 @@ def main(args):
     log.info('User: %s' % args.username)
     log.info('Queue: %s' % args.queue)
     log.info('Platform: %s' % args.platform)
-    woker = Worker(bs, args)
-    woker.work_forever()
+
+    worker = Worker(bs, args)
+    worker.write_status(True, "Starting")
+    try:
+        worker.work_forever()
+    finally:
+        worker.write_status(False, "Exited")
 
 
 OS_MAP = {'darwin': 'osx', 'windows':'win'}
@@ -113,6 +119,9 @@ def add_parser(subparsers, name='worker',
                         help='Exit main loop after only one build')
     dgroup.add_argument('--push-back', action='store_true',
                         help='Developers only, always push the build *back* onto the build queue')
+
+    dgroup.add_argument('--status-file',
+                        help='If given, binstar will update this file with the time it last checked the anaconda server for updates')
 
     parser.set_defaults(main=main)
 

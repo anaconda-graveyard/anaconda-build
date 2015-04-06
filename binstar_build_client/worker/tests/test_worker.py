@@ -14,6 +14,7 @@ class MockWorker(Worker):
         args = Mock()
         args.hostname = 'test_hostname'
         args.platform = 'test_platform'
+        args.status_file = None
         args.timeout = 100
         Worker.__init__(self, bs, args)
 
