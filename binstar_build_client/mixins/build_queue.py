@@ -110,3 +110,9 @@ class BuildQueueMixin(object):
         self._check_response(res, [201])
         return
 
+    def build_backlog(self, username, queuename):
+        url = '%s/build-queues/%s/%s/jobs' % (self.domain, username, queuename)
+        res = self.session.get(url)
+
+        self._check_response(res, [200])
+        return res.json().get('jobs', [])
