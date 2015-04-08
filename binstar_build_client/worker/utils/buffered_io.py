@@ -7,7 +7,7 @@ Also this adds a new keyword argument iotimeout which will terminate the process
 iotimeout seconds  
 """
 
-from __future__ import print_function
+from __future__ import print_function, unicode_literals, absolute_import
 
 import logging
 from subprocess import Popen, STDOUT, PIPE
@@ -80,18 +80,18 @@ class BufferedPopen(Popen):
     def kill_tree(self):
         'Kill all processes and child processes'
         try:
-            log.warn("Kill Tree parent pid:%s" % self.pid)
+            log.warning("Kill Tree parent pid:%s" % self.pid)
             parent = psutil.Process(self.pid)
         except psutil.NoSuchProcess:
-            log.warn("Parent pid %s is already dead" % self.pid)
+            log.warning("Parent pid %s is already dead" % self.pid)
             # Already dead
             return
 
-        children = parent.get_children(recursive=True)
+        children = parent.children(recursive=True)
 
         self.kill()
         for child in children:
             if child.is_running():
-                log.warn(" - Kill child pid %s" % child.pid)
+                log.warning(" - Kill child pid %s" % child.pid)
                 child.kill()
 

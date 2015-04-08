@@ -1,3 +1,5 @@
+from __future__ import print_function, unicode_literals, absolute_import
+
 import io
 import os
 import unittest
@@ -88,7 +90,7 @@ class Test(unittest.TestCase):
 
         class MyWorker(MockWorker):
             build = Mock()
-            build.side_effect = Exception
+            build.side_effect = Exception("This is an expected test error")
 
         worker = MyWorker()
         worker.args.push_back = False
@@ -105,14 +107,14 @@ class Test(unittest.TestCase):
 
         worker = MockWorker()
         worker.worker_id = 'worker_id'
-        expected = "build source"
+        expected = b"build source"
         worker.bs.fetch_build_source.return_value = io.BytesIO(expected)
 
         filename = worker.download_build_source('job_id')
         self.assertTrue(os.path.isfile(filename))
         self.addCleanup(os.unlink, filename)
 
-        with open(filename) as fd:
+        with open(filename, 'rb') as fd:
             data = fd.read()
         self.assertEqual(data, expected)
 
@@ -161,7 +163,7 @@ class Test(unittest.TestCase):
 
         with self.assertRaises(TypeError):
             for job in worker.job_loop():
-                raise TypeError()
+                raise TypeError("Expected Error")
 
     def test_job_context(self):
 
@@ -187,7 +189,7 @@ class Test(unittest.TestCase):
         journal = io.StringIO()
 
         with worker.job_context(journal, job_data):
-            raise TypeError("hai")
+            raise TypeError("hai -- Expected Error")
 
         value = journal.getvalue()
         expected = 'starting build, test_job_id, job_name\nbuild errored, test_job_id, job_name\n'
