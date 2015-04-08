@@ -1,16 +1,17 @@
 package: binstar-build
 engine:
   - python=2.7
+  - python=3.4
 platform:
   - linux-64
   - osx-64
- # - win-64
+  - win-64
 
 install:
   - conda install binstar pip setuptools
   - pip install coverage mock
 
-test: 
+test:
   - python setup.py develop
   - python -m unittest discover -v
 
