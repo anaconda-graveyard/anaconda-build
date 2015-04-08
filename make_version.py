@@ -2,7 +2,8 @@ from subprocess import check_output
 import os
 
 def git_describe():
-    output = check_output(['git', 'describe', '--always', '--long']).strip().split('-')
+    output = check_output(['git', 'describe', '--always', '--long']).strip()
+    output = output.decode().split('-')
     if len(output) == 3:
         version, build, commit = output
     else:

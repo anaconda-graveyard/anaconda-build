@@ -78,6 +78,11 @@ class Worker(object):
             self.worker_id = worker_id
             self._build_loop()
 
+    def write_status(self, ok=True, msg='ok'):
+        if self.args.status_file:
+            with open(self.args.status_file, 'w') as fd:
+                fd.write("%i %i '%s'\n" % (int(not ok), time.time(), msg))
+
     def job_loop(self):
         """
         An iterator that will yield job_data objects when
@@ -93,7 +98,7 @@ class Worker(object):
             try:
                 job_data = bs.pop_build_job(args.username, args.queue, self.worker_id)
             except errors.NotFound:
-
+                self.write_status(False, "worker not found")
                 if args.show_traceback:
                     raise
                 else:
@@ -105,11 +110,16 @@ class Worker(object):
                 log.error("Trouble connecting to binstar at '%s' " % bs.domain)
                 log.error("Could not retrieve work items")
                 job_data = {}
+                self.write_status(False, "Trouble connecting to binstar")
+
             except errors.ServerError as err:
                 log.exception(err)
                 log.error("There server '%s' returned an error response " % bs.domain)
                 log.error("Could not retrieve work items")
+                self.write_status(False, "Server error")
                 job_data = {}
+            else:
+                self.write_status(True)
 
             if job_data.get('job') is None:
                 if not worker_idle:
