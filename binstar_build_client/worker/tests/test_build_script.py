@@ -1,3 +1,4 @@
+from __future__ import print_function, unicode_literals, absolute_import
 
 from subprocess import Popen, PIPE, STDOUT
 import unittest
@@ -55,14 +56,16 @@ class Test(unittest.TestCase):
 
 
     def test_bad_tarball(self):
-
         build_data = default_build_data()
         script_filename = gen_build_script(build_data, ignore_setup_build=True)
         self.addCleanup(os.unlink, script_filename)
 
         build_tarball = path.join(path.dirname(__file__), 'data', 'does_not_exist.tar.bz2')
+
         p0 = Popen([script_filename, '--build-tarball', build_tarball], stdout=PIPE, stderr=STDOUT)
         self.assertEqual(p0.wait(), 11)
+        p0.stdout.close()
+
 
     def test_instructions_success(self):
 
@@ -75,7 +78,7 @@ class Test(unittest.TestCase):
         p0 = Popen([script_filename], stdout=PIPE, stderr=STDOUT)
         return_code = p0.wait()
         self.assertEqual(return_code, 0,)
-        output = p0.stdout.read()
+        output = p0.stdout.read().decode()
         self.assertIn("Exit BINSTAR_BUILD_RESULT=success", output)
 
         self.assertInOrdered(['UNIQUE INSTALL MARKER',
@@ -85,6 +88,7 @@ class Test(unittest.TestCase):
                               'UNIQUE AFTER SUCCESS MARKER',
                               'UNIQUE AFTER SCRIPT MARKER',
                               ], output)
+        p0.stdout.close()
 
     def test_instructions_error(self):
 
@@ -97,7 +101,7 @@ class Test(unittest.TestCase):
         self.addCleanup(os.unlink, script_filename)
         p0 = Popen([script_filename], stdout=PIPE, stderr=STDOUT)
         return_code = p0.wait()
-        output = p0.stdout.read()
+        output = p0.stdout.read().decode()
         self.assertEqual(return_code, 11)
 
         self.assertIn("Exit BINSTAR_BUILD_RESULT=error", output)
@@ -106,6 +110,7 @@ class Test(unittest.TestCase):
                               'UNIQUE AFTER ERROR MARKER',
                               'UNIQUE AFTER SCRIPT MARKER',
                               ], output)
+        p0.stdout.close()
 
     def test_instructions_failure(self):
 
@@ -118,7 +123,7 @@ class Test(unittest.TestCase):
         self.addCleanup(os.unlink, script_filename)
         p0 = Popen([script_filename], stdout=PIPE, stderr=STDOUT)
         return_code = p0.wait()
-        output = p0.stdout.read()
+        output = p0.stdout.read().decode()
         self.assertEqual(return_code, 12)
 
         self.assertIn("Exit BINSTAR_BUILD_RESULT=failure", output)
@@ -127,6 +132,8 @@ class Test(unittest.TestCase):
                               'UNIQUE AFTER FAILURE MARKER',
                               'UNIQUE AFTER SCRIPT MARKER',
                               ], output)
+
+        p0.stdout.close()
 
     def test_instructions_failure2(self):
 
@@ -139,7 +146,7 @@ class Test(unittest.TestCase):
         self.addCleanup(os.unlink, script_filename)
         p0 = Popen([script_filename], stdout=PIPE, stderr=STDOUT)
         return_code = p0.wait()
-        output = p0.stdout.read()
+        output = p0.stdout.read().decode()
         self.assertEqual(return_code, 12)
 
         self.assertIn("Exit BINSTAR_BUILD_RESULT=failure", output)
@@ -149,6 +156,7 @@ class Test(unittest.TestCase):
                               'UNIQUE AFTER FAILURE MARKER',
                               'UNIQUE AFTER SCRIPT MARKER',
                               ], output)
+        p0.stdout.close()
 
 
 if __name__ == "__main__":

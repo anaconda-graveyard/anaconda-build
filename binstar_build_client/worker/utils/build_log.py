@@ -1,13 +1,12 @@
 """
 Write IO back to build log on the binstar server
 """
+from __future__ import print_function, unicode_literals, absolute_import
+
 import logging
 import sys
 from threading import Lock, Thread, Event
 import traceback
-
-from binstar_client import errors
-
 from requests import ConnectionError
 
 log = logging.getLogger(__name__)

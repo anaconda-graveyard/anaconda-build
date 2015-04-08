@@ -1,13 +1,15 @@
-from __future__ import print_function
+from __future__ import print_function, unicode_literals, absolute_import
+
+import json
 import logging
 import os
 from os.path import basename, abspath
 
 from binstar_build_client.worker.utils.streamio import IOStream
 from binstar_build_client.worker.worker import Worker
-from requests import ConnectionError
 from binstar_client import errors
-import json
+from requests import ConnectionError
+
 
 log = logging.getLogger("binstar.build")
 

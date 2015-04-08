@@ -1,6 +1,8 @@
 """
 Threaded class to stream io from an iterator to a writeable file object
 """
+from __future__ import print_function, unicode_literals, absolute_import
+
 import logging
 from threading import Thread, Event
 import time
@@ -19,6 +21,10 @@ def stream_line_iterator(stream):
         yield data
         data = stream.readline()
 
+try:
+    unicode
+except NameError:
+    unicode = str
 
 class IOStream(Thread):
     """
@@ -32,7 +38,7 @@ class IOStream(Thread):
     """
     def __init__(self, line_iterator, outstream, iotimeout=None, timeout=None, timeout_callback=None):
 
-        if isinstance(line_iterator, file):
+        if hasattr(line_iterator, 'readline'):
             line_iterator = stream_line_iterator(line_iterator)
 
         self.line_iterator = line_iterator
@@ -51,6 +57,11 @@ class IOStream(Thread):
         try:
 
             for line in self.line_iterator:
+
+                # Python 3
+                if not isinstance(line, unicode):
+                    line = line.decode()
+
                 self._last_io = time.time()
                 self.outstream.write(line)
                 # self.outstream.flush()
