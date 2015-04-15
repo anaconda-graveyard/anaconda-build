@@ -1,7 +1,7 @@
 '''
 Build Queue
 '''
-from __future__ import (print_function, unicode_literals, division,
+from __future__ import (print_function, division,
     absolute_import)
 from binstar_client.utils import get_binstar, bool_input
 from binstar_build_client import BinstarBuildAPI

@@ -6,7 +6,7 @@ See also:
   * [Save and Trigger Your Builds](http://docs.binstar.org/examples.html#SaveAndTriggerYourBuilds)
 '''
 
-from __future__ import (print_function, unicode_literals, division,
+from __future__ import (print_function, division,
     absolute_import)
 
 from argparse import RawDescriptionHelpFormatter

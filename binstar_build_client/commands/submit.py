@@ -10,7 +10,7 @@ See also:
 
 '''
 
-from __future__ import (print_function, unicode_literals, division,
+from __future__ import (print_function, division,
     absolute_import)
 
 from argparse import RawDescriptionHelpFormatter
