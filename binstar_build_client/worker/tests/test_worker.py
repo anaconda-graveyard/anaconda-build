@@ -142,7 +142,7 @@ class Test(unittest.TestCase):
 
         popen_args = BufferedPopen.call_args[0][0]
         expected_args = ['script_filename', '--api-token', 'upload_token', '--build-tarball', 'build_source_filename']
-        self.assertTrue(popen_args[0].endswith('/script_filename'))
+        self.assertTrue(popen_args[0].endswith(os.sep + 'script_filename'))
         self.assertEqual(popen_args[1:], expected_args[1:])
         popen_kwargs = BufferedPopen.call_args[1]
         self.assertEqual(popen_kwargs['iotimeout'], 61)

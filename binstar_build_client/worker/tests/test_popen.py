@@ -11,7 +11,7 @@ skipPosix = unittest.skipIf(os.name != 'nt', 'This test does not run on Posix')
 
 class Test(unittest.TestCase):
 
-
+    @skipWindows
     def test_stdout(self):
         stdout = StringIO()
         p0 = BufferedPopen(['echo', 'hello'], stdout=stdout)
@@ -59,7 +59,7 @@ class Test(unittest.TestCase):
         returncode = p0.wait()
         self.assertIn('hello', stdout.getvalue())
         self.assertIn('Timeout: No output from program for 1 seconds', stdout.getvalue())
-        self.assertFalse(p0._io_thread.isAlive())
+        self.assertFalse(p0._iostream.isAlive())
 
 
 if __name__ == "__main__":
