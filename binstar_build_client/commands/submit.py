@@ -5,8 +5,8 @@ Submit a build from your local path or  via a git url:
 
 See also: 
 
-  * [Submit Your First Build](http://docs.binstar.org/examples.html#SubmitYourFirstBuild)
-  * [Submit A Build From Github](http://docs.binstar.org/examples.html#SubmitABuildFromGithub)
+  * [Submit Your First Build](http://docs.anaconda.org/examples.html#SubmitYourFirstBuild)
+  * [Submit A Build From Github](http://docs.anaconda.org/examples.html#SubmitABuildFromGithub)
 
 '''
 
@@ -106,7 +106,7 @@ def print_build_results(args, build):
     log.info('')
     build_result_url = build.get('url')
     if not build_result_url:
-        build_result_url = 'http://alpha.binstar.org/%s/%s/builds/matrix/%s' % (args.package.user, args.package.name, build['build_no'])
+        build_result_url = 'http://alpha.anaconda.org/%s/%s/builds/matrix/%s' % (args.package.user, args.package.name, build['build_no'])
     log.info('To view this build go to %s' % build_result_url)
     log.info('')
     log.info('You may also run\n\n    binstar-build tail -f %s/%s %s\n' % (args.package.user, args.package.name, build['build_no']))

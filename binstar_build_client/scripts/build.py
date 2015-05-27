@@ -8,7 +8,7 @@ To get started with binstar build run:
 
 See also: 
 
-  * [Binstar Build](http://docs.binstar.org/examples.html#BinstarBuild)
+  * [Binstar Build](http://docs.anaconda.org/examples.html#BinstarBuild)
   
 '''
 

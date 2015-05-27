@@ -173,7 +173,7 @@ class Worker(object):
 
     def _build_loop(self):
         """
-        This is the main build loop this checks binstar.org for any jobs it can do and 
+        This is the main build loop this checks anaconda.org for any jobs it can do and 
         """
 
         with open(self.JOURNAL_FILE, 'a') as journal:
