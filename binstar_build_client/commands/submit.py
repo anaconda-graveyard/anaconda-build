@@ -106,7 +106,7 @@ def print_build_results(args, build):
     log.info('')
     build_result_url = build.get('url')
     if not build_result_url:
-        build_result_url = 'http://alpha.anaconda.org/%s/%s/builds/matrix/%s' % (args.package.user, args.package.name, build['build_no'])
+        build_result_url = 'http://anaconda.org/%s/%s/builds/matrix/%s' % (args.package.user, args.package.name, build['build_no'])
     log.info('To view this build go to %s' % build_result_url)
     log.info('')
     log.info('You may also run\n\n    binstar-build tail -f %s/%s %s\n' % (args.package.user, args.package.name, build['build_no']))

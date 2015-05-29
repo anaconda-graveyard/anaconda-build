@@ -28,7 +28,7 @@ def main(args):
                                filter_platform=args.platform)
 
     log.info('')
-    log.info('To view this build go to http://alpha.anaconda.org/%s/%s/builds/matrix/%s' % (args.package.user, args.package.name, build_no))
+    log.info('To view this build go to http://anaconda.org/%s/%s/builds/matrix/%s' % (args.package.user, args.package.name, build_no))
     log.info('')
     log.info('You may also run\n\n    binstar-build tail -f %s/%s %s\n' % (args.package.user, args.package.name, build_no))
     log.info('')
