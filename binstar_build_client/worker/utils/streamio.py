@@ -57,14 +57,15 @@ class IOStream(Thread):
         try:
 
             for line in self.line_iterator:
+                try:
+                    # Python 3
+                    if not isinstance(line, unicode):
+                        line = line.decode(errors='replace')
 
-                # Python 3
-                if not isinstance(line, unicode):
-                    line = line.decode()
-
-                self._last_io = time.time()
-                self.outstream.write(line)
-                # self.outstream.flush()
+                    self._last_io = time.time()
+                    self.outstream.write(line)
+                except Exception as err:
+                    log.exception(err)
 
                 if getattr(self.outstream, 'terminate_build', False):
                     self.timeout_callback(reason='user_request')
