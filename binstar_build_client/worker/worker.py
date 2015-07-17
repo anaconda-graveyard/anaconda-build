@@ -181,13 +181,39 @@ class Worker(object):
                 with self.job_context(journal, job_data):
                     self._handle_job(job_data)
 
+    def working_dir(self, build_data):
+
+        owner = build_data['owner']['login']
+        package = build_data['package']['name']
+
+        working_dir = os.path.abspath(os.path.join('builds', owner, package))
+
+        return working_dir
+
+    def build_logfile(self, build_data):
+
+        working_dir = self.working_dir(build_data)
+        filename = os.path.abspath(os.path.join(working_dir, 'build-log.txt'))
+
+        log.info("Writing build log to file %s" % filename)
+        return filename
 
     def build(self, job_data):
         """
         Run a single build 
         """
         job_id = job_data['job']['_id']
-        with BuildLog(self.bs, self.args.username, self.args.queue, self.worker_id, job_id) as build_log:
+
+        working_dir = self.working_dir(job_data)
+
+        log.info("Creating working dir: %s" % working_dir)
+        rm_rf(working_dir)
+        os.makedirs(working_dir)
+
+        build_log = BuildLog(self.bs, self.args.username, self.args.queue, self.worker_id, job_id,
+                             filename=self.build_logfile(job_data))
+
+        with build_log:
 
 
             instructions = job_data['build_item_info'].get('instructions')
@@ -215,6 +241,7 @@ class Worker(object):
                 build_filename = None
 
             with remove_files_after(files):
+
                 exit_code = self.run(job_data, script_filename, build_log,
                                      timeout, iotimeout,
                                      api_token, git_oauth_token, build_filename,
@@ -243,13 +270,9 @@ class Worker(object):
     def run(self, build_data, script_filename, build_log, timeout, iotimeout,
             api_token=None, git_oauth_token=None, build_filename=None, instructions=None):
 
+        log.info("Running build script")
 
-        owner = build_data['owner']['login']
-        package = build_data['package']['name']
-
-        working_dir = os.path.abspath(os.path.join('builds', owner, package))
-        rm_rf(working_dir)
-        os.makedirs(working_dir)
+        working_dir = self.working_dir(build_data)
 
         args = [os.path.abspath(script_filename), '--api-token', api_token]
 
