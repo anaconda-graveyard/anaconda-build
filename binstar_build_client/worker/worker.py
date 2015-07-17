@@ -19,6 +19,7 @@ from .utils.build_log import BuildLog
 from .utils.script_generator import gen_build_script, \
     EXIT_CODE_OK, EXIT_CODE_ERROR, EXIT_CODE_FAILED
 import inspect
+import subprocess as sp
 
 
 log = logging.getLogger('binstar.build')
@@ -289,7 +290,8 @@ class Worker(object):
         if self.args.show_new_procs:
             already_running_procs = get_my_procs()
 
-        p0 = BufferedPopen(args, stdout=build_log, iotimeout=iotimeout, cwd=working_dir)
+        p0 = BufferedPopen(args, stdout=build_log, iotimeout=iotimeout, cwd=working_dir, stdin=sp.PIPE)
+        p0.stdin.close()
 
         try:
             exit_code = p0.wait()
