@@ -1,1 +1,3 @@
 recursive-include binstar_build_client *.txt *.html *.sh *.bat
+include versioneer.py
+include binstar_build_client/_version.py
