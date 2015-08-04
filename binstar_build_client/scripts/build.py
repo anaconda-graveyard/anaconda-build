@@ -26,7 +26,7 @@ from clyent import add_subparser_modules
 
 logger = logging.getLogger('binstar')
 
-description = 'Binstar build client for continuous integration, testing and building packages'
+description = 'Anaconda build client for continuous integration, testing and building packages'
 def add_parser(subparsers):
     parser = subparsers.add_parser('build',
                                       help=description,
@@ -38,7 +38,7 @@ def add_parser(subparsers):
 
 
 def main(args=None, exit=True):
-    description = 'Binstar build client for continuous integration, testing and building packages'
+    description = 'Anaconda build client for continuous integration, testing and building packages'
 
     return binstar_main(commands, args, exit,
                         epilog=__doc__, description=description,
