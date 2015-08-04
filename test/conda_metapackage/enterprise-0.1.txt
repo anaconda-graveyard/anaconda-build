@@ -56,7 +56,7 @@ Rev    |                           Name | Package Types   | Summary
 0      |                        wtforms | conda           | http://wtforms.simplecodes.com/
 
 To a package with conda run:
-     conda install --channel https://conda.binstar.org/t/$TOKEN/wakari/enterprise-0.1 <PACKAGE>
+     conda install --channel https://conda.anaconda.org/t/$TOKEN/wakari/enterprise-0.1 <PACKAGE>
 
 To generate a $TOKEN run:
     TOKEN=$(binstar auth --create --name <TOKEN-NAME>)

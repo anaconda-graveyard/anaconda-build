@@ -8,7 +8,7 @@ To get started you must have:
 
 .. _Anaconda: http://docs.continuum.io/anaconda/install.html
 
-.. _Binstar: https://binstar.org/
+.. _Binstar: https://anaconda.org/
 
 If you are not using Anaconda 1.6+ install the binstar command line client::
 
@@ -68,4 +68,4 @@ Since it is your first time creating a package and release you will be prompted 
 
 You will see a ``done`` printed out to confirm you have successfully uploaded your Conda package to Binstar. 
 
-See the package on 'https://binstar.org/<username>/<package_name>'
+See the package on 'https://anaconda.org/<username>/<package_name>'
