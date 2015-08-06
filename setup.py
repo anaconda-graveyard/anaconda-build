@@ -15,7 +15,7 @@ setup(
     author_email='srossross@gmail.com',
     url='http://github.com/Binstar/binstar_client',
     packages=find_packages(),
-    install_requires=['conda-server',
+    install_requires=['anaconda-client',
                       'jinja2', 'psutil'],
 
     include_package_data=True,
