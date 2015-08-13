@@ -15,6 +15,7 @@ try:
     unicode
 except NameError:
     unicode = str
+    basestring = (str,bytes)
 
 log = logging.getLogger(__name__)
 
@@ -66,11 +67,6 @@ def get_files(context, job_data):
     build_targets = job_data['build_item_info'].get('instructions', {}).get('build_targets')
     if not build_targets:
         return []
-    try:
-        unicode
-    except NameError:
-        # 'unicode' is undefined, must be Python 3
-        basestring = (str,bytes)
     if isinstance(build_targets, basestring):
         build_targets = [build_targets]
     elif isinstance(build_targets, dict):
