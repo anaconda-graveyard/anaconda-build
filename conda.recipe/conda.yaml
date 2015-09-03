@@ -16,7 +16,7 @@ requirements:
     - setuptools
   run:
     - python
-    - conda-server
+    - anaconda-client
     - pywin32 [win]
 
 about:
