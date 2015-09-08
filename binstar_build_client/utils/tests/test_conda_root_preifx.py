@@ -20,7 +20,7 @@ class Test(unittest.TestCase):
     def test_finds_conda(self, listdir, isdir):
         listdir.return_value = [CONDA_EXE, 'not_conda']
         prefix = get_conda_root_prefix()
-        self.assertEqual(prefix, '/a')
+        self.assertTrue(prefix in ('/a', "C://a"))
 
 
 
