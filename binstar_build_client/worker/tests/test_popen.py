@@ -52,11 +52,11 @@ class Test(unittest.TestCase):
     def test_iotimeout_win(self):
         stdout = io.StringIO()
         p0 = BufferedPopen(['cmd', '/c', 'echo hello && sleep 100 && echo goodby'], stdout=stdout, iotimeout=1)
-        self.assertTrue(p0._io_thread.isAlive())
+        self.assertTrue(p0._io_stream.isAlive())
         returncode = p0.wait()
         self.assertIn('hello', stdout.getvalue())
         self.assertIn('Timeout: No output from program for 1 seconds', stdout.getvalue())
-        self.assertTrue(not hasattr(p0, '_io_thread') or not p0._io_thread.isAlive())
+        self.assertFalse(p0._io_stream.isAlive())
 
 
 if __name__ == "__main__":
