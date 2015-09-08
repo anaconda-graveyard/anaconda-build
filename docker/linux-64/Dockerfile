@@ -1,10 +1,8 @@
-
 FROM binstar/build-base:centos6
 
-MAINTAINER Sean Ross-Ross <srossross@gmail.com>
+MAINTAINER Kamil Kwiek <kamil.kwiek@continuum.io>
 
 RUN useradd binstar
-
 RUN chown binstar:binstar -R /opt/miniconda
 
 USER binstar
@@ -15,7 +13,23 @@ ENV PATH /opt/miniconda/bin:$PATH
 
 RUN conda config --set always_yes true && \
     conda config --set binstar_upload false && \
-    conda config --add channels binstar
-RUN conda install conda-build jinja2 binstar psutil binstar-build llvm gcc
-RUN binstar config --set sites.binstar.url "https://api.anaconda.org"
+        conda config --add channels binstar
+RUN conda install jinja2 psutil anaconda-client anaconda-build llvm gcc && \
+    binstar config --set sites.binstar.url "https://api.anaconda.org"
+
+USER root
+WORKDIR /root
+
+RUN yum install -y curl-devel expat-devel gettext-devel openssl-devel zlib-devel perl-ExtUtils-MakeMaker
+RUN yum remove -y git && \
+    wget -q https://www.kernel.org/pub/software/scm/git/git-2.1.0.tar.gz && \
+    tar -xzf git-2.1.0.tar.gz && \
+    cd git-2.1.0 && \
+    make prefix=/usr/local/git all && \
+    make prefix=/usr/local/git install && \
+    echo "export PATH=\$PATH:/usr/local/git/bin" >> /etc/bashrc && \
+    ln -s /usr/local/git/bin/git /usr/bin/git
+
+USER binstar
+WORKDIR /home/binstar
 
