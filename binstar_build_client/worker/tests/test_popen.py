@@ -55,7 +55,7 @@ class Test(unittest.TestCase):
         returncode = p0.wait()
         self.assertIn('hello', stdout.getvalue())
         self.assertIn('Timeout: No output from program for 1 seconds', stdout.getvalue())
-        self.assertFalse(p0._io_stream.isAlive())
+        self.assertFalse(p0._iostream.isAlive())
 
 
 if __name__ == "__main__":
