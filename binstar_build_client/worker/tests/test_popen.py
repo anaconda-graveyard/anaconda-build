@@ -55,6 +55,7 @@ class Test(unittest.TestCase):
         returncode = p0.wait()
         self.assertIn('hello', stdout.getvalue())
         self.assertIn('Timeout: No output from program for 1 seconds', stdout.getvalue())
+        self.assertTrue(hasattr(p0, '_iostream'))
         self.assertFalse(p0._iostream.isAlive())
 
 
