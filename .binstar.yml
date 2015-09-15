@@ -8,7 +8,7 @@ platform:
   - win-64
 
 install:
-  - conda install binstar pip setuptools
+  - conda install anaconda-client pip setuptools
   - pip install coverage mock
 
 test:
