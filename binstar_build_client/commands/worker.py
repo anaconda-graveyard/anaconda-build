@@ -5,13 +5,17 @@ Build worker
 from __future__ import (print_function, unicode_literals, division,
     absolute_import)
 
+from tempfile import NamedTemporaryFile
 import logging
+import subprocess as sp
 import platform
-
 from binstar_build_client import BinstarBuildAPI
 from binstar_build_client.worker.worker import Worker
+from binstar_build_client.worker.utils.buffered_io import BufferedPopen
 from binstar_client.utils import get_binstar
 import os
+import sys
+import json
 from binstar_build_client.utils import get_conda_root_prefix
 from binstar_client import errors
 import time
@@ -40,8 +44,7 @@ def main(args):
     log.info('User: %s' % args.username)
     log.info('Queue: %s' % args.queue)
     log.info('Platform: %s' % args.platform)
-
-    worker = Worker(bs, args)
+    worker = Worker(bs, args, args.worker_id)
     worker.write_status(True, "Starting")
     try:
         worker.work_forever()
@@ -83,8 +86,15 @@ def add_parser(subparsers, name='worker',
                                    )
 
     conda_platform = get_platform()
+    parser.add_argument('username', metavar='OWNER/QUEUE',
+                        help='The queue to pull builds from')
+
     parser.add_argument('queue', metavar='OWNER/QUEUE',
                         help='The queue to pull builds from')
+    
+    parser.add_argument('worker_id', 
+                        help='Worker id from anaconda build worker')
+    
     parser.add_argument('-p', '--platform',
                         default=conda_platform,
                         help='The platform this worker is running on (default: %(default)s)')
@@ -124,6 +134,7 @@ def add_parser(subparsers, name='worker',
                         help='If given, binstar will update this file with the time it last checked the anaconda server for updates')
 
     parser.set_defaults(main=main)
+
 
     return parser
 

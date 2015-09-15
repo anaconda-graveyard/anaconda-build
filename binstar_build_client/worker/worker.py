@@ -65,18 +65,16 @@ class Worker(object):
     JOURNAL_FILE = 'journal.csv'
     SLEEP_TIME = 10
 
-    def __init__(self, bs, args):
+    def __init__(self, bs, args, worker_id):
         self.bs = bs
         self.args = args
-
+        self.worker_id = worker_id
     def work_forever(self):
         """
         Start a loop and continuously build forever
         """
         log.info('Working Forever')
-        with self.worker_context() as worker_id:
-            self.worker_id = worker_id
-            self._build_loop()
+        self._build_loop()
 
     def write_status(self, ok=True, msg='ok'):
         if self.args.status_file:
