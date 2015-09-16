@@ -16,6 +16,7 @@ from binstar_build_client.utils import get_conda_root_prefix
 from binstar_client import errors
 import time
 
+get_conda_root_prefix = lambda: '/opt/anaconda'
 
 log = logging.getLogger('binstar.build')
 
@@ -24,7 +25,7 @@ def main(args):
 
     args.conda_build_dir = args.conda_build_dir.format(args=args)
     bs = get_binstar(args, cls=BinstarBuildAPI)
-
+    build_users = args.build_users.split(',')
     if args.queue.count('/') == 1:
         username, queue = args.queue.split('/', 1)
         args.username = username
@@ -41,7 +42,7 @@ def main(args):
     log.info('Queue: %s' % args.queue)
     log.info('Platform: %s' % args.platform)
 
-    worker = Worker(bs, args)
+    worker = Worker(bs, args, build_users)
     worker.write_status(True, "Starting")
     try:
         worker.work_forever()
@@ -85,6 +86,7 @@ def add_parser(subparsers, name='worker',
     conda_platform = get_platform()
     parser.add_argument('queue', metavar='OWNER/QUEUE',
                         help='The queue to pull builds from')
+    parser.add_argument('build_users',help="Comma-separated list of users.")
     parser.add_argument('-p', '--platform',
                         default=conda_platform,
                         help='The platform this worker is running on (default: %(default)s)')
