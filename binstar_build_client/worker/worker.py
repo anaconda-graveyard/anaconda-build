@@ -209,10 +209,7 @@ class Worker(object):
         self.busy = {key:False for key in self.build_users}
         with open(self.JOURNAL_FILE, 'a') as journal:
             for job_data in self.job_loop():
-               # log.info('job_data %r' % (job_data,))
-                #log.info('self.__dict__ %r' % (self.__dict__,))
-                #log.info('args %r' %(self.args.__dict__,))
-                with self.job_context(journal, job_data):
+               with self.job_context(journal, job_data):
                     self._handle_job(job_data)
 
     def working_dir(self, build_data):
