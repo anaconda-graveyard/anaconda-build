@@ -7,7 +7,7 @@ import json
 import pickle
 import sys
 from tempfile import NamedTemporaryFile
-from binstar_build_client.worker.worker import Worker
+from binstar_build_client.worker.su_worker import SuWorker
 import logging
 import os
 log = logging.getLogger('binstar.build')
@@ -15,7 +15,7 @@ def main(args):
     build_user, job_data, worker_self = pickle.load(open(args.pickled))
     os.remove(args.pickled)
     bs = get_binstar(args, cls=BinstarBuildAPI)
-    worker = Worker(bs, worker_self['args'], [build_user])
+    worker = SuWorker(bs, worker_self['args'], [build_user])
     worker.__dict__.update(worker_self)
     build_results = json.dumps(worker.build(job_data))
     log.info('build results:\n' + build_results)

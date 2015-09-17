@@ -9,20 +9,22 @@ import logging
 import platform
 
 from binstar_build_client import BinstarBuildAPI
-from binstar_build_client.worker.worker import Worker
+from binstar_build_client.worker.su_worker import SuWorker
 from binstar_client.utils import get_binstar
 import os
 from binstar_build_client.utils import get_conda_root_prefix
 from binstar_client import errors
 import time
+from .worker import OS_MAP, ARCH_MAP, get_platform, get_dist
+get_conda_root_prefix = lambda: '/opt/anaconda'
 
 log = logging.getLogger('binstar.build')
-
 
 def main(args):
 
     args.conda_build_dir = args.conda_build_dir.format(args=args)
     bs = get_binstar(args, cls=BinstarBuildAPI)
+    build_users = args.build_users.split(',')
     if args.queue.count('/') == 1:
         username, queue = args.queue.split('/', 1)
         args.username = username
@@ -39,7 +41,7 @@ def main(args):
     log.info('Queue: %s' % args.queue)
     log.info('Platform: %s' % args.platform)
 
-    worker = Worker(bs, args)
+    worker = SuWorker(bs, args, build_users)
     worker.write_status(True, "Starting")
     try:
         worker.work_forever()
@@ -47,31 +49,7 @@ def main(args):
         worker.write_status(False, "Exited")
 
 
-OS_MAP = {'darwin': 'osx', 'windows':'win'}
-ARCH_MAP = {'x86': '32',
-            'i686': '32',
-            'x86_64': '64',
-			'amd64' : '64',
-            }
-
-def get_platform():
-    operating_system = platform.system().lower()
-    arch = platform.machine().lower()
-    return '%s-%s' % (OS_MAP.get(operating_system, operating_system),
-                      ARCH_MAP.get(arch, arch))
-
-def get_dist():
-    if platform.dist()[0]:
-        return platform.dist()[0].lower()
-    elif platform.mac_ver()[0]:
-        darwin_version = platform.mac_ver()[0].rsplit('.', 1)[0]
-        return 'darwin%s' % darwin_version
-    elif platform.win32_ver()[0]:
-        return platform.win32_ver()[0].lower()
-    return 'unknown'
-
-
-def add_parser(subparsers, name='worker',
+def add_parser(subparsers, name='su_worker',
                description='Run a build worker to build jobs off of a binstar build queue',
                epilog=__doc__):
 
@@ -83,6 +61,7 @@ def add_parser(subparsers, name='worker',
     conda_platform = get_platform()
     parser.add_argument('queue', metavar='OWNER/QUEUE',
                         help='The queue to pull builds from')
+    parser.add_argument('build_users',help="Comma-separated list of users.")
     parser.add_argument('-p', '--platform',
                         default=conda_platform,
                         help='The platform this worker is running on (default: %(default)s)')
