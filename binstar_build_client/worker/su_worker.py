@@ -70,6 +70,9 @@ is_root_install = '/opt/anaconda' in sys.prefix
 has_etc_worker_skel = os.path.isdir('/etc/worker-skel')
 
 def validate_su_worker(build_user):
+    if build_user == 'root':
+        raise errors.BinstarError('Do NOT make root the build_user.  ' +\
+                                 'The home directory of build_user is DELETED.')
     if not is_root:
         raise errors.BinstarError('su_worker must be run as root. Got %r' % is_root)
     if not is_root_install:
