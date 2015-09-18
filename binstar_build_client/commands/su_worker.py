@@ -24,7 +24,6 @@ def main(args):
 
     args.conda_build_dir = args.conda_build_dir.format(args=args)
     bs = get_binstar(args, cls=BinstarBuildAPI)
-    build_users = args.build_users.split(',')
     if args.queue.count('/') == 1:
         username, queue = args.queue.split('/', 1)
         args.username = username
@@ -41,7 +40,7 @@ def main(args):
     log.info('Queue: %s' % args.queue)
     log.info('Platform: %s' % args.platform)
 
-    worker = SuWorker(bs, args, build_users)
+    worker = SuWorker(bs, args, args.build_user)
     worker.write_status(True, "Starting")
     try:
         worker.work_forever()
@@ -61,7 +60,8 @@ def add_parser(subparsers, name='su_worker',
     conda_platform = get_platform()
     parser.add_argument('queue', metavar='OWNER/QUEUE',
                         help='The queue to pull builds from')
-    parser.add_argument('build_users',help="Comma-separated list of users.")
+    parser.add_argument('build_user',
+                        help="Build user whose home directory is DELETED on each build.")
     parser.add_argument('-p', '--platform',
                         default=conda_platform,
                         help='The platform this worker is running on (default: %(default)s)')
