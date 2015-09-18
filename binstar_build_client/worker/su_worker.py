@@ -17,6 +17,7 @@ import json
 import pickle
 import shutil
 import sys
+import pipes
 from tempfile import NamedTemporaryFile
 from .utils.buffered_io import BufferedPopen
 from .utils.build_log import BuildLog
@@ -168,8 +169,8 @@ class SuWorker(Worker):
         
         if self.args.show_new_procs:
             already_running_procs = get_my_procs()
-        args = self.su_with_env(" ".join(args))
-        log.info(" ".join(("%s" if idx != 3 else "'%s'") % a  for idx,a in enumerate(args)))
+        args = self.su_with_env(" ".join(pipes.quote(arg) for arg in args))
+        log.info(args)
         p0 = BufferedPopen(args, stdout=build_log, iotimeout=iotimeout, cwd=working_dir)
 
         try:
