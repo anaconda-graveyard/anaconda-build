@@ -65,7 +65,7 @@ def cmd(cmd):
     proc.wait()
     return stdout.getvalue()
 
-is_root = 'root' in cmd(['whoami']).strip()
+is_root = os.getuid() == 0
 is_root_install = '/opt/anaconda' in sys.prefix
 has_etc_worker_skel = os.path.isdir('/etc/worker-skel')
 
@@ -165,19 +165,18 @@ class SuWorker(Worker):
             args.extend(['--build-tarball', build_filename])
 
         log.info("Running command: (iotimeout=%s)" % iotimeout)
-        log.info(" ".join(args))
-
+        
         if self.args.show_new_procs:
             already_running_procs = get_my_procs()
         args = self.su_with_env(" ".join(args))
+        log.info(" ".join(("%s" if idx != 3 else "'%s'") % a  for idx,a in enumerate(args)))
         p0 = BufferedPopen(args, stdout=build_log, iotimeout=iotimeout, cwd=working_dir)
 
         try:
             exit_code = p0.wait()
         except BaseException:
             log.error("Binstar build process caught an exception while waiting for the build to finish")
-            p0.kill_tree()
-            p0.wait()
+            self.destroy_user_procs()
             raise
         finally:
             if self.args.show_new_procs:
