@@ -75,7 +75,8 @@ def get_files(context, job_data):
     if 'conda' in build_targets:
         idx = build_targets.index('conda')
         conda_build_dir = context['conda_build_dir']
-        build_targets[idx] = os.path.join(conda_build_dir, '*.tar.bz2')
+        expected_files = '{}*.tar.bz2'.format(context["package"]["name"])
+        build_targets[idx] = os.path.join(conda_build_dir, expected_files)
 
     if 'pypi' in build_targets:
         idx = build_targets.index('pypi')
