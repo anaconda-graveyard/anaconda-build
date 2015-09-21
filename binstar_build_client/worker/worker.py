@@ -61,7 +61,6 @@ class Worker(object):
     """
     
     """
-    STATE_FILE = 'worker.yaml'
     JOURNAL_FILE = 'journal.csv'
     SLEEP_TIME = 10
 
