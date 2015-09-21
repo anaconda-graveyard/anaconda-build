@@ -1,5 +1,8 @@
 '''
-Build worker 
+Build worker that runs as a root main process and uses su - build_user
+to run builds as a lesser user.  The lesser user is named at startup, and 
+it is important to note that the home directory of the build_user is 
+destroyed and recreated from /etc/worker-skel on each build. 
 '''
 
 from __future__ import (print_function, unicode_literals, division,
@@ -9,19 +12,23 @@ import logging
 import platform
 
 from binstar_build_client import BinstarBuildAPI
-from binstar_build_client.worker.su_worker import SuWorker
+from binstar_build_client.worker.su_worker import SuWorker, SU_WORKER_DEFAULT_PATH
 from binstar_client.utils import get_binstar
 import os
 from binstar_build_client.utils import get_conda_root_prefix
 from binstar_client import errors
 import time
 from .worker import OS_MAP, ARCH_MAP, get_platform, get_dist
-get_conda_root_prefix = lambda: '/opt/anaconda'
 
 log = logging.getLogger('binstar.build')
 
 def main(args):
 
+    python_install_dir = getattr(args, 'python_install_dir', SU_WORKER_DEFAULT_PATH)
+    if args.conda_build_dir is None:
+        args.conda_build_dir = os.path.join(python_install_dir, 
+                                            'conda-bld', 
+                                            '{args.platform}')
     args.conda_build_dir = args.conda_build_dir.format(args=args)
     bs = get_binstar(args, cls=BinstarBuildAPI)
     if args.queue.count('/') == 1:
@@ -34,13 +41,12 @@ def main(args):
         args.queue = queue
     else:
         raise errors.UserError("Build queue must be of the form build-USERNAME-QUEUENAME or USERNAME/QUEUENAME")
-
     log.info('Starting worker:')
     log.info('User: %s' % args.username)
     log.info('Queue: %s' % args.queue)
     log.info('Platform: %s' % args.platform)
 
-    worker = SuWorker(bs, args, args.build_user)
+    worker = SuWorker(bs, args, args.build_user, python_install_dir)
     worker.write_status(True, "Starting")
     try:
         worker.work_forever()
@@ -78,10 +84,12 @@ def add_parser(subparsers, name='su_worker',
                         dest='timeout',
                         help='Force jobs to stop after they exceed duration (default: %(default)s)', default=60 * 60 * 60)
 
+    parser.add_argument('--python-install-dir', default=SU_WORKER_DEFAULT_PATH,
+                        help='sys.prefix for the root python install, not the anaconda.org environment. '+\
+                             'Often /opt/anaconda.')
     dgroup = parser.add_argument_group('development options')
 
     dgroup.add_argument("--conda-build-dir",
-                        default=os.path.join(get_conda_root_prefix(), 'conda-bld', '{args.platform}'),
                         help="[Advanced] The conda build directory (default: %(default)s)",
                         )
     dgroup.add_argument('--show-new-procs', action='store_true', dest='show_new_procs',

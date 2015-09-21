@@ -1,5 +1,8 @@
 """
-The worker 
+SuWorker in this module is a subclass of worker.worker for 
+the purpose of running a root python build process that does each 
+build as a lesser user, build_user, via su.  SuWorker must 
+be run as root with a root python install.
 """
 from __future__ import print_function, absolute_import, unicode_literals
 
@@ -26,6 +29,8 @@ from .utils.script_generator import gen_build_script, \
 from .worker import Worker
 import inspect
 from binstar_client.utils import get_config
+
+SU_WORKER_DEFAULT_PATH = '/opt/anaconda'
 
 log = logging.getLogger('binstar.build')
 
@@ -67,17 +72,24 @@ def cmd(cmd):
     return stdout.getvalue()
 
 is_root = os.getuid() == 0
-is_root_install = '/opt/anaconda' in sys.prefix
 has_etc_worker_skel = os.path.isdir('/etc/worker-skel')
 
-def validate_su_worker(build_user):
+def validate_su_worker(build_user, python_install_dir):
+    '''Ensure su_worker is running as root, that there is a build worker, that 
+    /etc/worker-skel exists, and that conda is accessible to the build_user.'''
     if build_user == 'root':
         raise errors.BinstarError('Do NOT make root the build_user.  ' +\
                                  'The home directory of build_user is DELETED.')
+    python_exe = os.path.join(python_install_dir,'bin','python')
+    if not os.path.exists(python_exe):
+        raise errors.BinstarError('Expected python at %s but did not find it.' % python_exe)
+    conda_exe = os.path.join(python_install_dir, 'bin', 'conda')
+    check_conda = "%s && echo has_conda_installed" % conda_exe
+    conda_output = cmd(['su', '--login','-c', check_conda, '-', build_user])
+    if not 'has_conda_installed' in conda_output:
+        raise errors.BinstarError('Did not find conda at %s' % conda_exe)
     if not is_root:
         raise errors.BinstarError('su_worker must be run as root. Got %r' % is_root)
-    if not is_root_install:
-        raise errors.BinstarError('python must be in /opt/anaconda for su_worker')
     if not has_etc_worker_skel:
         raise errors.BinstarError('Cannot continue su_worker without /etc/worker-skel,' +\
                                       'a template for new build user home directory.')
@@ -88,20 +100,18 @@ def validate_su_worker(build_user):
         raise errors.BinstarError('Cannot continue without build_user %r. Got whoami = %r' % info)
     return True
 class SuWorker(Worker):
-    """
-    
-    """
-    STATE_FILE = 'worker.yaml'
-    JOURNAL_FILE = 'journal.csv'
-    SLEEP_TIME = 10
-    source_env = "export PATH=/opt/anaconda/bin:${PATH} "+ \
-                "&& source activate anaconda.org "
-    
-    def __init__(self, bs, args, build_user):
+    '''Overrides the run method of Worker to run builds 
+    as a lesser user. '''
+    def __init__(self, bs, args, build_user, python_install_dir):
         super(SuWorker, self).__init__(bs, args)
         self.build_user = build_user
-        validate_su_worker(self.build_user)
-
+        self.python_install_dir = python_install_dir
+        validate_su_worker(self.build_user, self.python_install_dir)
+    @property
+    def source_env(self):
+        return ("export PATH=%s/bin:${PATH} " % self.python_install_dir) + \
+                "&& source activate anaconda.org "
+    
     def _finish_job(self, job_data, failed, status):
         '''Count job as finished, destroy build user processes,
         and replace build user's home directory'''
@@ -125,7 +135,7 @@ class SuWorker(Worker):
         
     def clean_home_dir(self):
         
-        home_dir = cmd(['su', '--login', '-c', 'pwd', '-', self.build_user]).strip()
+        home_dir = os.path.expanduser('~%s' % self.build_user)
         log.info('Remove build worker home directory: %s' % home_dir)
         rm_rf(home_dir)
         shutil.copytree('/etc/worker-skel', home_dir, symlinks=False)
@@ -139,7 +149,7 @@ class SuWorker(Worker):
         '''build user is unable to do conda-clean-build-dir for 
         lack of permissions to the root directory /opt/anaconda/conda-bld, 
         This removes that dir by root user instead.'''
-        rm_rf('/opt/anaconda/conda-bld')
+        rm_rf(os.path.join(self.python_install_dir, '/conda-bld'))
 
     def destroy_user_procs(self):
         log.info("Destroy %s's processes" % self.build_user)
@@ -180,19 +190,7 @@ class SuWorker(Worker):
             self.destroy_user_procs()
             raise
         finally:
-            if self.args.show_new_procs:
-                currently_running_procs = get_my_procs()
-                new_procs = [psutil.Process(pid) for pid in currently_running_procs - already_running_procs]
-                if new_procs:
-                    build_log.write("WARNING: There are processes that were started during the build and are still running\n")
-                    for proc in new_procs:
-                        build_log.write(" - Process name:%s pid:%s\n" % (proc.name, proc.pid))
-                        try:
-                            cmdline = ' '.join(proc.cmdline)
-                        except:
-                            pass
-                        else:
-                            build_log.write("    + %s\n" % cmdline)
+            self.destroy_user_procs()
             if p0.stdout and not p0.stdout.closed:
                 log.info("Closing subprocess stdout PIPE")
                 p0.stdout.close()
