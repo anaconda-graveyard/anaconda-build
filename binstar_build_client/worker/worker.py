@@ -338,40 +338,6 @@ class Worker(object):
         log.info("Wrote build data to %s" % build_filename)
         return os.path.abspath(build_filename)
 
-
-    @contextmanager
-    def worker_context(self):
-        '''
-        Register the worker with binstar and clean up on any excpetion or exit
-        '''
-        os.chdir(self.args.cwd)
-
-        if os.path.isfile(self.STATE_FILE):
-            with open(self.STATE_FILE, 'r') as fd:
-                worker_data = yaml.load(fd)
-
-            self.bs.remove_worker(self.args.username, self.args.queue, worker_data['worker_id'])
-            log.info("Un-registered worker %s from binstar site" % worker_data['worker_id'])
-            os.unlink(self.STATE_FILE)
-            log.info("Removed worker.yaml")
-
-        worker_id = self.bs.register_worker(self.args.username, self.args.queue, self.args.platform,
-                                            self.args.hostname, self.args.dist)
-        worker_data = {'worker_id': worker_id}
-
-        with open(self.STATE_FILE, 'w') as fd:
-            yaml.dump(worker_data, fd)
-        try:
-            yield worker_id
-        finally:
-            log.info("Removing worker %s" % worker_id)
-            try:
-                self.bs.remove_worker(self.args.username, self.args.queue, worker_id)
-                os.unlink(self.STATE_FILE)
-            except Exception as err:
-                log.exception(err)
-            log.debug("Removed %s" % self.STATE_FILE)
-
     @contextmanager
     def job_context(self, journal, job_data):
         """

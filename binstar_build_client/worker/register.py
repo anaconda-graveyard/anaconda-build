@@ -16,8 +16,8 @@ def register_worker(bs, args):
     args.worker_id = worker_id
     with open(args.output, 'w') as fd:
         yaml.dump(args.__dict__, fd)
-    log.info('Worker config at %s.' % args.output)
-    return worker_id
+    log.info('Worker config saved at %s.' % args.output)
+    return args
 
 def deregister_worker(bs, args):
     config_file = args.config
@@ -26,11 +26,12 @@ def deregister_worker(bs, args):
             worker_config = yaml.load(f.read())
         args = Namespace()
         args.__dict__.update(worker_config)
-    log.info("Removing worker %s" % args.worker_id)
+    log.info("Removing worker %s." % args.worker_id)
     try:
         bs.remove_worker(args.username, args.queue, args.worker_id)
         if config_file is not None:
             os.unlink(config_file)
-            log.debug("Removed %s" % config_file)
+            log.debug("Removed worker config %s" % config_file)
     except Exception as err:
         log.exception(err)
+    return args
