@@ -42,19 +42,19 @@ def get_dist():
         return platform.win32_ver()[0].lower()
     return 'unknown'
 
+def split_queue_arg(queue):
+    if queue.count('/') == 1:
+        username, queue = queue.split('/', 1)
+    elif queue.count('-') == 2:
+        _, username, queue = queue.split('-', 2)
+    else:
+        raise errors.UserError("Build queue must be of the form build-USERNAME-QUEUENAME or USERNAME/QUEUENAME")
+    return username, queue
+
 def main(args):
     if not args.output:
         args.output = tempfile.NamedTemporaryFile(delete=False)
-    if args.queue.count('/') == 1:
-        username, queue = args.queue.split('/', 1)
-        args.username = username
-        args.queue = queue
-    elif args.queue.count('-') == 2:
-        _, username, queue = args.queue.split('-', 2)
-        args.username = username
-        args.queue = queue
-    else:
-        raise errors.UserError("Build queue must be of the form build-USERNAME-QUEUENAME or USERNAME/QUEUENAME")
+    args.username, args.queue = split_queue_arg(args.queue)
     bs = get_binstar(args, cls=BinstarBuildAPI)
     return register_worker(bs, args)
 

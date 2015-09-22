@@ -42,13 +42,23 @@ class Test(CLITestCase):
     
     @urlpatch
     @patch('binstar_build_client.commands.deregister.deregister_worker')
-    def test_deregister(self, urls, deregister_worker):
+    def test_deregister_from_config(self, urls, deregister_worker):
 
         with open(worker_data['output'], 'w') as f:
             f.write(yaml.dump(worker_data))
         main(['deregister', '-c', worker_data['output']], False)
         self.assertEqual(deregister_worker.call_count, 1)
-        
+    
+    @urlpatch
+    @patch('binstar_build_client.commands.deregister.deregister_worker')
+    def test_deregister_from_id(self, urls, deregister_worker):
+
+        main(['deregister', '-q', 
+              '%s/%s' % (worker_data['username'], worker_data['queue']),
+              '--worker-id', worker_data['worker_id']], False)
+        self.assertEqual(deregister_worker.call_count, 1)
+    
+
     @urlpatch
     @patch('binstar_build_client.commands.worker.Worker')
     def test_worker_simple(self, urls, Worker):
