@@ -67,15 +67,14 @@ class Worker(object):
     def __init__(self, bs, args):
         self.bs = bs
         self.args = args
-
+        self.worker_id = args.worker_id
+    
     def work_forever(self):
         """
         Start a loop and continuously build forever
         """
         log.info('Working Forever')
-        with self.worker_context() as worker_id:
-            self.worker_id = worker_id
-            self._build_loop()
+        self._build_loop()
 
     def write_status(self, ok=True, msg='ok'):
         if self.args.status_file:
