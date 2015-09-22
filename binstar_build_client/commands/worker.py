@@ -5,16 +5,17 @@ Build worker
 from __future__ import (print_function, unicode_literals, division,
     absolute_import)
 
+from argparse import Namespace
 import logging
+import os
+import time
+import yaml
+
+from binstar_client.utils import get_binstar
+from binstar_client import errors
 
 from binstar_build_client import BinstarBuildAPI
 from binstar_build_client.worker.worker import Worker
-from binstar_client.utils import get_binstar
-import os
-from binstar_client import errors
-import time
-import yaml
-from argparse import Namespace
 
 log = logging.getLogger('binstar.build')
 
@@ -22,7 +23,7 @@ def main(args):
     with open(args.worker_config) as f:
         worker_config = yaml.load(f.read())
     args = Namespace()
-    args.__dict__.update(worker_config)
+    vars(args).update(worker_config)
     args.conda_build_dir = args.conda_build_dir.format(args=args)
     bs = get_binstar(args, cls=BinstarBuildAPI)
 

@@ -1,12 +1,14 @@
 from __future__ import (print_function, unicode_literals, division,
     absolute_import)
 import os
-from binstar_client.utils import get_binstar, bool_input
-from binstar_build_client import BinstarBuildAPI
+
 from argparse import RawDescriptionHelpFormatter
 from dateutil.parser import parse as parse_date
 from binstar_client.commands.authorizations import format_timedelta
 from binstar_client import errors
+from binstar_client.utils import get_binstar, bool_input
+
+from binstar_build_client import BinstarBuildAPI
 from binstar_build_client.worker.register import deregister_worker
 from binstar_build_client.commands.register import split_queue_arg
 
@@ -14,7 +16,7 @@ def main(args):
     
     if args.config is not None:
         if not os.path.exists(args.config):
-            raise errors.BinstarError('build worker --config file %s does not exist.' % args.config)
+            raise errors.BinstarError('build worker --config file {} does not exist.'.format(args.config))
     else:
         if args.queue is None:
             raise errors.BinstarError('Argument --queue <username>/<queue> is required when not giving --config.')
@@ -32,7 +34,7 @@ def add_parser(subparsers, name='deregister',
                                    help=description, description=description,
                                    epilog=epilog)
     parser.add_argument('-c', '--config',
-                        help='Path to a config file from anaconda build register ...')
+                        help='Path to a yaml config file that was an --output of anaconda build register')
     parser.add_argument('-q', '--queue',
                         help="Queue (required if no --config arg)")
     parser.add_argument('-w', '--worker-id',    

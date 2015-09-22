@@ -7,15 +7,16 @@ Created on Feb 18, 2014
 from __future__ import (print_function, unicode_literals, division,
     absolute_import)
 
+import os
+import tempfile
+import yaml
 from mock import patch
 import unittest
 
-from binstar_build_client.scripts.build import main
 from binstar_client.tests.fixture import CLITestCase
 from binstar_client.tests.urlmock import urlpatch
-import tempfile
-import os
-import yaml
+
+from binstar_build_client.scripts.build import main
 
 worker_data = {'cwd': '.',
                'output': os.path.join(tempfile.gettempdir(), 'worker.yaml'), 
@@ -54,7 +55,7 @@ class Test(CLITestCase):
     def test_deregister_from_id(self, urls, deregister_worker):
 
         main(['deregister', '-q', 
-              '%s/%s' % (worker_data['username'], worker_data['queue']),
+              '{}/{}'.format(worker_data['username'], worker_data['queue']),
               '--worker-id', worker_data['worker_id']], False)
         self.assertEqual(deregister_worker.call_count, 1)
     
@@ -66,6 +67,7 @@ class Test(CLITestCase):
             f.write(yaml.dump(worker_data))
         main(['--show-traceback', 'worker', worker_data['output']], False)
         self.assertEqual(Worker().work_forever.call_count, 1)
-        
+        os.remove(worker_data['output'])
+
 if __name__ == '__main__':
     unittest.main()
