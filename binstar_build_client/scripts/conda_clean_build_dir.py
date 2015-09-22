@@ -18,13 +18,13 @@ def main():
     root_env = get_conda_root_prefix()
     build_root = os.path.join(root_env, 'conda-bld')
     has_access = os.access(build_root, os.W_OK)
-    if os.path.isdir(build_root) and has_access:
-        print("Removing conda build root %s" % build_root)
+    if not has_access:
+        build_root = os.path.join(os.path.expanduser('~'), 'conda-bld')
+    if os.path.isdir(build_root):
+        print("Removing conda build root {}".format(build_root))
         rm_rf(build_root)
     elif not os.path.isdir(build_root):
-        print("Conda build root %s does not exist" % build_root)
-    elif not has_access:
-        print("No access to remove build root %s" % build_root)
-
+        print("Conda build root {} does not exist".format(build_root))
+    
 if __name__ == '__main__':
     main()
