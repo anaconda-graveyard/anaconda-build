@@ -23,7 +23,7 @@ def main():
     if os.path.isdir(build_root):
         print("Removing conda build root {}".format(build_root))
         rm_rf(build_root)
-    elif not os.path.isdir(build_root):
+    else:
         print("Conda build root {} does not exist".format(build_root))
     
 if __name__ == '__main__':
