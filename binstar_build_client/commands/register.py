@@ -55,7 +55,7 @@ def split_queue_arg(queue):
 
 def main(args):
     if not args.output:
-        args.output = tempfile.NamedTemporaryFile(delete=False)
+        args.output = tempfile.NamedTemporaryFile(delete=False).name
     args.username, args.queue = split_queue_arg(args.queue)
     bs = get_binstar(args, cls=BinstarBuildAPI)
     return register_worker(bs, args)
