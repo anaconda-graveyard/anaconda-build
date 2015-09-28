@@ -17,7 +17,9 @@ from binstar_client.utils import get_binstar, bool_input
 
 from binstar_build_client.utils import get_conda_root_prefix
 from binstar_build_client import BinstarBuildAPI
-from binstar_build_client.worker.register import register_worker
+from binstar_build_client.worker.register import (register_worker,
+                                                  REGISTERED_WORKERS_FILE,
+                                                  print_registered_workers,)
 
     
     
@@ -54,6 +56,11 @@ def split_queue_arg(queue):
     return username, queue
 
 def main(args):
+    if args.list:
+        print_registered_workers()
+        return
+    if not args.queue:
+        raise errors.BinstarError('Argument --queue <USERNAME>/<QUEUE> is required.')
     if not args.output:
         args.output = tempfile.NamedTemporaryFile(delete=False).name
     args.username, args.queue = split_queue_arg(args.queue)
@@ -70,7 +77,10 @@ def add_parser(subparsers, name='register',
                                    )
 
     conda_platform = get_platform()
-    parser.add_argument('queue', metavar='OWNER/QUEUE',
+    parser.add_argument('-l', '--list', 
+                        help='List the workers registered by this user/machine and exit.',
+                        action='store_true')
+    parser.add_argument('-q', '--queue', metavar='OWNER/QUEUE',
                         help='The queue to pull builds from')
     parser.add_argument('-p', '--platform',
                         default=conda_platform,

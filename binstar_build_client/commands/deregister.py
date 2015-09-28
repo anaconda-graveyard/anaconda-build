@@ -9,11 +9,16 @@ from binstar_client import errors
 from binstar_client.utils import get_binstar, bool_input
 
 from binstar_build_client import BinstarBuildAPI
-from binstar_build_client.worker.register import deregister_worker
+from binstar_build_client.worker.register import (deregister_worker,
+                                                  REGISTERED_WORKERS_FILE,
+                                                  print_registered_workers)
 from binstar_build_client.commands.register import split_queue_arg
 
 def main(args):
     
+    if args.list:
+        print_registered_workers()
+        return
     if args.config is not None:
         if not os.path.exists(args.config):
             raise errors.BinstarError('build worker --config file {} does not exist.'.format(args.config))
@@ -33,6 +38,9 @@ def add_parser(subparsers, name='deregister',
     parser = subparsers.add_parser(name,
                                    help=description, description=description,
                                    epilog=epilog)
+    parser.add_argument('-l', '--list', 
+                        help='List the workers registered by this user/machine and exit.',
+                        action='store_true')
     parser.add_argument('-c', '--config',
                         help='Path to a yaml config file that was an --output of anaconda build register')
     parser.add_argument('-q', '--queue',
