@@ -109,8 +109,6 @@ def add_parser(subparsers, name='register',
                         help='Print any process that started during the build '
                              'and is still running after the build finished')
 
-    dgroup.add_argument('-c', '--clean', action='store_true',
-                        help='Clean up an existing workers session')
     dgroup.add_argument('-f', '--fail', action='store_true',
                         help='Exit main loop on any un-handled exception')
     dgroup.add_argument('-1', '--one', action='store_true',
