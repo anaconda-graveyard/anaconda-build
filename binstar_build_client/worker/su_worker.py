@@ -75,7 +75,7 @@ def cmd(cmd):
 is_root = os.getuid() == 0
 has_etc_worker_skel = os.path.isdir('/etc/worker-skel')
 
-def check_conda_path(python_install_dir, build_user):
+def check_conda_path(build_user, python_install_dir):
     conda_exe = os.path.join(python_install_dir, 'bin', 'conda')
     check_conda = "%s && echo has_conda_installed" % conda_exe
     conda_output = cmd(['su', '--login','-c', check_conda, '-', build_user])
@@ -86,6 +86,8 @@ def check_conda_path(python_install_dir, build_user):
     if not has_etc_worker_skel:
         raise errors.BinstarError('Cannot continue su_worker without /etc/worker-skel,' +\
                                       'a template for new build user home directory.')
+    return True
+
 def test_su_as_user(build_user):
     whoami_as_user = cmd(['su','--login','-c','whoami', '-', build_user]).strip()
     has_build_user = build_user in whoami_as_user
@@ -100,15 +102,11 @@ def validate_su_worker(build_user, python_install_dir):
     if build_user == 'root':
         raise errors.BinstarError('Do NOT make root the build_user.  ' +\
                                  'The home directory of build_user is DELETED.')
-    python_exe = os.path.join(python_install_dir,'bin','python')
-    if not os.path.exists(python_exe):
-        raise errors.BinstarError('Expected python at %s but did not find it.' % python_exe)
     if not has_etc_worker_skel:
         raise errors.BinstarError('Expected /etc/worker-skel to exist and be a template for {}\'s home directory')
     if not is_root:
         raise errors.BinstarError('Expected su_worker to run as root.')
-    test_su_as_user()
-    check_conda_path()
+    return test_su_as_user(build_user) and check_conda_path(build_user, python_install_dir)
 
 class SuWorker(Worker):
     '''Overrides the run method of Worker to run builds 
@@ -128,7 +126,6 @@ class SuWorker(Worker):
         and replace build user's home directory'''
         self.destroy_user_procs()
         self.clean_home_dir()
-        self.rm_rf_conda_bld()
         super(SuWorker, self)._finish_job(job_data, failed, status)
 
     @property
@@ -154,13 +151,6 @@ class SuWorker(Worker):
         if out:
             log.info(out)
         log.info('Copied /etc/worker-skel to %s.  Changed permissions.' % home_dir)
-        self.rm_rf_conda_bld()
-
-    def rm_rf_conda_bld(self):
-        '''build user is unable to do conda-clean-build-dir for 
-        lack of permissions to the root directory /opt/anaconda/conda-bld, 
-        This removes that dir by root user instead.'''
-        rm_rf(os.path.join(self.python_install_dir, '/conda-bld'))
 
     def destroy_user_procs(self):
         log.info("Destroy %s's processes" % self.build_user)
@@ -171,8 +161,7 @@ class SuWorker(Worker):
     def run(self, build_data, script_filename, build_log, timeout, iotimeout,
             api_token=None, git_oauth_token=None, build_filename=None, instructions=None):
 
-        self.rm_rf_conda_bld()
-
+    
         log.info("Running build script")
 
         working_dir = self.working_dir(build_data)
@@ -188,8 +177,6 @@ class SuWorker(Worker):
 
         log.info("Running command: (iotimeout=%s)" % iotimeout)
         
-        if self.args.show_new_procs:
-            already_running_procs = get_my_procs()
         args = self.su_with_env(" ".join(pipes.quote(arg) for arg in args))
         log.info(args)
         p0 = BufferedPopen(args, stdout=build_log, iotimeout=iotimeout, cwd=working_dir)

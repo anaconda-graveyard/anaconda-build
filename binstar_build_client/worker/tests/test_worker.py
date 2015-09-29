@@ -7,9 +7,7 @@ import unittest
 from mock import Mock, patch
 
 from binstar_build_client.commands.worker import (get_platform,
-                                                  Worker, 
-                                                  get_my_procs, 
-                                                  remove_files_after)
+                                                  Worker)
 
 
 
@@ -201,9 +199,7 @@ class Test(unittest.TestCase):
         value = journal.getvalue()
         expected = 'starting build, test_job_id, job_name\nbuild errored, test_job_id, job_name\n'
         self.assertEqual(value, expected)
-    def test_remove_files_after(self):
 
-    def test_get_my_procs(self):
 
 if __name__ == '__main__':
     unittest.main()
