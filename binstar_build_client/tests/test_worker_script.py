@@ -36,8 +36,7 @@ class Test(CLITestCase):
     @patch('binstar_build_client.commands.register.register_worker')
     def test_register(self, urls, register_worker):
 
-        main(['register', '--queue', 'username/queue-1','--cwd',
-              '.', '--output', worker_data['output']], False)
+        main(['register', '--queue', 'username/queue-1','--cwd','.'], False)
         self.assertEqual(register_worker.call_count, 1)
         
     
