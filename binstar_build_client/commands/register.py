@@ -18,7 +18,6 @@ from binstar_client.utils import get_binstar, bool_input
 from binstar_build_client.utils import get_conda_root_prefix
 from binstar_build_client import BinstarBuildAPI
 from binstar_build_client.worker.register import (register_worker,
-                                                  REGISTERED_WORKERS_FILE,
                                                   print_registered_workers,)
 
     
@@ -108,13 +107,6 @@ def add_parser(subparsers, name='register',
     dgroup.add_argument('--show-new-procs', action='store_true', dest='show_new_procs',
                         help='Print any process that started during the build '
                              'and is still running after the build finished')
-
-    dgroup.add_argument('-f', '--fail', action='store_true',
-                        help='Exit main loop on any un-handled exception')
-    dgroup.add_argument('-1', '--one', action='store_true',
-                        help='Exit main loop after only one build')
-    dgroup.add_argument('--push-back', action='store_true',
-                        help='Developers only, always push the build *back* onto the build queue')
 
     dgroup.add_argument('--status-file',
                         help='If given, binstar will update this file with the time it last checked the anaconda server for updates')

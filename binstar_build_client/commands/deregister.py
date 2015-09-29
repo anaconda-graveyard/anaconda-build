@@ -1,6 +1,7 @@
 from __future__ import (print_function, unicode_literals, division,
     absolute_import)
 import os
+import yaml
 
 from argparse import RawDescriptionHelpFormatter
 from dateutil.parser import parse as parse_date
@@ -10,7 +11,6 @@ from binstar_client.utils import get_binstar, bool_input
 
 from binstar_build_client import BinstarBuildAPI
 from binstar_build_client.worker.register import (deregister_worker,
-                                                  REGISTERED_WORKERS_FILE,
                                                   print_registered_workers)
 from binstar_build_client.commands.register import split_queue_arg
 
@@ -22,10 +22,9 @@ def main(args):
     if args.config is not None:
         if not os.path.exists(args.config):
             raise errors.BinstarError('build worker --config file {} does not exist.'.format(args.config))
+        with open(args.config, 'r') as f:
+            vars(args).update(yaml.load(f.read()))
     else:
-        if args.queue is None:
-            raise errors.BinstarError('Argument --queue <username>/<queue> is required when not giving --config.')
-        args.username, args.queue = split_queue_arg(args.queue)
         if args.worker_id is None:
             raise errors.BinstarError('Argument --worker-id must not be None if --config is None')
     bs = get_binstar(args, cls=BinstarBuildAPI)
