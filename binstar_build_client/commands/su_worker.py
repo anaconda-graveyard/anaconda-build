@@ -10,14 +10,14 @@ from __future__ import (print_function, unicode_literals, division,
 
 import logging
 import platform
+import time
+import os
 
 from binstar_build_client import BinstarBuildAPI
 from binstar_build_client.worker.su_worker import SuWorker, SU_WORKER_DEFAULT_PATH
 from binstar_client.utils import get_binstar
-import os
 from binstar_build_client.utils import get_conda_root_prefix
 from binstar_client import errors
-import time
 from .worker import OS_MAP, ARCH_MAP, get_platform, get_dist
 
 log = logging.getLogger('binstar.build')

@@ -25,5 +25,6 @@ class Test(CLITestCase):
         main(['--show-traceback', 'worker', 'username/queue-1'], False)
         self.assertEqual(Worker().work_forever.call_count, 1)
 
+    def test_get_my_procs(self):
 if __name__ == '__main__':
     unittest.main()

@@ -11,8 +11,6 @@ import logging
 import os
 import time
 import io
-from binstar_build_client.utils.rm import rm_rf
-from binstar_client import errors
 import psutil
 import requests
 import yaml
@@ -22,12 +20,15 @@ import shutil
 import sys
 import pipes
 from tempfile import NamedTemporaryFile
+import inspect
+
+from binstar_build_client.utils.rm import rm_rf
+from binstar_client import errors
 from .utils.buffered_io import BufferedPopen
 from .utils.build_log import BuildLog
 from .utils.script_generator import gen_build_script, \
     EXIT_CODE_OK, EXIT_CODE_ERROR, EXIT_CODE_FAILED
 from .worker import Worker
-import inspect
 from binstar_client.utils import get_config
 
 SU_WORKER_DEFAULT_PATH = '/opt/anaconda'
@@ -74,15 +75,7 @@ def cmd(cmd):
 is_root = os.getuid() == 0
 has_etc_worker_skel = os.path.isdir('/etc/worker-skel')
 
-def validate_su_worker(build_user, python_install_dir):
-    '''Ensure su_worker is running as root, that there is a build worker, that 
-    /etc/worker-skel exists, and that conda is accessible to the build_user.'''
-    if build_user == 'root':
-        raise errors.BinstarError('Do NOT make root the build_user.  ' +\
-                                 'The home directory of build_user is DELETED.')
-    python_exe = os.path.join(python_install_dir,'bin','python')
-    if not os.path.exists(python_exe):
-        raise errors.BinstarError('Expected python at %s but did not find it.' % python_exe)
+def check_conda_path(python_install_dir, build_user):
     conda_exe = os.path.join(python_install_dir, 'bin', 'conda')
     check_conda = "%s && echo has_conda_installed" % conda_exe
     conda_output = cmd(['su', '--login','-c', check_conda, '-', build_user])
@@ -93,12 +86,30 @@ def validate_su_worker(build_user, python_install_dir):
     if not has_etc_worker_skel:
         raise errors.BinstarError('Cannot continue su_worker without /etc/worker-skel,' +\
                                       'a template for new build user home directory.')
+def test_su_as_user(build_user):
     whoami_as_user = cmd(['su','--login','-c','whoami', '-', build_user]).strip()
     has_build_user = build_user in whoami_as_user
     if not has_build_user:
         info = (build_user, whoami_as_user)
         raise errors.BinstarError('Cannot continue without build_user %r. Got whoami = %r' % info)
     return True
+
+def validate_su_worker(build_user, python_install_dir):
+    '''Ensure su_worker is running as root, that there is a build worker, that 
+    /etc/worker-skel exists, and that conda is accessible to the build_user.'''
+    if build_user == 'root':
+        raise errors.BinstarError('Do NOT make root the build_user.  ' +\
+                                 'The home directory of build_user is DELETED.')
+    python_exe = os.path.join(python_install_dir,'bin','python')
+    if not os.path.exists(python_exe):
+        raise errors.BinstarError('Expected python at %s but did not find it.' % python_exe)
+    if not has_etc_worker_skel:
+        raise errors.BinstarError('Expected /etc/worker-skel to exist and be a template for {}\'s home directory')
+    if not is_root:
+        raise errors.BinstarError('Expected su_worker to run as root.')
+    test_su_as_user()
+    check_conda_path()
+
 class SuWorker(Worker):
     '''Overrides the run method of Worker to run builds 
     as a lesser user. '''

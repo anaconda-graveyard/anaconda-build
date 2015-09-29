@@ -7,14 +7,14 @@ from __future__ import (print_function, unicode_literals, division,
 
 import logging
 import platform
+import os
+import time
 
 from binstar_build_client import BinstarBuildAPI
 from binstar_build_client.worker.worker import Worker
 from binstar_client.utils import get_binstar
-import os
 from binstar_build_client.utils import get_conda_root_prefix
 from binstar_client import errors
-import time
 
 log = logging.getLogger('binstar.build')
 
