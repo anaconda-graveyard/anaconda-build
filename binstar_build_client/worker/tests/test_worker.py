@@ -10,7 +10,6 @@ from binstar_build_client.commands.worker import (get_platform,
                                                   Worker)
 
 
-
 class MockWorker(Worker):
     def __init__(self):
         self.SLEEP_TIME = 0

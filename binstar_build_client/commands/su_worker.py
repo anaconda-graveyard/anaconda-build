@@ -24,9 +24,8 @@ log = logging.getLogger('binstar.build')
 
 def main(args):
 
-    python_install_dir = getattr(args, 'python_install_dir', SU_WORKER_DEFAULT_PATH)
     if args.conda_build_dir is None:
-        args.conda_build_dir = os.path.join(python_install_dir, 
+        args.conda_build_dir = os.path.join(args.python_install_dir, 
                                             'conda-bld', 
                                             '{args.platform}')
     args.conda_build_dir = args.conda_build_dir.format(args=args)
@@ -42,11 +41,11 @@ def main(args):
     else:
         raise errors.UserError("Build queue must be of the form build-USERNAME-QUEUENAME or USERNAME/QUEUENAME")
     log.info('Starting worker:')
-    log.info('User: %s' % args.username)
-    log.info('Queue: %s' % args.queue)
-    log.info('Platform: %s' % args.platform)
+    log.info('User: {}'.format(args.username))
+    log.info('Queue: {}'.format(args.queue))
+    log.info('Platform: {}'.format(args.platform))
 
-    worker = SuWorker(bs, args, args.build_user, python_install_dir)
+    worker = SuWorker(bs, args, args.build_user, args.python_install_dir)
     worker.write_status(True, "Starting")
     try:
         worker.work_forever()

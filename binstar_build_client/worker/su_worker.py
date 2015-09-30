@@ -24,56 +24,23 @@ import inspect
 
 from binstar_build_client.utils.rm import rm_rf
 from binstar_client import errors
+from binstar_client.utils import get_config
+
 from .utils.buffered_io import BufferedPopen
 from .utils.build_log import BuildLog
 from .utils.script_generator import gen_build_script, \
     EXIT_CODE_OK, EXIT_CODE_ERROR, EXIT_CODE_FAILED
 from .worker import Worker
-from binstar_client.utils import get_config
 
 SU_WORKER_DEFAULT_PATH = '/opt/anaconda'
 
 log = logging.getLogger('binstar.build')
 
-def get_my_procs():
-
-    this_proc = psutil.Process()
-
-    if os.name == 'nt':
-        myusername = this_proc.username()
-        def ismyproc(proc):
-            try:
-                return proc.username() == myusername
-            except psutil.AccessDenied:
-                return False
-    else:
-        def ismyproc(proc):
-            if inspect.isroutine(this_proc.uids):
-                # psutil >= 2
-                return proc.uids().real == this_proc.uids().real
-            else:
-                # psutil < 2
-                return proc.uids.real == this_proc.uids.real
-
-
-    return {proc.pid for proc in psutil.process_iter() if ismyproc(proc)}
-
-@contextmanager
-def remove_files_after(files):
-    try:
-        yield
-    finally:
-        for filename in files:
-            if os.path.isfile(filename):
-                os.unlink(filename)
 def cmd(cmd):
     stdout = io.StringIO()
     proc = BufferedPopen(cmd, stdout=stdout)
     proc.wait()
     return stdout.getvalue()
-
-is_root = os.getuid() == 0
-has_etc_worker_skel = os.path.isdir('/etc/worker-skel')
 
 def check_conda_path(build_user, python_install_dir):
     conda_exe = os.path.join(python_install_dir, 'bin', 'conda')
@@ -81,11 +48,6 @@ def check_conda_path(build_user, python_install_dir):
     conda_output = cmd(['su', '--login','-c', check_conda, '-', build_user])
     if not 'has_conda_installed' in conda_output:
         raise errors.BinstarError('Did not find conda at %s' % conda_exe)
-    if not is_root:
-        raise errors.BinstarError('su_worker must be run as root. Got %r' % is_root)
-    if not has_etc_worker_skel:
-        raise errors.BinstarError('Cannot continue su_worker without /etc/worker-skel,' +\
-                                      'a template for new build user home directory.')
     return True
 
 def test_su_as_user(build_user):
@@ -102,8 +64,10 @@ def validate_su_worker(build_user, python_install_dir):
     if build_user == 'root':
         raise errors.BinstarError('Do NOT make root the build_user.  ' +\
                                  'The home directory of build_user is DELETED.')
+    has_etc_worker_skel = os.path.isdir('/etc/worker-skel')
     if not has_etc_worker_skel:
         raise errors.BinstarError('Expected /etc/worker-skel to exist and be a template for {}\'s home directory')
+    is_root = os.getuid() == 0
     if not is_root:
         raise errors.BinstarError('Expected su_worker to run as root.')
     return test_su_as_user(build_user) and check_conda_path(build_user, python_install_dir)
@@ -111,14 +75,16 @@ def validate_su_worker(build_user, python_install_dir):
 class SuWorker(Worker):
     '''Overrides the run method of Worker to run builds 
     as a lesser user. '''
+
     def __init__(self, bs, args, build_user, python_install_dir):
         super(SuWorker, self).__init__(bs, args)
         self.build_user = build_user
         self.python_install_dir = python_install_dir
         validate_su_worker(self.build_user, self.python_install_dir)
+
     @property
     def source_env(self):
-        return ("export PATH=%s/bin:${PATH} " % self.python_install_dir) + \
+        return "export PATH={}/bin:${PATH} ".format(self.python_install_dir) + \
                 "&& source activate anaconda.org "
     
     def _finish_job(self, job_data, failed, status):
@@ -134,7 +100,7 @@ class SuWorker(Worker):
         return config.get('url', 'https://api.anaconda.org')
  
     def su_with_env(self, cmd):
-        '''args for su as build_user with the right anaconda settings'''
+        '''args for su as build_user with the anaconda settings'''
         cmds = ['su','--login', '-c', self.source_env]
         cmds[-1] += (" && anaconda config --set url %s && " % self.anaconda_url) 
         cmds[-1] += cmd
@@ -142,7 +108,8 @@ class SuWorker(Worker):
         return cmds       
         
     def clean_home_dir(self):
-        
+        '''Delete lesser build_user's home dir and 
+        replace it with /etc/worker-skel'''
         home_dir = os.path.expanduser('~%s' % self.build_user)
         log.info('Remove build worker home directory: %s' % home_dir)
         rm_rf(home_dir)
@@ -161,7 +128,6 @@ class SuWorker(Worker):
     def run(self, build_data, script_filename, build_log, timeout, iotimeout,
             api_token=None, git_oauth_token=None, build_filename=None, instructions=None):
 
-    
         log.info("Running build script")
 
         working_dir = self.working_dir(build_data)
@@ -175,7 +141,7 @@ class SuWorker(Worker):
         elif build_filename:
             args.extend(['--build-tarball', build_filename])
 
-        log.info("Running command: (iotimeout=%s)" % iotimeout)
+        log.info("Running command: (iotimeout={})".format(iotimeout))
         
         args = self.su_with_env(" ".join(pipes.quote(arg) for arg in args))
         log.info(args)
@@ -192,6 +158,4 @@ class SuWorker(Worker):
             if p0.stdout and not p0.stdout.closed:
                 log.info("Closing subprocess stdout PIPE")
                 p0.stdout.close()
-
-
         return exit_code

@@ -10,14 +10,13 @@ import platform
 import os
 import time
 
+from binstar_client import errors
+from binstar_client.utils import get_binstar
 from binstar_build_client import BinstarBuildAPI
 from binstar_build_client.worker.worker import Worker
-from binstar_client.utils import get_binstar
 from binstar_build_client.utils import get_conda_root_prefix
-from binstar_client import errors
 
 log = logging.getLogger('binstar.build')
-
 
 def main(args):
 
@@ -35,9 +34,9 @@ def main(args):
         raise errors.UserError("Build queue must be of the form build-USERNAME-QUEUENAME or USERNAME/QUEUENAME")
 
     log.info('Starting worker:')
-    log.info('User: %s' % args.username)
-    log.info('Queue: %s' % args.queue)
-    log.info('Platform: %s' % args.platform)
+    log.info('User: {}'.format(args.username))
+    log.info('Queue: {}'.format(args.queue))
+    log.info('Platform: {}'.format(args.platform))
 
     worker = Worker(bs, args)
     worker.write_status(True, "Starting")
