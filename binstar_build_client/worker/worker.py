@@ -81,7 +81,7 @@ class Worker(object):
     def write_status(self, ok=True, msg='ok'):
         if self.args.status_file:
             with open(self.args.status_file, 'w') as fd:
-                fd.write("%i %i '%s'\n" % (int(not ok), time.time(), msg))
+                fd.write("{} {} '{}'\n".format(int(not ok), int(time.time()), msg))
 
     def job_loop(self):
         """
@@ -107,14 +107,14 @@ class Worker(object):
                     raise errors.BinstarError(msg)
 
             except requests.ConnectionError as err:
-                log.error("Trouble connecting to binstar at '%s' " % bs.domain)
+                log.error("Trouble connecting to binstar at '{}' ".format(bs.domain))
                 log.error("Could not retrieve work items")
                 job_data = {}
                 self.write_status(False, "Trouble connecting to binstar")
 
             except errors.ServerError as err:
                 log.exception(err)
-                log.error("There server '%s' returned an error response " % bs.domain)
+                log.error("There server '{}' returned an error response ".format(bs.domain))
                 log.error("Could not retrieve work items")
                 self.write_status(False, "Server error")
                 job_data = {}
@@ -195,7 +195,7 @@ class Worker(object):
         working_dir = self.working_dir(build_data)
         filename = os.path.abspath(os.path.join(working_dir, 'build-log.txt'))
 
-        log.info("Writing build log to file %s" % filename)
+        log.info("Writing build log to file {}".format(filename))
         return filename
 
     def build(self, job_data):
@@ -206,7 +206,7 @@ class Worker(object):
 
         working_dir = self.working_dir(job_data)
 
-        log.info("Creating working dir: %s" % working_dir)
+        log.info("Creating working dir: {}".format(working_dir))
         rm_rf(working_dir)
         os.makedirs(working_dir)
 
@@ -217,8 +217,8 @@ class Worker(object):
 
 
             instructions = job_data['build_item_info'].get('instructions')
-            build_log.write("Building on worker %s (platform %s)\n" % (self.args.hostname, self.args.platform))
-            build_log.write("Starting build %s\n" % job_data['job_name'])
+            build_log.write("Building on worker {} (platform {})\n".format(self.args.hostname, self.args.platform))
+            build_log.write("Starting build {} \n".format(job_data['job_name']))
 
             if not os.path.exists('build_scripts'):
                 os.mkdir('build_scripts')
@@ -247,23 +247,23 @@ class Worker(object):
                                      api_token, git_oauth_token, build_filename,
                                      instructions=instructions)
 
-            log.info("Build script exited with code %s" % exit_code)
+            log.info("Build script exited with code {}".format(exit_code))
             if exit_code == EXIT_CODE_OK:
                 failed = False
                 status = 'success'
-                log.info('Build %s Succeeded' % (job_data['job_name']))
+                log.info('Build {} Succeeded'.format(job_data['job_name']))
             elif exit_code == EXIT_CODE_ERROR:
                 failed = True
                 status = 'error'
-                log.error("Build %s errored" % (job_data['job_name']))
+                log.error("Build {} errored".format(job_data['job_name']))
             elif exit_code == EXIT_CODE_FAILED:
                 failed = True
                 status = 'failure'
-                log.error("Build %s failed" % (job_data['job_name']))
+                log.error("Build {} failed".format(job_data['job_name']))
             else:  # Unknown error
                 failed = True
                 status = 'error'
-                log.error("Unknown build exit status %s for build %s" % (exit_code, job_data['job_name']))
+                log.error("Unknown build exit status {} for build {}".format(exit_code, job_data['job_name']))
 
             return failed, status
 
@@ -283,7 +283,7 @@ class Worker(object):
         elif build_filename:
             args.extend(['--build-tarball', build_filename])
 
-        log.info("Running command: (iotimeout=%s)" % iotimeout)
+        log.info("Running command: (iotimeout={})".format(iotimeout))
         log.info(" ".join(args))
 
         if self.args.show_new_procs:
@@ -305,13 +305,13 @@ class Worker(object):
                 if new_procs:
                     build_log.write("WARNING: There are processes that were started during the build and are still running\n")
                     for proc in new_procs:
-                        build_log.write(" - Process name:%s pid:%s\n" % (proc.name, proc.pid))
+                        build_log.write(" - Process name:{} pid:{}\n".format(proc.name, proc.pid))
                         try:
                             cmdline = ' '.join(proc.cmdline)
                         except:
                             pass
                         else:
-                            build_log.write("    + %s\n" % cmdline)
+                            build_log.write("    + {}\n".format(cmdline))
             if p0.stdout and not p0.stdout.closed:
                 log.info("Closing subprocess stdout PIPE")
                 p0.stdout.close()
@@ -328,7 +328,7 @@ class Worker(object):
         if not os.path.exists('build_data'):
             os.mkdir('build_data')
 
-        build_filename = os.path.join('build_data', '%s.tar.bz2' % job_id)
+        build_filename = os.path.join('build_data', '{}.tar.bz2'.format(job_id))
         fp = self.bs.fetch_build_source(self.args.username, self.args.queue, self.worker_id, job_id)
 
         with open(build_filename, 'wb') as bp:
@@ -337,7 +337,7 @@ class Worker(object):
                 bp.write(data)
                 data = fp.read(2 ** 13)
 
-        log.info("Wrote build data to %s" % build_filename)
+        log.info("Wrote build data to {}".format(build_filename))
         return os.path.abspath(build_filename)
 
 
@@ -383,20 +383,20 @@ class Worker(object):
         """
         ctx = (job_data['job']['_id'], job_data['job_name'])
 
-        log.info('Starting build, %s, %s' % ctx)
-        journal.write('starting build, %s, %s\n' % ctx)
+        log.info('Starting build, {}, {}'.format(*ctx))
+        journal.write('starting build, {}, {}\n'.format(*ctx))
 
         start_time = time.time()
-        log.info('Setting alarm to terminate build after %i seconds' % self.args.timeout)
+        log.info('Setting alarm to terminate build after {} seconds'.format(self.args.timeout))
 
         try:
             yield
         except Exception as err:
-            journal.write('build errored, %s, %s\n' % ctx)
+            journal.write('build errored, {}, {}\n'.format(*ctx))
             log.exception(err)
             time.sleep(self.SLEEP_TIME)
         else:
-            journal.write('finished build, %s, %s\n' % ctx)
+            journal.write('finished build, {}, {}\n'.format(*ctx))
         finally:
             duration = time.time() - start_time
-            log.info('Build Duration %i seconds' % duration)
+            log.info('Build Duration {} seconds'.format(duration))
