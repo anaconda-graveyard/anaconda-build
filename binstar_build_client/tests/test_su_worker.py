@@ -12,16 +12,12 @@ from mock import patch
 import io
 import os
 import psutil
-import subprocess as sp 
-import sys
-import tempfile
+import subprocess as sp
 import unittest
 
 from binstar_client import errors
-from binstar_client.tests.fixture import CLITestCase
 from binstar_client.tests.urlmock import urlpatch
 from binstar_client.utils import get_binstar
-from binstar_client.utils import get_config
 
 from binstar_build_client import BinstarBuildAPI
 from binstar_build_client.scripts.build import main

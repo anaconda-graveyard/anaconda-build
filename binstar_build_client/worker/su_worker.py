@@ -6,30 +6,18 @@ be run as root with a root python install.
 """
 from __future__ import print_function, absolute_import, unicode_literals
 
-from contextlib import contextmanager
-from tempfile import NamedTemporaryFile
-import inspect
 import io
-import json
 import logging
 import os
-import pickle
 import pipes
-import psutil
-import requests
 import shutil
-import sys
-import time
-import yaml
 
 from binstar_client import errors
 from binstar_client.utils import get_config
 
 from binstar_build_client.utils.rm import rm_rf
 from binstar_build_client.worker.utils.buffered_io import BufferedPopen
-from binstar_build_client.worker.utils.build_log import BuildLog
-from binstar_build_client.worker.utils.script_generator import (gen_build_script,
-    EXIT_CODE_OK, EXIT_CODE_ERROR, EXIT_CODE_FAILED)
+from binstar_build_client.worker.utils.script_generator import gen_build_script
 from binstar_build_client.worker.worker import Worker
 
 SU_WORKER_DEFAULT_PATH = '/opt/anaconda'

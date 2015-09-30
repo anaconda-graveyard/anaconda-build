@@ -8,7 +8,6 @@ from __future__ import (print_function, unicode_literals, division,
 import logging
 import os
 import platform
-import time
 
 from binstar_client import errors
 from binstar_client.utils import get_binstar
