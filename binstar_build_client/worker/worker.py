@@ -1,5 +1,5 @@
 """
-The worker 
+The worker
 """
 from __future__ import print_function, absolute_import, unicode_literals
 
@@ -21,12 +21,15 @@ from binstar_build_client.worker.utils.script_generator import gen_build_script,
 
 log = logging.getLogger('binstar.build')
 
+
 def get_my_procs():
 
     this_proc = psutil.Process()
 
     if os.name == 'nt':
+
         myusername = this_proc.username()
+
         def ismyproc(proc):
             try:
                 return proc.username() == myusername
@@ -41,8 +44,8 @@ def get_my_procs():
                 # psutil < 2
                 return proc.uids.real == this_proc.uids.real
 
-
     return {proc.pid for proc in psutil.process_iter() if ismyproc(proc)}
+
 
 @contextmanager
 def remove_files_after(files):
@@ -54,10 +57,9 @@ def remove_files_after(files):
                 os.unlink(filename)
 
 
-
 class Worker(object):
     """
-    
+
     """
     JOURNAL_FILE = 'journal.csv'
     SLEEP_TIME = 10
@@ -66,7 +68,7 @@ class Worker(object):
         self.bs = bs
         self.args = args
         self.worker_id = args.worker_id
-    
+
     def work_forever(self):
         """
         Start a loop and continuously build forever
@@ -82,23 +84,26 @@ class Worker(object):
     def job_loop(self):
         """
         An iterator that will yield job_data objects when
-        one is available. 
-        
+        one is available.
+
         Also handles journaling of jobs
-        
+
         """
         bs = self.bs
         args = self.args
         worker_idle = False
         while 1:
             try:
-                job_data = bs.pop_build_job(args.username, args.queue, self.worker_id)
+                job_data = bs.pop_build_job(args.username,
+                                            args.queue,
+                                            self.worker_id)
             except errors.NotFound:
                 self.write_status(False, "worker not found")
                 if args.show_traceback:
                     raise
                 else:
-                    msg = ("This worker can no longer pop items off the build queue. "
+                    msg = ("This worker can no longer "
+                           "pop items off the build queue. "
                            "Did someone remove it manually?")
                     raise errors.BinstarError(msg)
 
@@ -162,9 +167,11 @@ class Worker(object):
         args = self.args
 
         if args.push_back:
-            bs.push_build_job(args.username, args.queue, self.worker_id, job_data['job']['_id'])
+            bs.push_build_job(args.username, args.queue, 
+                              self.worker_id, job_data['job']['_id'])
         else:
-            job_data = bs.fininsh_build(args.username, args.queue, self.worker_id, job_data['job']['_id'],
+            job_data = bs.fininsh_build(args.username, args.queue, 
+                                        self.worker_id, job_data['job']['_id'],
                                         failed=failed, status=status)
 
     def _build_loop(self):
