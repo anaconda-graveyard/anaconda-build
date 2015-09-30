@@ -5,10 +5,8 @@ Build worker
 from __future__ import (print_function, unicode_literals, division,
     absolute_import)
 
-from argparse import Namespace
 import logging
 import os
-import time
 import yaml
 
 from binstar_client.utils import get_binstar

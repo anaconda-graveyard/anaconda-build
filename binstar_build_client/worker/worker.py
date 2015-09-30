@@ -5,6 +5,7 @@ from __future__ import print_function, absolute_import, unicode_literals
 
 from contextlib import contextmanager
 import logging
+import inspect
 import os
 import time
 
@@ -12,14 +13,11 @@ from binstar_build_client.utils.rm import rm_rf
 from binstar_client import errors
 import psutil
 import requests
-import yaml
 
-from .utils.buffered_io import BufferedPopen
-from .utils.build_log import BuildLog
-from .utils.script_generator import gen_build_script, \
+from binstar_build_client.worker.utils.buffered_io import BufferedPopen
+from binstar_build_client.worker.utils.build_log import BuildLog
+from binstar_build_client.worker.utils.script_generator import gen_build_script, \
     EXIT_CODE_OK, EXIT_CODE_ERROR, EXIT_CODE_FAILED
-import inspect
-
 
 log = logging.getLogger('binstar.build')
 

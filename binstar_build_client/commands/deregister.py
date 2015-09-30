@@ -1,17 +1,13 @@
 from __future__ import (print_function, unicode_literals, division,
     absolute_import)
 
-from argparse import RawDescriptionHelpFormatter
 import os
 import yaml
 
 from binstar_client import errors
-from binstar_client.commands.authorizations import format_timedelta
-from binstar_client.utils import get_binstar, bool_input
-from dateutil.parser import parse as parse_date
+from binstar_client.utils import get_binstar
 
 from binstar_build_client import BinstarBuildAPI
-from binstar_build_client.commands.register import split_queue_arg
 from binstar_build_client.worker.register import (deregister_worker,
                                                   print_registered_workers)
 

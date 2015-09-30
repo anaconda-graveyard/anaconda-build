@@ -1,11 +1,9 @@
 from __future__ import (print_function, unicode_literals, division,
     absolute_import)
 
-from argparse import Namespace
 import os
 import yaml
 import logging
-import tempfile
 
 from binstar_client import errors
 log = logging.getLogger("binstar.build")
@@ -25,8 +23,9 @@ def print_registered_workers():
                 worker = yaml.load(fil.read())
                 has_workers = True
                 log.info('worker-id\t{}\tqueue\t{}/{}'.format(worker['worker_id'], worker['username'], worker['queue']))
-            except Exception as e:
-                log.info('Skipping non-yaml file in .workers {}'.format(worker_file))
+            except Exception:
+                log.info('Skipping file worker config file: {} that could ' +\
+                         'not be yaml.load\'ed'.format(worker_file))
     if not has_workers:
         log.info('(No registered workers)')
 def register_worker(bs, args):
@@ -60,7 +59,7 @@ def deregister_worker(bs, args):
         os.unlink(filename)
         log.debug("Removed worker config {}".format(filename))
         return args
-    except Exception as e:
+    except Exception:
         log.info('Failed on anaconda build deregister.\n')
         print_registered_workers()
         log.info('deregister failed with error:\n')
