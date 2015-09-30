@@ -35,7 +35,7 @@ def register_worker(bs, args):
     '''
     worker_id = bs.register_worker(args.username, args.queue, args.platform,
                                         args.hostname, args.dist)
-    log.info('Registered worker with worker_id:%s' % worker_id)
+    log.info('Registered worker with worker_id:\t{}'.format(worker_id))
     args.worker_id = worker_id
     filename = os.path.join(REGISTERED_WORKERS_DIR, args.worker_id)
     with open(filename, 'w') as fd:

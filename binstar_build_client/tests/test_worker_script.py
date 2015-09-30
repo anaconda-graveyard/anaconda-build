@@ -38,7 +38,6 @@ class Test(CLITestCase):
         main(['register', '--queue', 'username/queue-1','--cwd','.'], False)
         self.assertEqual(register_worker.call_count, 1)
         
-    
     @urlpatch
     @patch('binstar_build_client.commands.deregister.deregister_worker')
     def test_deregister_from_config(self, urls, deregister_worker):
