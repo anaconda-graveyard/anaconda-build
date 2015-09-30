@@ -63,9 +63,10 @@ class TestSuWorker(unittest.TestCase):
         self.assertNotEqual(check.call_count, 0)
         self.assertEqual(test_su.call_count, 1)
         with patch.object(su_worker, 'check_conda_path', return_value=True, clear=True) as check:
-            with patch.object(os, 'getuid', return_value=1, clear=True) as getuid:
-                with self.assertRaises(errors.BinstarError):
-                    su_worker.validate_su_worker(TEST_BUILD_WORKER, SU_WORKER_DEFAULT_PATH)
+            with patch.object(os.path, 'isdir', return_value=True, clear=True) as isdir: 
+                with patch.object(os, 'getuid', return_value=1, clear=True) as getuid:
+                    with self.assertRaises(errors.BinstarError):
+                        su_worker.validate_su_worker(TEST_BUILD_WORKER, SU_WORKER_DEFAULT_PATH)
         self.assertEqual(getuid.call_count, 1)
 
     @unittest.skipIf(not is_valid_su_worker, 'Skipping as not valid su_worker')
@@ -113,22 +114,24 @@ class TestSuWorker(unittest.TestCase):
         with patch.object(su_worker.SuWorker, 'su_with_env', return_value=ok) as su_with_env:
             with patch.object(su_worker.SuWorker, 'destroy_user_procs', return_value=True) as destroy_user_procs:
                 with patch.object(su_worker.SuWorker, 'working_dir', return_value='.') as working_dir:
-                    worker = self.new_su_worker()
-                    build_data = {} 
-                    build_log = io.StringIO()
-                    timeout = iotimeout = 200
-                    script_filename = 'script'
-                    exit_code = worker.run(build_data, script_filename, 
-                                              build_log, timeout, iotimeout,
-                                              api_token='api_token', 
-                                              git_oauth_token='git_oauth_token', 
-                                              build_filename=None, instructions=None)
-                    build_log = build_log.getvalue()
-                    self.assertIn('su_worker_test_ok', build_log)
-                    self.assertEqual(exit_code, 0)
+                    with patch.object(su_worker, 'validate_su_worker', return_value=True) as validate_su_worker:
+                        worker = self.new_su_worker()
+                        build_data = {} 
+                        build_log = io.StringIO()
+                        timeout = iotimeout = 200
+                        script_filename = 'script'
+                        exit_code = worker.run(build_data, script_filename, 
+                                                  build_log, timeout, iotimeout,
+                                                  api_token='api_token', 
+                                                  git_oauth_token='git_oauth_token', 
+                                                  build_filename=None, instructions=None)
+                        build_log = build_log.getvalue()
+                        self.assertIn('su_worker_test_ok', build_log)
+                        self.assertEqual(exit_code, 0)
         self.assertEqual(su_with_env.call_count, 1)
         self.assertEqual(destroy_user_procs.call_count, 1)
         self.assertEqual(working_dir.call_count, 1)
+        self.assertEqual(validate_su_worker.call_count, 1)
 
     @unittest.skipIf(not is_valid_su_worker, 'Skipping as not valid su_worker')
     @unittest.skipIf(not standard_root_install, 
