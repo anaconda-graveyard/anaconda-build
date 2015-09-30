@@ -6,15 +6,16 @@ from __future__ import (print_function, unicode_literals, division,
     absolute_import)
 
 import logging
-import platform
 import os
+import platform
 import time
 
 from binstar_client import errors
 from binstar_client.utils import get_binstar
+
 from binstar_build_client import BinstarBuildAPI
-from binstar_build_client.worker.worker import Worker
 from binstar_build_client.utils import get_conda_root_prefix
+from binstar_build_client.worker.worker import Worker
 
 log = logging.getLogger('binstar.build')
 

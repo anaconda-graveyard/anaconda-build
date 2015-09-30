@@ -8,14 +8,14 @@ from __future__ import (print_function, unicode_literals, division,
     absolute_import)
 
 from mock import patch
-import unittest
 import os
 import subprocess as sp
+import unittest
 
 from binstar_build_client.scripts.build import main
+from binstar_build_client.worker.worker import get_my_procs
 from binstar_client.tests.fixture import CLITestCase
 from binstar_client.tests.urlmock import urlpatch
-from binstar_build_client.worker.worker import get_my_procs
 
 class Test(CLITestCase):
 

@@ -7,30 +7,30 @@ be run as root with a root python install.
 from __future__ import print_function, absolute_import, unicode_literals
 
 from contextlib import contextmanager
-import logging
-import os
-import time
-import io
-import psutil
-import requests
-import yaml
-import json
-import pickle
-import shutil
-import sys
-import pipes
 from tempfile import NamedTemporaryFile
 import inspect
+import io
+import json
+import logging
+import os
+import pickle
+import pipes
+import psutil
+import requests
+import shutil
+import sys
+import time
+import yaml
 
-from binstar_build_client.utils.rm import rm_rf
 from binstar_client import errors
 from binstar_client.utils import get_config
 
-from .utils.buffered_io import BufferedPopen
-from .utils.build_log import BuildLog
-from .utils.script_generator import gen_build_script, \
-    EXIT_CODE_OK, EXIT_CODE_ERROR, EXIT_CODE_FAILED
-from .worker import Worker
+from binstar_build_client.utils.rm import rm_rf
+from binstar_build_client.worker.utils.buffered_io import BufferedPopen
+from binstar_build_client.worker.utils.build_log import BuildLog
+from binstar_build_client.worker.utils.script_generator import (gen_build_script,
+    EXIT_CODE_OK, EXIT_CODE_ERROR, EXIT_CODE_FAILED)
+from binstar_build_client.worker.worker import Worker
 
 SU_WORKER_DEFAULT_PATH = '/opt/anaconda'
 
@@ -133,7 +133,6 @@ class SuWorker(Worker):
         working_dir = self.working_dir(build_data)
 
         args = [os.path.abspath(script_filename), '--api-token', api_token]
-
 
         if git_oauth_token:
             args.extend(['--git-oauth-token', git_oauth_token])
