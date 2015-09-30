@@ -63,12 +63,10 @@ class Test(unittest.TestCase):
             build = Mock()
             build.return_value = False, 'success'
             download_build_source = Mock()
-
         worker = MyWorker()
         worker.args.push_back = False
         worker.worker_id = 'worker_id'
         worker._handle_job({'job':{'_id':'test_job_id'}})
-
         self.assertEqual(worker.build.call_count, 1)
         self.assertEqual(worker.bs.fininsh_build.call_count, 1)
         self.assertEqual(worker.bs.fininsh_build.call_args[1], {'status': 'success', 'failed': False})

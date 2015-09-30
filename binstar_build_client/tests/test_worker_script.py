@@ -15,7 +15,6 @@ import unittest
 
 from binstar_client.tests.fixture import CLITestCase
 from binstar_client.tests.urlmock import urlpatch
-
 from binstar_build_client.scripts.build import main
 
 worker_data = {'cwd': '.',

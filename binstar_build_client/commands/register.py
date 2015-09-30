@@ -14,14 +14,11 @@ from dateutil.parser import parse as parse_date
 from binstar_client.commands.authorizations import format_timedelta
 from binstar_client import errors
 from binstar_client.utils import get_binstar, bool_input
-
 from binstar_build_client.utils import get_conda_root_prefix
 from binstar_build_client import BinstarBuildAPI
 from binstar_build_client.worker.register import (register_worker,
                                                   print_registered_workers,)
-
-    
-    
+ 
 OS_MAP = {'darwin': 'osx', 'windows':'win'}
 ARCH_MAP = {'x86': '32',
             'i686': '32',
@@ -114,4 +111,3 @@ def add_parser(subparsers, name='register',
     parser.set_defaults(main=main)
 
     return parser
-
