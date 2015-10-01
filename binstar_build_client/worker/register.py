@@ -28,6 +28,7 @@ def print_registered_workers():
                          'not be yaml.load\'ed'.format(worker_file))
     if not has_workers:
         log.info('(No registered workers)')
+
 def register_worker(bs, args):
     '''
     Register the worker with anaconda
