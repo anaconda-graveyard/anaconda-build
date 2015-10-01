@@ -34,7 +34,7 @@ def print_worker_summary(args):
     log.info('--one: {}'.format(args.one))
     log.info('--dist: {}'.format(args.dist))
     log.info('--cwd: {}'.format(args.cwd))
-    log.info('--max-job-duration: {} (seconds)'.format(args.max_job_duration))
+    log.info('--max-job-duration: {} (seconds)'.format(args.timeout))
 
 
 def main(args):

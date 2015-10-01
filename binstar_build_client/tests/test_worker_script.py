@@ -30,7 +30,7 @@ worker_data = {'cwd': '.',
                'status_file': 'status_file',
                'hostname': 'localhost',
                'dist': 'dist',
-               'max_job_duration': 1000,
+               'timeout': 1000,
             }
 
 class Test(CLITestCase):
