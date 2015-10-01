@@ -55,8 +55,6 @@ def main(args):
         return
     if not args.queue:
         raise errors.BinstarError('Argument --queue <USERNAME>/<QUEUE> is required.')
-    if not args.output:
-        args.output = tempfile.NamedTemporaryFile(delete=False).name
     args.username, args.queue = split_queue_arg(args.queue)
     bs = get_binstar(args, cls=BinstarBuildAPI)
     return register_worker(bs, args)
@@ -91,8 +89,6 @@ def add_parser(subparsers, name='register',
     parser.add_argument('-t', '--max-job-duration', type=int, metavar='SECONDS',
                         dest='timeout',
                         help='Force jobs to stop after they exceed duration (default: %(default)s)', default=60 * 60 * 60)
-    parser.add_argument('-o','--output',
-                        help="Filename of output worker config yaml file with worker id and args.")
     parser.set_defaults(main=main)
 
     return parser

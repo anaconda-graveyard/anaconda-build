@@ -19,6 +19,24 @@ from binstar_build_client.worker.register import REGISTERED_WORKERS_DIR, print_r
 
 log = logging.getLogger('binstar.build')
 
+def print_worker_summary(args):
+    log.info('Starting worker:')
+    log.info('Hostname: {}'.format(args.hostname))
+    log.info('User: {}'.format(args.username))
+    log.info('Queue: {}'.format(args.queue))
+    log.info('Platform: {}'.format(args.platform))
+    log.info('Worker-id: {}'.format(args.worker_id))
+    log.info('Build Options:')
+    log.info('--conda-build-dir: {}'.format(args.conda_build_dir))
+    log.info('--show-new-procs: {}'.format(args.show_new_procs))
+    log.info('--status-file: {}'.format(args.status_file))
+    log.info('--push-back: {}'.format(args.push_back))
+    log.info('--one: {}'.format(args.one))
+    log.info('--dist: {}'.format(args.dist))
+    log.info('--cwd: {}'.format(args.cwd))
+    log.info('--max-job-duration: {} (seconds)'.format(args.max_job_duration))
+
+
 def main(args):
     worker_file = os.path.join(REGISTERED_WORKERS_DIR, args.worker_id)
     if not os.path.exists(worker_file):
@@ -29,12 +47,7 @@ def main(args):
     vars(args).update(worker_config)
     args.conda_build_dir = args.conda_build_dir.format(args=args)
     bs = get_binstar(args, cls=BinstarBuildAPI)
-
-    log.info('Starting worker:')
-    log.info('User: {}'.format(args.username))
-    log.info('Queue: {}'.format(args.queue))
-    log.info('Platform: {}'.format(args.platform))
-
+    print_worker_summary(args)
     worker = Worker(bs, args)
     worker.write_status(True, "Starting")
     try:

@@ -39,8 +39,6 @@ def add_parser(subparsers, name='deregister',
                         action='store_true')
     parser.add_argument('-c', '--config',
                         help='Path to a yaml config file that was an --output of anaconda build register')
-    parser.add_argument('-q', '--queue',
-                        help="Queue (required if no --config arg)")
     parser.add_argument('-w', '--worker-id',    
                         help="Worker id (required if no --config arg")
     parser.set_defaults(main=main)

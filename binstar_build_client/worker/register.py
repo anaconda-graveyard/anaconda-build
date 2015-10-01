@@ -41,6 +41,7 @@ def register_worker(bs, args):
     with open(filename, 'w') as fd:
         yaml.dump(vars(args), fd)
     log.info('Worker config saved at {}.'.format(filename))
+    log.info('Now run:\n\tanaconda build worker {}'.format(worker_id))
     return args
 
 def deregister_worker(bs, args):
