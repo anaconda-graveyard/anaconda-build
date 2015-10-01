@@ -14,7 +14,6 @@ from binstar_client import errors
 from binstar_client.utils import get_binstar
 
 from binstar_build_client import BinstarBuildAPI
-from binstar_build_client.utils import get_conda_root_prefix
 from binstar_build_client.worker.register import (register_worker,
                                                   print_registered_workers,)
  
@@ -94,19 +93,6 @@ def add_parser(subparsers, name='register',
                         help='Force jobs to stop after they exceed duration (default: %(default)s)', default=60 * 60 * 60)
     parser.add_argument('-o','--output',
                         help="Filename of output worker config yaml file with worker id and args.")
-    dgroup = parser.add_argument_group('development options')
-
-    dgroup.add_argument("--conda-build-dir",
-                        default=os.path.join(get_conda_root_prefix(), 'conda-bld', '{args.platform}'),
-                        help="[Advanced] The conda build directory (default: %(default)s)",
-                        )
-    dgroup.add_argument('--show-new-procs', action='store_true', dest='show_new_procs',
-                        help='Print any process that started during the build '
-                             'and is still running after the build finished')
-
-    dgroup.add_argument('--status-file',
-                        help='If given, binstar will update this file with the time it last checked the anaconda server for updates')
-
     parser.set_defaults(main=main)
 
     return parser
