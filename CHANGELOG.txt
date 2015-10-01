@@ -1,3 +1,12 @@
+2015-10-01: 0.11.0:
+------------------
+* fix dependency names in setup.py, .binstar.yml
+* fixes to conda-clean-build-dir script related to permissions
+* better python 3 compatbility
+* added conda server build subcommand
+* pointing anaconda client to http://api.anaconda.org by default
+* optimizations for docker image worker
+
 2013-09-05: 0.3.1:
 -----------------
 * fix attribute error on Windows
