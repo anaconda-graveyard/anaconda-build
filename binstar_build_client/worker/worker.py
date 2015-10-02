@@ -16,8 +16,8 @@ from binstar_client import errors
 from binstar_build_client.utils.rm import rm_rf
 from binstar_build_client.worker.utils.buffered_io import BufferedPopen
 from binstar_build_client.worker.utils.build_log import BuildLog
-from binstar_build_client.worker.utils.script_generator import gen_build_script, \
-    EXIT_CODE_OK, EXIT_CODE_ERROR, EXIT_CODE_FAILED
+from binstar_build_client.worker.utils.script_generator import (gen_build_script,
+    EXIT_CODE_OK, EXIT_CODE_ERROR, EXIT_CODE_FAILED)
 
 log = logging.getLogger('binstar.build')
 
@@ -79,7 +79,8 @@ class Worker(object):
     def write_status(self, ok=True, msg='ok'):
         if self.args.status_file:
             with open(self.args.status_file, 'w') as fd:
-                fd.write("{} {} '{}'\n".format(int(not ok), int(time.time()), msg))
+                msg = (int(not ok), int(time.time()), msg)
+                fd.write("{} {} '{}'\n".format(*msg))
 
     def job_loop(self):
         """
@@ -108,14 +109,16 @@ class Worker(object):
                     raise errors.BinstarError(msg)
 
             except requests.ConnectionError as err:
-                log.error("Trouble connecting to binstar at '{}' ".format(bs.domain))
+                msg = "Trouble connecting to binstar at '{}' ".format(bs.domain)
+                log.error(msg)
                 log.error("Could not retrieve work items")
                 job_data = {}
                 self.write_status(False, "Trouble connecting to binstar")
 
             except errors.ServerError as err:
                 log.exception(err)
-                log.error("There server '{}' returned an error response ".format(bs.domain))
+                msg = "There server '{}' returned an error response ".format(bs.domain)
+                log.error(msg)
                 log.error("Could not retrieve work items")
                 self.write_status(False, "Server error")
                 job_data = {}
@@ -136,8 +139,6 @@ class Worker(object):
 
             if args.one:
                 break
-
-
 
     def _handle_job(self, job_data):
         """
@@ -167,16 +168,17 @@ class Worker(object):
         args = self.args
 
         if args.push_back:
-            bs.push_build_job(args.username, args.queue, 
+            bs.push_build_job(args.username, args.queue,
                               self.worker_id, job_data['job']['_id'])
         else:
-            job_data = bs.fininsh_build(args.username, args.queue, 
+            job_data = bs.fininsh_build(args.username, args.queue,
                                         self.worker_id, job_data['job']['_id'],
                                         failed=failed, status=status)
 
     def _build_loop(self):
         """
-        This is the main build loop this checks anaconda.org for any jobs it can do and 
+        This is the main build loop this checks
+        anaconda.org for any jobs it can do and
         """
 
         with open(self.JOURNAL_FILE, 'a') as journal:
@@ -203,7 +205,7 @@ class Worker(object):
 
     def build(self, job_data):
         """
-        Run a single build 
+        Run a single build
         """
         job_id = job_data['job']['_id']
 
@@ -213,14 +215,15 @@ class Worker(object):
         rm_rf(working_dir)
         os.makedirs(working_dir)
 
-        build_log = BuildLog(self.bs, self.args.username, self.args.queue, self.worker_id, job_id,
+        build_log = BuildLog(self.bs, self.args.username,
+                             self.args.queue, self.worker_id, job_id,
                              filename=self.build_logfile(job_data))
 
         with build_log:
 
-
             instructions = job_data['build_item_info'].get('instructions')
-            build_log.write("Building on worker {} (platform {})\n".format(self.args.hostname, self.args.platform))
+            msg = (self.args.hostname, self.args.platform)
+            build_log.write("Building on worker {} (platform {})\n".format(*msg))
             build_log.write("Starting build {} \n".format(job_data['job_name']))
 
             if not os.path.exists('build_scripts'):
@@ -266,7 +269,8 @@ class Worker(object):
             else:  # Unknown error
                 failed = True
                 status = 'error'
-                log.error("Unknown build exit status {} for build {}".format(exit_code, job_data['job_name']))
+                msg = (exit_code, job_data['job_name'])
+                log.error("Unknown build exit status {} for build {}".format(*msg))
 
             return failed, status
 
@@ -278,7 +282,6 @@ class Worker(object):
         working_dir = self.working_dir(build_data)
 
         args = [os.path.abspath(script_filename), '--api-token', api_token]
-
 
         if git_oauth_token:
             args.extend(['--git-oauth-token', git_oauth_token])
@@ -306,7 +309,8 @@ class Worker(object):
                 currently_running_procs = get_my_procs()
                 new_procs = [psutil.Process(pid) for pid in currently_running_procs - already_running_procs]
                 if new_procs:
-                    build_log.write("WARNING: There are processes that were started during the build and are still running\n")
+                    build_log.write("WARNING: There are processes that were "
+                                    "started during the build and are still running\n")
                     for proc in new_procs:
                         build_log.write(" - Process name:{} pid:{}\n".format(proc.name, proc.pid))
                         try:
@@ -319,20 +323,20 @@ class Worker(object):
                 log.info("Closing subprocess stdout PIPE")
                 p0.stdout.close()
 
-
         return exit_code
 
     def download_build_source(self, job_id):
         """
         If the source files for this job were tarred and uploaded to bisntar.
-        Download them. 
+        Download them.
         """
         log.info("Fetching build data")
         if not os.path.exists('build_data'):
             os.mkdir('build_data')
 
         build_filename = os.path.join('build_data', '{}.tar.bz2'.format(job_id))
-        fp = self.bs.fetch_build_source(self.args.username, self.args.queue, self.worker_id, job_id)
+        fp = self.bs.fetch_build_source(self.args.username, self.args.queue,
+                                        self.worker_id, job_id)
 
         with open(build_filename, 'wb') as bp:
             data = fp.read(2 ** 13)
@@ -347,8 +351,9 @@ class Worker(object):
     def job_context(self, journal, job_data):
         """
         Yields a context where a job can execute safely
-        
-        If the context is not exited within 'args.timeout' seconds, an exception will be raised
+
+        If the context is not exited within 'args.timeout' seconds,
+        an exception will be raised
         """
         ctx = (job_data['job']['_id'], job_data['job_name'])
 

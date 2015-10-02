@@ -9,7 +9,7 @@ from binstar_build_client.commands.register import get_platform
 from binstar_build_client.worker.worker import Worker
 from binstar_build_client.worker.register import register_worker, deregister_worker
 from binstar_build_client.commands.register import get_platform
-                                                  
+
 
 class MockWorker(Worker):
     def __init__(self):
@@ -22,12 +22,13 @@ class MockWorker(Worker):
         args.timeout = 100
         Worker.__init__(self, bs, args)
 
+
 def default_build_data():
     return {
               'build_info':
                 {'api_endpoint': 'api_endpoint',
                  'build_no': 1,
-                 '_id':'build_id',
+                 '_id': 'build_id',
                  },
               'build_item_info':
                 {'platform': get_platform(),
@@ -36,7 +37,7 @@ def default_build_data():
                  'sub_build_no': 0,
                  'instructions': {
                                   'iotimeout': 61,
-                                  'install':'echo UNIQUE INSTALL MARKER',
+                                  'install': 'echo UNIQUE INSTALL MARKER',
                                   'test': 'echo UNIQUE TEST MARKER',
                                   'before_script': 'echo UNIQUE BEFORE SCRIPT MARKER',
                                   'script': 'echo UNIQUE SCRIPT MARKER',
@@ -51,13 +52,14 @@ def default_build_data():
                 {'_id': 'test_gen_build_script'},
               'owner': {'login': 'me'},
               'package': {'name': 'the_package'},
-              'job_name':'job_name',
-              'upload_token':'upload_token'
+              'job_name': 'job_name',
+              'upload_token': 'upload_token'
               }
+
 
 class Test(unittest.TestCase):
 
-    
+
     def test_handle_job(self):
 
         class MyWorker(MockWorker):
@@ -67,10 +69,11 @@ class Test(unittest.TestCase):
         worker = MyWorker()
         worker.args.push_back = False
         worker.worker_id = 'worker_id'
-        worker._handle_job({'job':{'_id':'test_job_id'}})
+        worker._handle_job({'job': {'_id': 'test_job_id'}})
         self.assertEqual(worker.build.call_count, 1)
         self.assertEqual(worker.bs.fininsh_build.call_count, 1)
-        self.assertEqual(worker.bs.fininsh_build.call_args[1], {'status': 'success', 'failed': False})
+        self.assertEqual(worker.bs.fininsh_build.call_args[1],
+                        {'status': 'success', 'failed': False})
 
     def test_failed_job(self):
 
@@ -82,12 +85,12 @@ class Test(unittest.TestCase):
         worker.args.push_back = False
         worker.worker_id = 'worker_id'
 
-        worker._handle_job({'job':{'_id':'test_job_id'}})
+        worker._handle_job({'job': {'_id': 'test_job_id'}})
 
         self.assertEqual(worker.build.call_count, 1)
         self.assertEqual(worker.bs.fininsh_build.call_count, 1)
-        self.assertEqual(worker.bs.fininsh_build.call_args[1], {'status': 'error', 'failed': True})
-
+        self.assertEqual(worker.bs.fininsh_build.call_args[1],
+                         {'status': 'error', 'failed': True})
 
     def test_download_build_source(self):
 
@@ -103,9 +106,6 @@ class Test(unittest.TestCase):
         with open(filename, 'rb') as fd:
             data = fd.read()
         self.assertEqual(data, expected)
-
-
-
 
     @patch('binstar_build_client.worker.worker.BufferedPopen')
     @patch('binstar_build_client.worker.worker.gen_build_script')
@@ -126,7 +126,8 @@ class Test(unittest.TestCase):
         self.assertEqual(status, 'success')
 
         popen_args = BufferedPopen.call_args[0][0]
-        expected_args = ['script_filename', '--api-token', 'upload_token', '--build-tarball', 'build_source_filename']
+        expected_args = ['script_filename', '--api-token', 'upload_token',
+                         '--build-tarball', 'build_source_filename']
         ending_posix = popen_args[0].split('/')[-1]
         ending_win = popen_args[0].split('\\')[-1]
         self.assertIn('script_filename', (ending_win, ending_posix))
@@ -138,7 +139,8 @@ class Test(unittest.TestCase):
         worker = MockWorker()
         worker.worker_id = 'worker_id'
         worker.args.one = True
-        worker.bs.pop_build_job.return_value = {'job':{'_id':'test_job_id'}, 'job_name':'job_name'}
+        worker.bs.pop_build_job.return_value = {'job': {'_id': 'test_job_id'},
+                                                'job_name': 'job_name'}
         jobs = list(worker.job_loop())
         self.assertEqual(len(jobs), 1)
 
@@ -147,7 +149,8 @@ class Test(unittest.TestCase):
         worker = MockWorker()
         worker.worker_id = 'worker_id'
         worker.args.one = False
-        worker.bs.pop_build_job.return_value = {'job':{'_id':'test_job_id'}, 'job_name':'job_name'}
+        worker.bs.pop_build_job.return_value = {'job': {'_id': 'test_job_id'},
+                                                'job_name': 'job_name'}
 
         with self.assertRaises(TypeError):
             for job in worker.job_loop():
@@ -158,14 +161,15 @@ class Test(unittest.TestCase):
         worker = MockWorker()
         worker.worker_id = 'worker_id'
         worker.args.one = False
-        job_data = {'job':{'_id':'test_job_id'}, 'job_name':'job_name'}
+        job_data = {'job': {'_id': 'test_job_id'}, 'job_name': 'job_name'}
         journal = io.StringIO()
 
         with worker.job_context(journal, job_data):
             pass
 
         value = journal.getvalue()
-        expected = 'starting build, test_job_id, job_name\nfinished build, test_job_id, job_name\n'
+        expected = 'starting build, test_job_id, job_name\n' +\
+                   'finished build, test_job_id, job_name\n'
         self.assertEqual(value, expected)
 
     def test_job_context_error(self):
@@ -173,14 +177,15 @@ class Test(unittest.TestCase):
         worker = MockWorker()
         worker.worker_id = 'worker_id'
         worker.args.one = False
-        job_data = {'job':{'_id':'test_job_id'}, 'job_name':'job_name'}
+        job_data = {'job': {'_id': 'test_job_id'}, 'job_name': 'job_name'}
         journal = io.StringIO()
 
         with worker.job_context(journal, job_data):
             raise TypeError("hai -- Expected Error")
 
         value = journal.getvalue()
-        expected = 'starting build, test_job_id, job_name\nbuild errored, test_job_id, job_name\n'
+        expected = 'starting build, test_job_id, job_name\n' +\
+                   'build errored, test_job_id, job_name\n'
         self.assertEqual(value, expected)
 
 

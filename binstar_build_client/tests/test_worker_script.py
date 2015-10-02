@@ -5,7 +5,7 @@ Created on Feb 18, 2014
 '''
 
 from __future__ import (print_function, unicode_literals, division,
-    absolute_import)
+                        absolute_import)
 
 import os
 import tempfile
@@ -23,7 +23,7 @@ from binstar_build_client.scripts.build import main
 from binstar_build_client.worker.register import REGISTERED_WORKERS_DIR
 
 worker_data = {'cwd': '.',
-               'output': os.path.join(REGISTERED_WORKERS_DIR, 'worker_id'), 
+               'output': os.path.join(REGISTERED_WORKERS_DIR, 'worker_id'),
                'username': 'username',
                'queue': 'queue-1',
                'conda_build_dir': 'conda_build_dir',
@@ -35,19 +35,18 @@ worker_data = {'cwd': '.',
                'hostname': 'localhost',
                'dist': 'dist',
                'timeout': 1000,
-            }
+               }
 
 
 class Test(CLITestCase):
-
 
     @urlpatch
     @patch('binstar_build_client.commands.register.register_worker')
     def test_register(self, urls, register_worker):
 
-        main(['register', '--queue', 'username/queue-1','--cwd','.'], False)
+        main(['register', '--queue', 'username/queue-1', '--cwd', '.'], False)
         self.assertEqual(register_worker.call_count, 1)
-        
+
     @urlpatch
     @patch('binstar_build_client.commands.deregister.deregister_worker')
     def test_deregister_from_config(self, urls, deregister_worker):
@@ -56,14 +55,13 @@ class Test(CLITestCase):
             f.write(yaml.dump(worker_data))
         main(['deregister', '-c', worker_data['output']], False)
         self.assertEqual(deregister_worker.call_count, 1)
-    
+
     @urlpatch
     @patch('binstar_build_client.commands.deregister.deregister_worker')
     def test_deregister_from_id(self, urls, deregister_worker):
 
         main(['deregister', '--worker-id', worker_data['worker_id']], False)
         self.assertEqual(deregister_worker.call_count, 1)
-    
 
     @urlpatch
     @patch('binstar_build_client.commands.worker.Worker')
@@ -72,7 +70,7 @@ class Test(CLITestCase):
             f.write(yaml.dump(worker_data))
         main(['--show-traceback', 'worker', worker_data['worker_id']], False)
         self.assertEqual(Worker().work_forever.call_count, 1)
-        
+
     @classmethod
     def tearDownClass(cls):
         if os.path.exists(worker_data['output']):
@@ -87,6 +85,6 @@ class Test(CLITestCase):
         my_pids = get_my_procs()
         for pid in pids:
             self.assertIn(pid, my_pids)
-    
+
 if __name__ == '__main__':
     unittest.main()
