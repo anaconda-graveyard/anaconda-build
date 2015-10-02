@@ -3,12 +3,14 @@ from __future__ import print_function, unicode_literals, absolute_import
 import io
 import os
 import unittest
-
 from mock import Mock, patch
+
+from binstar_build_client.commands.register import get_platform
+from binstar_build_client.worker.worker import Worker
+from binstar_build_client.worker.register import register_worker, deregister_worker
 
 from binstar_build_client.commands.worker import (get_platform,
                                                   Worker)
-
 
 class MockWorker(Worker):
     def __init__(self):
@@ -56,34 +58,17 @@ def default_build_data():
 
 class Test(unittest.TestCase):
 
-    def test_worker_context(self):
-        bs = Mock()
-        bs.register_worker.return_value = 'test_worker_id'
-        args = Mock()
-        args.cwd = '.'
-
-        worker = Worker(bs, args)
-        worker.STATE_FILE = 'worker_test_state.yaml'
-
-        with worker.worker_context() as worker_id:
-            self.assertEqual(worker_id, 'test_worker_id')
-            self.assertTrue(os.path.isfile(worker.STATE_FILE))
-
-        self.assertEqual(bs.remove_worker.call_count, 1)
-        self.assertFalse(os.path.isfile(worker.STATE_FILE))
-
+    
     def test_handle_job(self):
 
         class MyWorker(MockWorker):
             build = Mock()
             build.return_value = False, 'success'
             download_build_source = Mock()
-
         worker = MyWorker()
         worker.args.push_back = False
         worker.worker_id = 'worker_id'
         worker._handle_job({'job':{'_id':'test_job_id'}})
-
         self.assertEqual(worker.build.call_count, 1)
         self.assertEqual(worker.bs.fininsh_build.call_count, 1)
         self.assertEqual(worker.bs.fininsh_build.call_args[1], {'status': 'success', 'failed': False})
