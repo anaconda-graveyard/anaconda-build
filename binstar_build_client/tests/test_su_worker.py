@@ -18,9 +18,11 @@ import unittest
 from binstar_client import errors
 from binstar_client.tests.urlmock import urlpatch
 from binstar_client.utils import get_binstar
+import yaml
 
 from binstar_build_client import BinstarBuildAPI
 from binstar_build_client.scripts.build import main
+from binstar_build_client.tests.test_worker_script import worker_data
 import binstar_build_client.worker.su_worker as su_worker
         
 TEST_BUILD_WORKER = 'test_build_worker'
@@ -38,9 +40,12 @@ class TestSuWorker(unittest.TestCase):
     @patch('binstar_build_client.worker.su_worker.SuWorker')
     def test_su_worker(self, urls, SuWorker):
         '''Test su_worker CLI '''
-        main(['--show-traceback', 'su_worker', 'username/queue-1', TEST_BUILD_WORKER], False)
+        with open(worker_data['output'], 'w') as f:
+            f.write(yaml.dump(worker_data))
+        main(['--show-traceback', 'su_worker', 
+              worker_data['worker_id'], TEST_BUILD_WORKER], False)
         self.assertEqual(SuWorker().work_forever.call_count, 1)
-
+        
     def test_validate_su_worker(self):
         '''Test su_worker is only run as root, with root python install'''
         with patch.object(os, 'getuid', return_value=0, clear=True) as getuid: 
@@ -147,8 +152,14 @@ class TestSuWorker(unittest.TestCase):
         args = Namespace()
         args.site = 'http://api.anaconda.org'
         args.token = None
+        args.worker_id = 'worker_id'
         bs = get_binstar(args, cls=BinstarBuildAPI)
         return su_worker.SuWorker(bs, args, TEST_BUILD_WORKER, SU_WORKER_DEFAULT_PATH)
+
+    @classmethod
+    def tearDownClass(cls):
+        if os.path.exists(worker_data['output']):
+            os.remove(worker_data['output'])
 
 if __name__ == '__main__':
     unittest.main()

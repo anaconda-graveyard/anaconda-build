@@ -37,7 +37,7 @@ def print_worker_summary(args):
     log.info('--cwd: {}'.format(args.cwd))
     log.info('--max-job-duration: {} (seconds)'.format(args.timeout))
 
-def main(args):
+def update_args_from_worker_file(args):
     worker_file = os.path.join(REGISTERED_WORKERS_DIR, args.worker_id)
     if not os.path.exists(worker_file):
         print_registered_workers()
@@ -46,6 +46,10 @@ def main(args):
         worker_config = yaml.load(f.read())
     vars(args).update(worker_config)
     args.conda_build_dir = args.conda_build_dir.format(args=args)
+    return args
+
+def main(args):
+    args = update_args_from_worker_file(args)
     bs = get_binstar(args, cls=BinstarBuildAPI)
     print_worker_summary(args)
     worker = Worker(bs, args)

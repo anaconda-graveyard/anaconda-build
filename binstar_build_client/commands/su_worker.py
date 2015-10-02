@@ -13,38 +13,21 @@ import platform
 import time
 import os
 
+from binstar_client import errors
+from binstar_client.utils import get_binstar
+
 from binstar_build_client import BinstarBuildAPI
 from binstar_build_client.worker.su_worker import SuWorker, SU_WORKER_DEFAULT_PATH
-from binstar_client.utils import get_binstar
 from binstar_build_client.utils import get_conda_root_prefix
-from binstar_client import errors
-from .worker import OS_MAP, ARCH_MAP, get_platform, get_dist
-
+from binstar_build_client.commands.register import OS_MAP, ARCH_MAP, get_platform, get_dist
+from binstar_build_client.commands.worker import (print_worker_summary,
+                                                  update_args_from_worker_file)
 log = logging.getLogger('binstar.build')
 
 def main(args):
-
-    if args.conda_build_dir is None:
-        args.conda_build_dir = os.path.join(args.python_install_dir, 
-                                            'conda-bld', 
-                                            '{args.platform}')
-    args.conda_build_dir = args.conda_build_dir.format(args=args)
+    args = update_args_from_worker_file(args)
     bs = get_binstar(args, cls=BinstarBuildAPI)
-    if args.queue.count('/') == 1:
-        username, queue = args.queue.split('/', 1)
-        args.username = username
-        args.queue = queue
-    elif args.queue.count('-') == 2:
-        _, username, queue = args.queue.split('-', 2)
-        args.username = username
-        args.queue = queue
-    else:
-        raise errors.UserError("Build queue must be of the form build-USERNAME-QUEUENAME or USERNAME/QUEUENAME")
-    log.info('Starting worker:')
-    log.info('User: {}'.format(args.username))
-    log.info('Queue: {}'.format(args.queue))
-    log.info('Platform: {}'.format(args.platform))
-
+    print_worker_summary(args)
     worker = SuWorker(bs, args, args.build_user, args.python_install_dir)
     worker.write_status(True, "Starting")
     try:
@@ -62,51 +45,34 @@ def add_parser(subparsers, name='su_worker',
                                    epilog=epilog
                                    )
 
-    conda_platform = get_platform()
-    parser.add_argument('queue', metavar='OWNER/QUEUE',
-                        help='The queue to pull builds from')
+    parser.add_argument('worker_id', 
+                        help="worker_id that was given in anaconda build register")
     parser.add_argument('build_user',
                         help="Build user whose home directory is DELETED on each build.")
-    parser.add_argument('-p', '--platform',
-                        default=conda_platform,
-                        help='The platform this worker is running on (default: %(default)s)')
-
-    parser.add_argument('--hostname', default=platform.node(),
-                        help='The host name the worker should use (default: %(default)s)')
-
-    parser.add_argument('--dist', default=get_dist(),
-                        help='The operating system distribution the worker should use (default: %(default)s)')
-
-    parser.add_argument('--cwd', default='.',
-                        help='The root directory this build should use (default: "%(default)s")')
-    parser.add_argument('-t', '--max-job-duration', type=int, metavar='SECONDS',
-                        dest='timeout',
-                        help='Force jobs to stop after they exceed duration (default: %(default)s)', default=60 * 60 * 60)
-
     parser.add_argument('--python-install-dir', default=SU_WORKER_DEFAULT_PATH,
-                        help='sys.prefix for the root python install, not the anaconda.org environment. '+\
-                             'Often /opt/anaconda.')
+                        help='sys.prefix for the root python install, not the ' +\
+                            'anaconda.org environment. Often /opt/anaconda.')
+    parser.add_argument('-f', '--fail', action='store_true',
+                        help='Exit main loop on any un-handled exception')
+    parser.add_argument('-1', '--one', action='store_true',
+                        help='Exit main loop after only one build')
+    parser.add_argument('--push-back', action='store_true',
+                        help='Developers only, always push the build *back* ' +\
+                             'onto the build queue')
     dgroup = parser.add_argument_group('development options')
 
     dgroup.add_argument("--conda-build-dir",
+                        default=os.path.join(get_conda_root_prefix(), 
+                                             'conda-bld', '{args.platform}'),
                         help="[Advanced] The conda build directory (default: %(default)s)",
                         )
     dgroup.add_argument('--show-new-procs', action='store_true', dest='show_new_procs',
                         help='Print any process that started during the build '
                              'and is still running after the build finished')
 
-    dgroup.add_argument('-c', '--clean', action='store_true',
-                        help='Clean up an existing workers session')
-    dgroup.add_argument('-f', '--fail', action='store_true',
-                        help='Exit main loop on any un-handled exception')
-    dgroup.add_argument('-1', '--one', action='store_true',
-                        help='Exit main loop after only one build')
-    dgroup.add_argument('--push-back', action='store_true',
-                        help='Developers only, always push the build *back* onto the build queue')
-
     dgroup.add_argument('--status-file',
-                        help='If given, binstar will update this file with the time it last checked the anaconda server for updates')
-
+                        help='If given, binstar will update this file with the ' +\
+                             'time it last checked the anaconda server for updates')
     parser.set_defaults(main=main)
 
     return parser

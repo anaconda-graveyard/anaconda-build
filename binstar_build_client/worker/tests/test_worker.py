@@ -8,9 +8,8 @@ from mock import Mock, patch
 from binstar_build_client.commands.register import get_platform
 from binstar_build_client.worker.worker import Worker
 from binstar_build_client.worker.register import register_worker, deregister_worker
-
-from binstar_build_client.commands.worker import (get_platform,
-                                                  Worker)
+from binstar_build_client.commands.register import get_platform
+                                                  
 
 class MockWorker(Worker):
     def __init__(self):
