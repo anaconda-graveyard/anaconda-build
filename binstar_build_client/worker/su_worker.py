@@ -45,7 +45,8 @@ def test_su_as_user(build_user):
     has_build_user = build_user in whoami_as_user
     if not has_build_user:
         info = (build_user, whoami_as_user)
-        raise errors.BinstarError('Cannot continue without build_user {}. Got whoami = {}'.format(*info))
+        raise errors.BinstarError('Cannot continue without build_user {}.'
+                                  ' Got whoami = {}'.format(*info))
     return True
 
 
