@@ -300,7 +300,8 @@ class Worker(object):
         try:
             exit_code = p0.wait()
         except BaseException:
-            log.error("Binstar build process caught an exception while waiting for the build to finish")
+            log.error("Binstar build process caught an exception while "
+                      "waiting for the build to finish")
             p0.kill_tree()
             p0.wait()
             raise
