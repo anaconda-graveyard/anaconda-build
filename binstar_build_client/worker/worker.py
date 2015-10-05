@@ -313,7 +313,8 @@ class Worker(object):
                     build_log.write("WARNING: There are processes that were "
                                     "started during the build and are still running\n")
                     for proc in new_procs:
-                        build_log.write(" - Process name:{} pid:{}\n".format(proc.name, proc.pid))
+                        build_log.write(" - Process name:{} pid:{}\n".format(proc.name,
+                                                                             proc.pid))
                         try:
                             cmdline = ' '.join(proc.cmdline)
                         except:
