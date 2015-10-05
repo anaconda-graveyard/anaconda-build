@@ -2,7 +2,7 @@
 Attach a private key file
 '''
 
-from __future__ import (print_function, unicode_literals, division,
+from __future__ import (print_function, division,
     absolute_import)
 
 from binstar_client.utils import get_binstar

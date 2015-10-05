@@ -1,7 +1,7 @@
 """
 Threaded class to stream io from an iterator to a writeable file object
 """
-from __future__ import print_function, unicode_literals, absolute_import
+from __future__ import print_function, absolute_import
 
 import logging
 from threading import Thread, Event

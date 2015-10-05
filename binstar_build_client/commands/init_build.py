@@ -17,7 +17,7 @@ Tail the output of a build untill it is complete:
 
 '''
 
-from __future__ import (print_function, unicode_literals, division,
+from __future__ import (print_function, division,
     absolute_import)
 
 import logging

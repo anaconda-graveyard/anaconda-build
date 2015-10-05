@@ -5,7 +5,7 @@ Created on May 8, 2014
 '''
 
 
-from __future__ import (print_function, unicode_literals, division,
+from __future__ import (print_function, division,
     absolute_import)
 
 from itertools import product

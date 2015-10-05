@@ -4,7 +4,7 @@ Created on Feb 22, 2014
 @author: sean
 '''
 
-from __future__ import (print_function, unicode_literals, division,
+from __future__ import (print_function, division,
     absolute_import)
 
 import requests
