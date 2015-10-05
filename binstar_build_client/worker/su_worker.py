@@ -59,11 +59,13 @@ def validate_su_worker(build_user, python_install_dir):
     has_etc_worker_skel = os.path.isdir('/etc/worker-skel')
     if not has_etc_worker_skel:
         raise errors.BinstarError('Expected /etc/worker-skel to exist and '
-                                  'be a template for {}\'s home directory'.format(build_user))
+                                  'be a template for {}\'s'
+                                  ' home directory'.format(build_user))
     is_root = os.getuid() == 0
     if not is_root:
         raise errors.BinstarError('Expected su_worker to run as root.')
-    return test_su_as_user(build_user) and check_conda_path(build_user, python_install_dir)
+    return test_su_as_user(build_user) and check_conda_path(build_user,
+                                                            python_install_dir)
 
 
 class SuWorker(Worker):
