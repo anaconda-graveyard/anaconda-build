@@ -1,16 +1,13 @@
 from setuptools import setup, find_packages
+import versioneer
 
-ctx = {}
-try:
-    with open('binstar_build_client/_version.py') as fd:
-        exec(open('binstar_build_client/_version.py').read(), ctx)
-    version = ctx.get('__version__', 'dev')
-except IOError:
-    version = '0.8'
 
 setup(
     name='binstar-build',
-    version=version,
+
+    version=versioneer.get_version(),
+    cmdclass=versioneer.get_cmdclass(),
+
     author='Sean Ross-Ross',
     author_email='srossross@gmail.com',
     url='http://github.com/Binstar/binstar_client',
