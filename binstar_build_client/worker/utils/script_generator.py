@@ -15,6 +15,7 @@ try:
     unicode
 except NameError:
     unicode = str
+    basestring = (str,bytes)
 
 log = logging.getLogger(__name__)
 
@@ -66,7 +67,6 @@ def get_files(context, job_data):
     build_targets = job_data['build_item_info'].get('instructions', {}).get('build_targets')
     if not build_targets:
         return []
-
     if isinstance(build_targets, basestring):
         build_targets = [build_targets]
     elif isinstance(build_targets, dict):
@@ -85,8 +85,8 @@ def get_files(context, job_data):
 
 def get_list(dct, item, default=()):
     """
-    Get an item from a dictionary, like `dict.get`. 
-    
+    Get an item from a dictionary, like `dict.get`.
+
     This method will transform all scalar values into lists of lenght 1
     """
     value = dct.get(item, default)
@@ -158,7 +158,7 @@ def create_exports(build_data):
 def gen_build_script(build_data, **context):
     """
     Generate a build script from a submitted build
-    
+
     :return: the filename of the build script to execute
     """
 
@@ -204,4 +204,3 @@ def gen_build_script(build_data, **context):
         os.chmod(script_filename, 0o777)
 
     return script_filename
-

@@ -19,8 +19,8 @@ Here is an example:
 	# conda will search *only* the channels listed here
 	channels:
   	   - defaults
-  	   - http://conda.binstar.org/USER-NAME
-  	   - http://conda.binstar.org/USER-NAME-2
+  	   - http://conda.anaconda.org/USER-NAME
+  	   - http://conda.anaconda.org/USER-NAME-2
   	   
   	# environment locations:
   	   - ~/envs
@@ -31,7 +31,7 @@ This example shows that when searching or installing with the ``conda`` command 
 .. _continuum: http://repo.continuum.io/pkgs/free/linux-64/index.html
 
 
-If you have already uploaded a file to binstar.org, which can be done by following along the `Getting Started guide`_, you should now add your conda.binstar url to the .condarc file as shown above and run::
+If you have already uploaded a file to anaconda.org, which can be done by following along the `Getting Started guide`_, you should now add your conda.binstar url to the .condarc file as shown above and run::
 
 	$ conda search <test_package1>
 

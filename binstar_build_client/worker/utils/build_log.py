@@ -8,6 +8,7 @@ import sys
 from threading import Lock, Thread, Event
 import traceback
 from requests import ConnectionError
+import codecs
 
 log = logging.getLogger(__name__)
 
@@ -19,9 +20,9 @@ class BuildLog(object):
     seconds
     """
 
-    INTERVAL = 4
+    INTERVAL = 10  # Send logs to server every `INTERVAL` seconds
 
-    def __init__(self, bs, username, queue, worker_id, job_id):
+    def __init__(self, bs, username, queue, worker_id, job_id, filename=None):
         self.bs = bs
         self.username = username
         self.queue = queue
@@ -32,6 +33,12 @@ class BuildLog(object):
         self._running = False
         self.event = Event()
 
+        log.info("Writing build log to %s" % filename)
+        if filename:
+            self.fd = codecs.open(filename, 'wb', encoding='utf-8', errors='replace')
+        else:
+            self.fd = None
+
 
     def write(self, msg):
         """
@@ -39,7 +46,10 @@ class BuildLog(object):
         
         The if the io thread is running, msg will be appended an internal message buffer
         """
-        n = sys.stdout.write(msg)
+        if self.fd:
+            n = self.fd.write(msg)
+        else:
+            n = len(msg)
 
         if self._running:
             with self._write_lock:

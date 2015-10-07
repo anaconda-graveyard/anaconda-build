@@ -1,10 +1,11 @@
 """
-The worker 
+The worker
 """
 from __future__ import print_function, absolute_import, unicode_literals
 
 from contextlib import contextmanager
 import logging
+import inspect
 import os
 import time
 
@@ -12,23 +13,23 @@ from binstar_build_client.utils.rm import rm_rf
 from binstar_client import errors
 import psutil
 import requests
-import yaml
 
-from .utils.buffered_io import BufferedPopen
-from .utils.build_log import BuildLog
-from .utils.script_generator import gen_build_script, \
+from binstar_build_client.worker.utils.buffered_io import BufferedPopen
+from binstar_build_client.worker.utils.build_log import BuildLog
+from binstar_build_client.worker.utils.script_generator import gen_build_script, \
     EXIT_CODE_OK, EXIT_CODE_ERROR, EXIT_CODE_FAILED
-import inspect
-
 
 log = logging.getLogger('binstar.build')
+
 
 def get_my_procs():
 
     this_proc = psutil.Process()
 
     if os.name == 'nt':
+
         myusername = this_proc.username()
+
         def ismyproc(proc):
             try:
                 return proc.username() == myusername
@@ -43,8 +44,8 @@ def get_my_procs():
                 # psutil < 2
                 return proc.uids.real == this_proc.uids.real
 
-
     return {proc.pid for proc in psutil.process_iter() if ismyproc(proc)}
+
 
 @contextmanager
 def remove_files_after(files):
@@ -56,27 +57,24 @@ def remove_files_after(files):
                 os.unlink(filename)
 
 
-
 class Worker(object):
     """
-    
+
     """
-    STATE_FILE = 'worker.yaml'
     JOURNAL_FILE = 'journal.csv'
     SLEEP_TIME = 10
 
     def __init__(self, bs, args):
         self.bs = bs
         self.args = args
+        self.worker_id = args.worker_id
 
     def work_forever(self):
         """
         Start a loop and continuously build forever
         """
         log.info('Working Forever')
-        with self.worker_context() as worker_id:
-            self.worker_id = worker_id
-            self._build_loop()
+        self._build_loop()
 
     def write_status(self, ok=True, msg='ok'):
         if self.args.status_file:
@@ -86,23 +84,26 @@ class Worker(object):
     def job_loop(self):
         """
         An iterator that will yield job_data objects when
-        one is available. 
-        
+        one is available.
+
         Also handles journaling of jobs
-        
+
         """
         bs = self.bs
         args = self.args
         worker_idle = False
         while 1:
             try:
-                job_data = bs.pop_build_job(args.username, args.queue, self.worker_id)
+                job_data = bs.pop_build_job(args.username,
+                                            args.queue,
+                                            self.worker_id)
             except errors.NotFound:
                 self.write_status(False, "worker not found")
                 if args.show_traceback:
                     raise
                 else:
-                    msg = ("This worker can no longer pop items off the build queue. "
+                    msg = ("This worker can no longer "
+                           "pop items off the build queue. "
                            "Did someone remove it manually?")
                     raise errors.BinstarError(msg)
 
@@ -166,14 +167,16 @@ class Worker(object):
         args = self.args
 
         if args.push_back:
-            bs.push_build_job(args.username, args.queue, self.worker_id, job_data['job']['_id'])
+            bs.push_build_job(args.username, args.queue, 
+                              self.worker_id, job_data['job']['_id'])
         else:
-            job_data = bs.fininsh_build(args.username, args.queue, self.worker_id, job_data['job']['_id'],
+            job_data = bs.fininsh_build(args.username, args.queue, 
+                                        self.worker_id, job_data['job']['_id'],
                                         failed=failed, status=status)
 
     def _build_loop(self):
         """
-        This is the main build loop this checks binstar.org for any jobs it can do and 
+        This is the main build loop this checks anaconda.org for any jobs it can do and 
         """
 
         with open(self.JOURNAL_FILE, 'a') as journal:
@@ -181,13 +184,39 @@ class Worker(object):
                 with self.job_context(journal, job_data):
                     self._handle_job(job_data)
 
+    def working_dir(self, build_data):
+
+        owner = build_data['owner']['login']
+        package = build_data['package']['name']
+
+        working_dir = os.path.abspath(os.path.join('builds', owner, package))
+
+        return working_dir
+
+    def build_logfile(self, build_data):
+
+        working_dir = self.working_dir(build_data)
+        filename = os.path.abspath(os.path.join(working_dir, 'build-log.txt'))
+
+        log.info("Writing build log to file %s" % filename)
+        return filename
 
     def build(self, job_data):
         """
         Run a single build 
         """
         job_id = job_data['job']['_id']
-        with BuildLog(self.bs, self.args.username, self.args.queue, self.worker_id, job_id) as build_log:
+
+        working_dir = self.working_dir(job_data)
+
+        log.info("Creating working dir: %s" % working_dir)
+        rm_rf(working_dir)
+        os.makedirs(working_dir)
+
+        build_log = BuildLog(self.bs, self.args.username, self.args.queue, self.worker_id, job_id,
+                             filename=self.build_logfile(job_data))
+
+        with build_log:
 
 
             instructions = job_data['build_item_info'].get('instructions')
@@ -215,6 +244,7 @@ class Worker(object):
                 build_filename = None
 
             with remove_files_after(files):
+
                 exit_code = self.run(job_data, script_filename, build_log,
                                      timeout, iotimeout,
                                      api_token, git_oauth_token, build_filename,
@@ -243,13 +273,9 @@ class Worker(object):
     def run(self, build_data, script_filename, build_log, timeout, iotimeout,
             api_token=None, git_oauth_token=None, build_filename=None, instructions=None):
 
+        log.info("Running build script")
 
-        owner = build_data['owner']['login']
-        package = build_data['package']['name']
-
-        working_dir = os.path.abspath(os.path.join('builds', owner, package))
-        rm_rf(working_dir)
-        os.makedirs(working_dir)
+        working_dir = self.working_dir(build_data)
 
         args = [os.path.abspath(script_filename), '--api-token', api_token]
 
@@ -316,40 +342,6 @@ class Worker(object):
 
         log.info("Wrote build data to %s" % build_filename)
         return os.path.abspath(build_filename)
-
-
-    @contextmanager
-    def worker_context(self):
-        '''
-        Register the worker with binstar and clean up on any excpetion or exit
-        '''
-        os.chdir(self.args.cwd)
-
-        if os.path.isfile(self.STATE_FILE):
-            with open(self.STATE_FILE, 'r') as fd:
-                worker_data = yaml.load(fd)
-
-            self.bs.remove_worker(self.args.username, self.args.queue, worker_data['worker_id'])
-            log.info("Un-registered worker %s from binstar site" % worker_data['worker_id'])
-            os.unlink(self.STATE_FILE)
-            log.info("Removed worker.yaml")
-
-        worker_id = self.bs.register_worker(self.args.username, self.args.queue, self.args.platform,
-                                            self.args.hostname, self.args.dist)
-        worker_data = {'worker_id': worker_id}
-
-        with open(self.STATE_FILE, 'w') as fd:
-            yaml.dump(worker_data, fd)
-        try:
-            yield worker_id
-        finally:
-            log.info("Removing worker %s" % worker_id)
-            try:
-                self.bs.remove_worker(self.args.username, self.args.queue, worker_id)
-                os.unlink(self.STATE_FILE)
-            except Exception as err:
-                log.exception(err)
-            log.debug("Removed %s" % self.STATE_FILE)
 
     @contextmanager
     def job_context(self, journal, job_data):

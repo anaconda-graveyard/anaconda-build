@@ -15,7 +15,7 @@ setup(
     author_email='srossross@gmail.com',
     url='http://github.com/Binstar/binstar_client',
     packages=find_packages(),
-    install_requires=['binstar',
+    install_requires=['anaconda-client',
                       'jinja2', 'psutil'],
 
     include_package_data=True,
@@ -25,7 +25,8 @@ setup(
           'console_scripts': [
               'binstar-build = binstar_build_client.scripts.build:main',
               'conda-clean-build-dir = binstar_build_client.scripts.conda_clean_build_dir:main',
-              ]
+              ],
+           'conda_server.subcommand': ['build = binstar_build_client.scripts.build:add_parser'],
                  },
 
 )

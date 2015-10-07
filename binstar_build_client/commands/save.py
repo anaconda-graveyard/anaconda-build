@@ -3,7 +3,7 @@ Save build info to be triggered later
 
 See also: 
 
-  * [Save and Trigger Your Builds](http://docs.binstar.org/examples.html#SaveAndTriggerYourBuilds)
+  * [Save and Trigger Your Builds](http://docs.anaconda.org/examples.html#SaveAndTriggerYourBuilds)
 
 '''
 
