@@ -167,10 +167,10 @@ class Worker(object):
         args = self.args
 
         if args.push_back:
-            bs.push_build_job(args.username, args.queue, 
+            bs.push_build_job(args.username, args.queue,
                               self.worker_id, job_data['job']['_id'])
         else:
-            job_data = bs.fininsh_build(args.username, args.queue, 
+            job_data = bs.fininsh_build(args.username, args.queue,
                                         self.worker_id, job_data['job']['_id'],
                                         failed=failed, status=status)
 
@@ -315,11 +315,6 @@ class Worker(object):
                             pass
                         else:
                             build_log.write("    + %s\n" % cmdline)
-            if p0.stdout and not p0.stdout.closed:
-                log.info("Closing subprocess stdout PIPE")
-                p0.stdout.close()
-
-
         return exit_code
 
     def download_build_source(self, job_id):

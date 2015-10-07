@@ -8,7 +8,7 @@ from threading import Thread, Event
 import time
 
 
-log = logging.getLogger(__name__)
+log = logging.getLogger('binstar.build')
 
 
 def stream_line_iterator(stream):
@@ -96,3 +96,5 @@ class IOStream(Thread):
             if self.timeout and elapsed_total >= self.timeout:
                 self.timeout_callback(reason='timeout')
                 return
+
+        log.info("Exiting Timeout loop")
