@@ -13,6 +13,7 @@ import logging
 from subprocess import Popen, STDOUT, PIPE
 import psutil
 from binstar_build_client.worker.utils.streamio import IOStream
+import time
 
 
 
@@ -49,10 +50,12 @@ class BufferedPopen(Popen):
         If timeout is given, the process will be killed after timeout seconds if it is not finished 
         """
         returncode = Popen.wait(self)
-
         if self.stdout and not self.stdout.closed:
             log.info("Closing subprocess stdout PIPE")
-            self.stdout.close()
+            try:
+                self.stdout.close()
+            except IOError as err:
+                log.warning(err)
 
 #         self._finished_event.set()
 
