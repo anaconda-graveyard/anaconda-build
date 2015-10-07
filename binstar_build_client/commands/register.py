@@ -84,7 +84,7 @@ def add_parser(subparsers, name='register',
     parser.add_argument('--dist', default=get_dist(),
                         help='The operating system distribution the worker should use (default: %(default)s)')
 
-    parser.add_argument('--cwd', default='.',
+    parser.add_argument('--cwd', default=os.path.abspath('.'), type=os.path.abspath,
                         help='The root directory this build should use (default: "%(default)s")')
     parser.add_argument('-t', '--max-job-duration', type=int, metavar='SECONDS',
                         dest='timeout',
