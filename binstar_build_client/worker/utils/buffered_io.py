@@ -16,7 +16,7 @@ from binstar_build_client.worker.utils.streamio import IOStream
 
 
 
-log = logging.getLogger(__name__)
+log = logging.getLogger('binstar.build')
 
 def is_special(fd):
     """
@@ -50,13 +50,17 @@ class BufferedPopen(Popen):
         """
         returncode = Popen.wait(self)
 
+        if self.stdout and not self.stdout.closed:
+            log.info("Closing subprocess stdout PIPE")
+            self.stdout.close()
+
 #         self._finished_event.set()
-        log.debug("returncode", returncode)
 
         if self._iostream.is_alive():
-            log.debug("self._io_thread.join()")
+            log.info("Wait for IO thread to finish")
             self._iostream.join()
 
+        log.debug("returncode", returncode)
         return returncode
 
     def timeout_callback(self, reason='iotimeout'):
