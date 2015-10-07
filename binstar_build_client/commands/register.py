@@ -88,7 +88,7 @@ def add_parser(subparsers, name='register',
                         help='The root directory this build should use (default: "%(default)s")')
     parser.add_argument('-t', '--max-job-duration', type=int, metavar='SECONDS',
                         dest='timeout',
-                        help='Force jobs to stop after they exceed duration (default: %(default)s)', default=60 * 60 * 60)
+                        help='Force jobs to stop after they exceed duration (default: %(default)s)', default=60 * 60)
     parser.set_defaults(main=main)
 
     return parser
