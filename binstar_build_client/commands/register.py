@@ -1,11 +1,12 @@
 '''
 Register an anaconda build worker.
 
-anaconda build register 
+anaconda build register
 '''
 from __future__ import (print_function, unicode_literals, division,
     absolute_import)
 
+import os
 import platform
 
 from binstar_client import errors
