@@ -6,9 +6,7 @@ anaconda build register
 from __future__ import (print_function, unicode_literals, division,
     absolute_import)
 
-import os
 import platform
-import tempfile
 
 from binstar_client import errors
 from binstar_client.utils import get_binstar
@@ -16,7 +14,7 @@ from binstar_client.utils import get_binstar
 from binstar_build_client import BinstarBuildAPI
 from binstar_build_client.worker.register import (register_worker,
                                                   print_registered_workers,)
- 
+
 OS_MAP = {'darwin': 'osx', 'windows':'win'}
 ARCH_MAP = {'x86': '32',
             'i686': '32',
@@ -53,8 +51,10 @@ def main(args):
     if args.list:
         print_registered_workers()
         return
+
     if not args.queue:
         raise errors.BinstarError('Argument --queue <USERNAME>/<QUEUE> is required.')
+
     args.username, args.queue = split_queue_arg(args.queue)
     bs = get_binstar(args, cls=BinstarBuildAPI)
     return register_worker(bs, args)
@@ -69,7 +69,7 @@ def add_parser(subparsers, name='register',
                                    )
 
     conda_platform = get_platform()
-    parser.add_argument('-l', '--list', 
+    parser.add_argument('-l', '--list',
                         help='List the workers registered by this user/machine and exit.',
                         action='store_true')
     parser.add_argument('-q', '--queue', metavar='OWNER/QUEUE',
@@ -84,11 +84,11 @@ def add_parser(subparsers, name='register',
     parser.add_argument('--dist', default=get_dist(),
                         help='The operating system distribution the worker should use (default: %(default)s)')
 
-    parser.add_argument('--cwd', default='.',
+    parser.add_argument('--cwd', default=os.path.abspath('.'), type=os.path.abspath,
                         help='The root directory this build should use (default: "%(default)s")')
     parser.add_argument('-t', '--max-job-duration', type=int, metavar='SECONDS',
                         dest='timeout',
-                        help='Force jobs to stop after they exceed duration (default: %(default)s)', default=60 * 60 * 60)
+                        help='Force jobs to stop after they exceed duration (default: %(default)s)', default=60 * 60)
     parser.set_defaults(main=main)
 
     return parser
