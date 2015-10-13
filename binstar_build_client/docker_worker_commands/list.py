@@ -1,0 +1,1 @@
+from binstar_build_client.worker_commands.list import add_parser

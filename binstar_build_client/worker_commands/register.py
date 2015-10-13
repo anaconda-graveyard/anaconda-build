@@ -9,12 +9,7 @@ from __future__ import (print_function, unicode_literals, division,
 import os
 import platform
 
-from binstar_client import errors
-from binstar_client.utils import get_binstar
-
-from binstar_build_client import BinstarBuildAPI
-from binstar_build_client.worker.register import (register_worker,
-                                                  print_registered_workers,)
+from binstar_build_client.worker.register import register_worker_main
 
 OS_MAP = {'darwin': 'osx', 'windows':'win'}
 ARCH_MAP = {'x86': '32',
@@ -39,30 +34,13 @@ def get_dist():
         return platform.win32_ver()[0].lower()
     return 'unknown'
 
-def split_queue_arg(queue):
-    if queue.count('/') == 1:
-        username, queue = queue.split('/', 1)
-    elif queue.count('-') == 2:
-        _, username, queue = queue.split('-', 2)
-    else:
-        raise errors.UserError("Build queue must be of the form build-USERNAME-QUEUENAME or USERNAME/QUEUENAME")
-    return username, queue
-
 def main(args):
-    if args.list:
-        print_registered_workers()
-        return
-
-    if not args.queue:
-        raise errors.BinstarError('Argument --queue <USERNAME>/<QUEUE> is required.')
-
-    args.username, args.queue = split_queue_arg(args.queue)
-    bs = get_binstar(args, cls=BinstarBuildAPI)
-    return register_worker(bs, args)
+    return register_worker_main(args, context="worker")
 
 def add_parser(subparsers, name='register',
                description='Register a build worker to build jobs off of a binstar build queue',
-               epilog=__doc__):
+               epilog=__doc__,
+               default_func=main):
 
     parser = subparsers.add_parser(name,
                                    help=description, description=description,
@@ -70,10 +48,7 @@ def add_parser(subparsers, name='register',
                                    )
 
     conda_platform = get_platform()
-    parser.add_argument('-l', '--list',
-                        help='List the workers registered by this user/machine and exit.',
-                        action='store_true')
-    parser.add_argument('-q', '--queue', metavar='OWNER/QUEUE',
+    parser.add_argument('queue', metavar='OWNER/QUEUE',
                         help='The queue to pull builds from')
     parser.add_argument('-p', '--platform',
                         default=conda_platform,
@@ -90,6 +65,6 @@ def add_parser(subparsers, name='register',
     parser.add_argument('-t', '--max-job-duration', type=int, metavar='SECONDS',
                         dest='timeout',
                         help='Force jobs to stop after they exceed duration (default: %(default)s)', default=60 * 60)
-    parser.set_defaults(main=main)
+    parser.set_defaults(main=default_func)
 
     return parser

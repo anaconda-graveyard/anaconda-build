@@ -1,5 +1,5 @@
 '''
-Build worker 
+Build worker
 '''
 
 from __future__ import (print_function, unicode_literals, division,
@@ -7,38 +7,43 @@ from __future__ import (print_function, unicode_literals, division,
 
 import logging
 import os
-import yaml
 
 from binstar_client.utils import get_binstar
 
 from binstar_build_client import BinstarBuildAPI
 from binstar_build_client.utils import get_conda_root_prefix
 from binstar_build_client.worker.worker import Worker
-from binstar_build_client.worker.register import add_worker_options
+from binstar_build_client.worker.register import (Registration,
+                                                  print_worker_summary)
+
 
 log = logging.getLogger('binstar.build')
 
 
 def main(args):
 
-    add_worker_options(args)
-
     bs = get_binstar(args, cls=BinstarBuildAPI)
-
-    worker = Worker(bs, args)
-
-    worker.write_status(True, "Starting")
-
+    reg = Registration.load(bs, args.worker_id)
+    reg.clean_workers_dir(bs)
+    reg.assert_is_not_running(bs)
+    reg.is_running = True
+    reg.save()
+    worker = None
     try:
+        args.conda_build_dir = args.conda_build_dir.format(args=reg)
+        print_worker_summary(reg, args)
+        worker = Worker(bs, args, reg)
+        worker.write_status(True, "Starting")
         worker.work_forever()
     finally:
-        worker.write_status(False, "Exited")
+        reg.is_running = False
+        reg.save()
+        if worker is not None:
+            worker.write_status(False, "Exited")
 
-
-def add_parser(subparsers, name='worker',
+def add_parser(subparsers, name='run',
                description='Run a build worker to build jobs off of a binstar build queue',
                epilog=__doc__):
-
     parser = subparsers.add_parser(name,
                                    help=description, description=description,
                                    epilog=epilog

@@ -1,5 +1,5 @@
 '''
-Build queue backlog  
+Build queue backlog
 '''
 
 from __future__ import (print_function, unicode_literals, division,
@@ -7,10 +7,10 @@ from __future__ import (print_function, unicode_literals, division,
 
 import logging
 
-from binstar_build_client import BinstarBuildAPI
 from binstar_client.utils import get_binstar
 from binstar_client import errors
-from pprint import pprint
+
+from binstar_build_client import BinstarBuildAPI
 
 log = logging.getLogger('binstar.build')
 
