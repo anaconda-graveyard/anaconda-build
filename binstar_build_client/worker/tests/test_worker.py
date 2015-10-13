@@ -5,7 +5,7 @@ import os
 import unittest
 from mock import Mock, patch
 
-from binstar_build_client.commands.register import get_platform
+from binstar_build_client.worker_commands.register import get_platform
 from binstar_build_client.worker.worker import Worker
 from binstar_build_client.worker.register import register_worker, deregister_worker
 
@@ -15,11 +15,13 @@ class MockWorker(Worker):
         self.SLEEP_TIME = 0
         bs = Mock()
         args = Mock()
-        args.hostname = 'test_hostname'
-        args.platform = 'test_platform'
+        registration = Mock()
+        registration.hostname = 'test_hostname'
+        registration.platform = 'test_platform'
         args.status_file = None
-        args.timeout = 100
-        Worker.__init__(self, bs, args)
+        registration.timeout = 100
+        args.worker_id = 'worker_id'
+        Worker.__init__(self, bs, args, registration)
 
 def default_build_data():
     return {
@@ -56,7 +58,7 @@ def default_build_data():
 
 class Test(unittest.TestCase):
 
-    
+
     def test_handle_job(self):
 
         class MyWorker(MockWorker):

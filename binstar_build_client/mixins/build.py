@@ -22,6 +22,7 @@ class BuildMixin(object):
         data, headers = jencode(filename=filename, content=content)
         res = self.session.post(url, data=data, headers=headers)
         self._check_response(res, [201])
+
     def remove_keyfile(self, username, package, filename):
         url = '%s/build/%s/%s/keyfile' % (self.domain, username, package)
         params = dict(filename=filename)

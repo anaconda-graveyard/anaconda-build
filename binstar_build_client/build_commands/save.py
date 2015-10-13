@@ -1,7 +1,7 @@
 '''
 Save build info to be triggered later
 
-See also: 
+See also:
 
   * [Save and Trigger Your Builds](http://docs.anaconda.org/examples.html#SaveAndTriggerYourBuilds)
 
@@ -12,7 +12,6 @@ from __future__ import (print_function, unicode_literals, division,
 
 from argparse import RawDescriptionHelpFormatter
 import logging
-import re
 
 from binstar_build_client import BinstarBuildAPI
 from binstar_client import errors

@@ -1,5 +1,5 @@
 '''
-Build worker 
+Build worker
 '''
 
 from __future__ import (print_function, unicode_literals, division,
@@ -7,13 +7,13 @@ from __future__ import (print_function, unicode_literals, division,
 
 import logging
 
-from binstar_build_client import BinstarBuildAPI
-from binstar_build_client.worker.docker_worker import DockerWorker
+from binstar_client import errors
 from binstar_client.utils import get_binstar
 
-from .worker import add_parser as add_worker_parser
-from binstar_client import errors
-from binstar_build_client.worker.register import add_worker_options
+from binstar_build_client import BinstarBuildAPI
+from binstar_build_client.worker.docker_worker import DockerWorker
+from binstar_build_client.worker.register import Registration
+from binstar_build_client.worker_commands.run import add_parser as add_run_parser
 
 try:
     import docker
@@ -25,21 +25,25 @@ log = logging.getLogger('binstar.build')
 
 def main(args):
     if docker is None:
-        raise errors.UserError("binstar-build docker-worker requires docker and docker-py to be installed\n"
+        raise errors.UserError("anaconda docker-worker [run|register|deregister|list] requires docker and docker-py to be installed\n"
                                "Run:\n\tpip install docker-py")
-
-
-    add_worker_options(args)
-
     bs = get_binstar(args, cls=BinstarBuildAPI)
-
-    woker = DockerWorker(bs, args)
-    woker.work_forever()
+    reg = Registration.load(bs, args.worker_id)
+    reg.clean_workers_dir(bs)
+    reg.assert_is_not_running(bs)
+    reg.is_running = True
+    reg.save()
+    try:
+        worker = DockerWorker(bs, args, reg)
+        worker.work_forever()
+    finally:
+        reg.is_running = False
+        reg.save()
 
 def add_parser(subparsers):
     description = 'Run a build worker in a docker container to build jobs off of a binstar build queue'
 
-    parser = add_worker_parser(subparsers, 'docker-worker',
+    parser = add_run_parser(subparsers, 'run',
                                description, __doc__)
 
     dgroup = parser.add_argument_group('docker arguments')
