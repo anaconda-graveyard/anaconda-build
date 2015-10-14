@@ -37,7 +37,8 @@ def main(args):
 
 def add_parser(subparsers, name='run',
                description='Run a build worker to build jobs off of a binstar build queue',
-               epilog=__doc__):
+               epilog=__doc__,
+               default_func=main):
 
     parser = subparsers.add_parser(name,
                                    help=description, description=description,
@@ -67,5 +68,5 @@ def add_parser(subparsers, name='run',
                         help='If given, binstar will update this file with the ' + \
                              'time it last checked the anaconda server for updates')
 
-    parser.set_defaults(main=main)
+    parser.set_defaults(main=default_func)
     return parser

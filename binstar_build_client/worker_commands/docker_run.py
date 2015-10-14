@@ -7,12 +7,12 @@ from __future__ import (print_function, unicode_literals, division,
 
 import logging
 
-from binstar_build_client import BinstarBuildAPI
-from binstar_build_client.worker.docker_worker import DockerWorker
+from binstar_client import errors
 from binstar_client.utils import get_binstar
 
+from binstar_build_client import BinstarBuildAPI
+from binstar_build_client.worker.docker_worker import DockerWorker
 from binstar_build_client.worker_commands.run import add_parser as add_worker_parser
-from binstar_client import errors
 from binstar_build_client.worker.register import add_worker_options
 
 try:
@@ -39,7 +39,7 @@ def main(args):
 def add_parser(subparsers):
     description = 'Run a build worker in a docker container to build jobs off of a binstar build queue'
 
-    parser = add_worker_parser(subparsers, 'run',
+    parser = add_worker_parser(subparsers, 'docker_run',
                                description, __doc__)
 
     dgroup = parser.add_argument_group('docker arguments')

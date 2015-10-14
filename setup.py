@@ -22,12 +22,11 @@ setup(
       'console_scripts': [
           'binstar-build = binstar_build_client.scripts.build:main',
           'binstar-worker = binstar_build_client.scripts.worker:main',
-          'binstar-docker_worker = binstar_build_client.scripts.docker_worker:main',
           'conda-clean-build-dir = binstar_build_client.scripts.conda_clean_build_dir:main',
           ],
        'conda_server.subcommand': ['build = binstar_build_client.scripts.build:add_parser',
                                    'worker = binstar_build_client.scripts.worker:add_parser',
-                                   'docker_worker = binstar_build_client.scripts.docker_worker:add_parser'],
+                                   ],
     }
 
 )
