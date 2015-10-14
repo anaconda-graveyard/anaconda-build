@@ -32,24 +32,24 @@ def print_registered_workers():
     if not has_workers:
         log.info('(No registered workers)')
 
-def register_worker(bs, args):
+def register_worker(bs, args, context="worker"):
     '''
     Register the worker with anaconda
     '''
     worker_id = bs.register_worker(args.username, args.queue, args.platform,
                                         args.hostname, args.dist)
-    log.info('Registered worker with worker_id:\t{}'.format(worker_id))
+    log.info('Registered {} with worker_id:\t{}'.format(context, worker_id))
     args.worker_id = worker_id
 
     filename = os.path.join(REGISTERED_WORKERS_DIR, args.worker_id)
     with open(filename, 'w') as fd:
         yaml.dump(vars(args), fd)
 
-    log.info('Worker config saved at {}.'.format(filename))
-    log.info('Now run:\n\tanaconda build worker {}'.format(worker_id))
+    log.info('{} config saved at {}.'.format(context, filename))
+    log.info('Now run:\n\tanaconda {} run {}'.format(context, worker_id))
     return args
 
-def deregister_worker(bs, args):
+def deregister_worker(bs, args, context="worker"):
     ''' Deregister the worker with anaconda'''
     try:
         filename = os.path.join(REGISTERED_WORKERS_DIR, args.worker_id)
@@ -62,13 +62,13 @@ def deregister_worker(bs, args):
 
         removed_worker = bs.remove_worker(args.username, args.queue, args.worker_id)
         if not removed_worker:
-            info = (args.worker_id, args.username, args.queue,)
-            raise errors.BinstarError('Failed to remove_worker with argument of ' + \
+            info = (context, args.worker_id, args.username, args.queue,)
+            raise errors.BinstarError('Failed to remove {} with argument of ' + \
                                       'worker_id\t{}\tqueue\t{}/{}'.format(*info))
 
-        log.info('Deregistered worker with worker-id {}'.format(args.worker_id))
+        log.info('Deregistered {} with worker-id {}'.format(context, args.worker_id))
         os.unlink(filename)
-        log.debug("Removed worker config {}".format(filename))
+        log.debug("Removed {} config {}".format(context, filename))
         return args
 
     except Exception:

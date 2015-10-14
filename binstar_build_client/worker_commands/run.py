@@ -1,5 +1,5 @@
 '''
-Build worker 
+Build worker
 '''
 
 from __future__ import (print_function, unicode_literals, division,
@@ -35,7 +35,7 @@ def main(args):
         worker.write_status(False, "Exited")
 
 
-def add_parser(subparsers, name='worker',
+def add_parser(subparsers, name='run',
                description='Run a build worker to build jobs off of a binstar build queue',
                epilog=__doc__):
 
