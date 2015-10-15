@@ -22,7 +22,7 @@ def main(args):
     print(__doc__)
 
 def add_parser(subparsers, name='worker',
-               description='DEPRECATED',
+               description='DEPRECATED: use anaconda worker -h',
                epilog=__doc__,
                default_func=main):
     parser = subparsers.add_parser(name,
