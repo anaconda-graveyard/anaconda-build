@@ -7,7 +7,7 @@ from mock import Mock, patch
 
 from binstar_build_client.worker_commands.register import get_platform
 from binstar_build_client.worker.worker import Worker
-from binstar_build_client.worker.register import register_worker, deregister_worker
+from binstar_build_client.worker.register import WorkerConfiguration
 
 
 class MockWorker(Worker):
@@ -15,11 +15,17 @@ class MockWorker(Worker):
         self.SLEEP_TIME = 0
         bs = Mock()
         args = Mock()
-        args.hostname = 'test_hostname'
-        args.platform = 'test_platform'
         args.status_file = None
         args.timeout = 100
-        Worker.__init__(self, bs, args)
+
+        worker_config = WorkerConfiguration('worker_id',
+                                            'username',
+                                            'queue',
+                                            'test_platform',
+                                            'test_hostname',
+                                            'dist')
+
+        Worker.__init__(self, bs, worker_config, args)
 
 def default_build_data():
     return {
@@ -65,7 +71,6 @@ class Test(unittest.TestCase):
             download_build_source = Mock()
         worker = MyWorker()
         worker.args.push_back = False
-        worker.worker_id = 'worker_id'
         worker._handle_job({'job':{'_id':'test_job_id'}})
         self.assertEqual(worker.build.call_count, 1)
         self.assertEqual(worker.bs.fininsh_build.call_count, 1)
@@ -79,7 +84,6 @@ class Test(unittest.TestCase):
 
         worker = MyWorker()
         worker.args.push_back = False
-        worker.worker_id = 'worker_id'
 
         worker._handle_job({'job':{'_id':'test_job_id'}})
 
@@ -91,7 +95,6 @@ class Test(unittest.TestCase):
     def test_download_build_source(self):
 
         worker = MockWorker()
-        worker.worker_id = 'worker_id'
         expected = b"build source"
         worker.bs.fetch_build_source.return_value = io.BytesIO(expected)
 
@@ -117,7 +120,6 @@ class Test(unittest.TestCase):
         gen_build_script.return_value = 'script_filename'
 
         worker = MyWorker()
-        worker.worker_id = 'worker_id'
         job_data = default_build_data()
 
         failed, status = worker.build(job_data)
@@ -135,7 +137,6 @@ class Test(unittest.TestCase):
 
     def test_job_loop(self):
         worker = MockWorker()
-        worker.worker_id = 'worker_id'
         worker.args.one = True
         worker.bs.pop_build_job.return_value = {'job':{'_id':'test_job_id'}, 'job_name':'job_name'}
         jobs = list(worker.job_loop())
@@ -144,7 +145,6 @@ class Test(unittest.TestCase):
     def test_job_loop_error(self):
 
         worker = MockWorker()
-        worker.worker_id = 'worker_id'
         worker.args.one = False
         worker.bs.pop_build_job.return_value = {'job':{'_id':'test_job_id'}, 'job_name':'job_name'}
 
@@ -155,7 +155,6 @@ class Test(unittest.TestCase):
     def test_job_context(self):
 
         worker = MockWorker()
-        worker.worker_id = 'worker_id'
         worker.args.one = False
         job_data = {'job':{'_id':'test_job_id'}, 'job_name':'job_name'}
         journal = io.StringIO()
@@ -170,7 +169,6 @@ class Test(unittest.TestCase):
     def test_job_context_error(self):
 
         worker = MockWorker()
-        worker.worker_id = 'worker_id'
         worker.args.one = False
         job_data = {'job':{'_id':'test_job_id'}, 'job_name':'job_name'}
         journal = io.StringIO()

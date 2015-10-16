@@ -7,6 +7,7 @@ from __future__ import (print_function, unicode_literals, division,
     absolute_import)
 
 import platform
+import logging
 
 from binstar_client import errors
 from binstar_client.utils import get_binstar
@@ -20,6 +21,8 @@ ARCH_MAP = {'x86': '32',
             'x86_64': '64',
             'amd64' : '64',
             }
+
+log = logging.getLogger('binstar.build')
 
 def get_platform():
     'Get the conda platform string of the current machine'
@@ -56,17 +59,15 @@ def split_queue_arg(queue):
     return username, queue
 
 def main(args):
-    if args.list:
-        WorkerConfiguration.print_registered_workers()
-        return
-
-    if not args.queue:
-        raise errors.BinstarError('Argument --queue <USERNAME>/<QUEUE> is required.')
 
     args.username, args.queue = split_queue_arg(args.queue)
     bs = get_binstar(args, cls=BinstarBuildAPI)
     worker_config = WorkerConfiguration.register(bs, args.username, args.queue, args.platform, args.hostname, args.dist)
     worker_config.save()
+
+    log.info('Worker config saved at {}.'.format(worker_config.filename))
+    log.info('Now run:\n\tanaconda worker run {}'.format(worker_config.worker_id))
+
 
 def add_parser(subparsers, name='register',
                description='Register a build worker to build jobs off of a binstar build queue',

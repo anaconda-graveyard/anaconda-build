@@ -7,6 +7,7 @@ from binstar_client import errors
 import yaml
 from glob import glob
 import io
+from contextlib import contextmanager
 
 
 log = logging.getLogger("binstar.build")
@@ -68,8 +69,10 @@ class WorkerConfiguration(object):
         "Iterate over the registered workers on this machine"
 
         log.info('Registered workers:\n')
+
         for worker_id in os.listdir(cls.REGISTERED_WORKERS_DIR):
-            yield cls.load(worker_id)
+            if '.' not in worker_id:
+                yield cls.load(worker_id)
 
     @property
     def filename(self):
@@ -97,16 +100,27 @@ class WorkerConfiguration(object):
         'Test if this worker is running'
         return self.pid is not None
 
-    def set_as_running(self):
+    @contextmanager
+    def running(self):
         'Flag this worker id as running'
         dst = '{}.{}'.format(self.filename, os.getpid())
         os.link(self.filename, dst)
+        try:
+            yield
+        finally:
+            if os.path.isfile(dst):
+                os.unlink(dst)
+
+
+
 
     @classmethod
     def load(cls, worker_id):
         'Load a worker config from a worker_id'
 
         worker_file = os.path.join(cls.REGISTERED_WORKERS_DIR, worker_id)
+        if not os.path.isfile(worker_file):
+            raise errors.BinstarError("Worker with ID {} does not exist locally".format(worker_id))
 
         with open(worker_file) as fd:
             attrs = yaml.safe_load(fd)
@@ -116,7 +130,6 @@ class WorkerConfiguration(object):
     @classmethod
     def print_registered_workers(cls):
 
-        log.info('Registered workers:\n')
         has_workers = False
         for f in os.listdir(cls.REGISTERED_WORKERS_DIR):
             worker_file = os.path.join(cls.REGISTERED_WORKERS_DIR, f)
@@ -151,8 +164,6 @@ class WorkerConfiguration(object):
         with open(self.filename, 'w') as fd:
             yaml.safe_dump(self.to_dict(), fd, default_flow_style=False)
 
-        log.info('Worker config saved at {}.'.format(self.filename))
-        log.info('Now run:\n\tanaconda build worker {}'.format(self.worker_id))
 
     def deregister(self, bs):
         'Deregister the worker from anaconda server'

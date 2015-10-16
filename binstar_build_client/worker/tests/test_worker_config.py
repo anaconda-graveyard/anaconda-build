@@ -43,10 +43,10 @@ class Test(unittest.TestCase):
 
         self.assertFalse(wc.is_running())
 
-        wc.set_as_running()
+        with wc.running():
+            self.assertTrue(wc.is_running())
 
-        self.assertTrue(wc.is_running())
-
+        self.assertFalse(wc.is_running())
 
 if __name__ == '__main__':
     unittest.main()
