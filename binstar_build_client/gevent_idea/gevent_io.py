@@ -130,8 +130,7 @@ def main(popen_args, timeout, iotimeout):
         print("line:", line)
 
     with flush_every(b_output, seconds=2):
-        while p0.poll() is None:
-            time.sleep(1)
+        p0.wait()
 
     print("done!")
 
@@ -139,5 +138,6 @@ def main(popen_args, timeout, iotimeout):
     out = stream.getvalue().decode()
     print(out)
     return out
+
 if __name__ == "__main__":
     main()
