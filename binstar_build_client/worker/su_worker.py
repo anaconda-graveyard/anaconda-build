@@ -99,6 +99,7 @@ class SuWorker(Worker):
         '''args for su as build_user with the anaconda settings'''
         cmds = ['su', '--login', '-c', self.source_env]
         cmds[-1] += " && anaconda config --set url {} && ".format(self.anaconda_url)
+        cmds[-1] += " conda config --set always_yes true &&"
         cmds[-1] += cmd
         cmds += ['-', self.build_user]
         return cmds
