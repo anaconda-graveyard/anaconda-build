@@ -80,8 +80,8 @@ class SuWorker(Worker):
 
     @property
     def source_env(self):
-        return "export PATH={}/bin:${PATH} ".format(self.python_install_dir) + \
-                "&& source activate anaconda.org "
+        return ("export PATH={0}/bin:${{PATH}} "
+                "&& source activate anaconda.org ").format(self.python_install_dir)
 
     def _finish_job(self, job_data, failed, status):
         '''Count job as finished, destroy build user processes,
