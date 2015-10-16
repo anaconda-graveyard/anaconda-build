@@ -80,8 +80,8 @@ class SuWorker(Worker):
 
     @property
     def source_env(self):
-        return "export PATH={}/bin:${PATH} ".format(self.python_install_dir) + \
-                "&& source activate anaconda.org "
+        return ("export PATH={0}/bin:${{PATH}} "
+                "&& source activate anaconda.org ").format(self.python_install_dir)
 
     def _finish_job(self, job_data, failed, status):
         '''Count job as finished, destroy build user processes,
@@ -99,6 +99,7 @@ class SuWorker(Worker):
         '''args for su as build_user with the anaconda settings'''
         cmds = ['su', '--login', '-c', self.source_env]
         cmds[-1] += " && anaconda config --set url {} && ".format(self.anaconda_url)
+        cmds[-1] += " conda config --set always_yes true &&"
         cmds[-1] += cmd
         cmds += ['-', self.build_user]
         return cmds
