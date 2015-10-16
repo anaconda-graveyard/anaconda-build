@@ -17,13 +17,16 @@ from binstar_build_client import BinstarBuildAPI
 from binstar_build_client.worker.su_worker import (SuWorker,
                                                    SU_WORKER_DEFAULT_PATH)
 from binstar_build_client.utils import get_conda_root_prefix
-from binstar_build_client.commands.worker import (print_worker_summary,
-                                                  update_args_from_worker_file)
+from binstar_build_client.worker.register import (add_worker_options,
+                                                  REGISTERED_WORKERS_DIR,
+                                                  print_registered_workers)
+from binstar_build_client.worker_commands.run import print_worker_summary
+
 log = logging.getLogger('binstar.build')
 
 
 def main(args):
-    args = update_args_from_worker_file(args)
+    add_worker_options(args)
     bs = get_binstar(args, cls=BinstarBuildAPI)
     print_worker_summary(args, starting="su_worker")
     worker = SuWorker(bs, args, args.build_user, args.python_install_dir)
@@ -34,7 +37,7 @@ def main(args):
         worker.write_status(False, "Exited")
 
 
-def add_parser(subparsers, name='su_worker',
+def add_parser(subparsers, name='su_worker_run',
                description='Run a build worker to build jobs off of a binstar build queue',
                epilog=__doc__):
 

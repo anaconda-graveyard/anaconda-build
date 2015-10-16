@@ -6,6 +6,7 @@ anaconda build register
 from __future__ import (print_function, unicode_literals, division,
                         absolute_import)
 
+import os
 import platform
 
 from binstar_client import errors
@@ -52,22 +53,16 @@ def split_queue_arg(queue):
         raise errors.UserError(msg)
     return username, queue
 
-
-def main(args):
-    if args.list:
-        print_registered_workers()
-        return
-    if not args.queue:
-        msg = 'Argument --queue <USERNAME>/<QUEUE> is required.'
-        raise errors.BinstarError(msg)
+def main(args, context="worker"):
     args.username, args.queue = split_queue_arg(args.queue)
     bs = get_binstar(args, cls=BinstarBuildAPI)
-    return register_worker(bs, args)
+    return register_worker(bs, args, context=context)
 
 
 def add_parser(subparsers, name='register',
                description='Register a build worker to build jobs off of a binstar build queue',
-               epilog=__doc__):
+               epilog=__doc__,
+               default_func=main):
 
     parser = subparsers.add_parser(name,
                                    help=description, description=description,
@@ -75,10 +70,7 @@ def add_parser(subparsers, name='register',
                                    )
 
     conda_platform = get_platform()
-    parser.add_argument('-l', '--list',
-                        help='List the workers registered by this user/machine and exit.',
-                        action='store_true')
-    parser.add_argument('-q', '--queue', metavar='OWNER/QUEUE',
+    parser.add_argument('queue', metavar='OWNER/QUEUE',
                         help='The queue to pull builds from')
     parser.add_argument('-p', '--platform',
                         default=conda_platform,
@@ -91,13 +83,11 @@ def add_parser(subparsers, name='register',
                         help='The operating system distribution the '
                              'worker should use (default: %(default)s)')
 
-    parser.add_argument('--cwd', default='.',
+    parser.add_argument('--cwd', default=os.path.abspath('.'), type=os.path.abspath,
                         help='The root directory this build should use (default: "%(default)s")')
     parser.add_argument('-t', '--max-job-duration', type=int, metavar='SECONDS',
                         dest='timeout',
-                        help='Force jobs to stop after they exceed '
-                             'duration (default: %(default)s)',
-                        default=60 * 60 * 60)
-    parser.set_defaults(main=main)
+                        help='Force jobs to stop after they exceed duration (default: %(default)s)', default=60 * 60)
+    parser.set_defaults(main=default_func)
 
     return parser

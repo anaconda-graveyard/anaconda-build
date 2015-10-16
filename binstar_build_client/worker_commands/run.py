@@ -11,11 +11,13 @@ import os
 from binstar_client import errors
 from binstar_client.utils import get_binstar
 import yaml
+from binstar_client.utils import get_binstar
 
 from binstar_build_client import BinstarBuildAPI
 from binstar_build_client.utils import get_conda_root_prefix
 from binstar_build_client.worker.worker import Worker
-from binstar_build_client.worker.register import (REGISTERED_WORKERS_DIR,
+from binstar_build_client.worker.register import (add_worker_options,
+                                                  REGISTERED_WORKERS_DIR,
                                                   print_registered_workers)
 
 log = logging.getLogger('binstar.build')
@@ -54,20 +56,25 @@ def update_args_from_worker_file(args):
 
 
 def main(args):
-    args = update_args_from_worker_file(args)
+
+    add_worker_options(args)
+
     bs = get_binstar(args, cls=BinstarBuildAPI)
-    print_worker_summary(args, starting='worker')
+
     worker = Worker(bs, args)
+
     worker.write_status(True, "Starting")
+
     try:
         worker.work_forever()
     finally:
         worker.write_status(False, "Exited")
 
 
-def add_parser(subparsers, name='worker',
+def add_parser(subparsers, name='run',
                description='Run a build worker to build jobs off of a binstar build queue',
-               epilog=__doc__):
+               epilog=__doc__,
+               default_func=main):
 
     parser = subparsers.add_parser(name,
                                    help=description, description=description,
@@ -80,7 +87,7 @@ def add_parser(subparsers, name='worker',
     parser.add_argument('-1', '--one', action='store_true',
                         help='Exit main loop after only one build')
     parser.add_argument('--push-back', action='store_true',
-                        help='Developers only, always push the build *back* '
+                        help='Developers only, always push the build *back* ' + \
                              'onto the build queue')
     dgroup = parser.add_argument_group('development options')
 
@@ -94,8 +101,8 @@ def add_parser(subparsers, name='worker',
                              'and is still running after the build finished')
 
     dgroup.add_argument('--status-file',
-                        help='If given, binstar will update this file with the '
+                        help='If given, binstar will update this file with the ' + \
                              'time it last checked the anaconda server for updates')
 
-    parser.set_defaults(main=main)
+    parser.set_defaults(main=default_func)
     return parser

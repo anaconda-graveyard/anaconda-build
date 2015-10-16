@@ -21,7 +21,7 @@ from binstar_client.utils import get_binstar
 import yaml
 
 from binstar_build_client import BinstarBuildAPI
-from binstar_build_client.scripts.build import main
+from binstar_build_client.scripts.worker import main
 from binstar_build_client.tests.test_worker_script import worker_data
 import binstar_build_client.worker.su_worker as su_worker
 
@@ -44,7 +44,7 @@ class TestSuWorker(unittest.TestCase):
         '''Test su_worker CLI '''
         with open(worker_data['output'], 'w') as f:
             f.write(yaml.dump(worker_data))
-        main(['--show-traceback', 'su_worker',
+        main(['--show-traceback', 'su_worker_run',
               worker_data['worker_id'], TEST_BUILD_WORKER], False)
         self.assertEqual(SuWorker().work_forever.call_count, 1)
 

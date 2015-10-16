@@ -324,7 +324,6 @@ class Worker(object):
             if p0.stdout and not p0.stdout.closed:
                 log.info("Closing subprocess stdout PIPE")
                 p0.stdout.close()
-
         return exit_code
 
     def download_build_source(self, job_id):
