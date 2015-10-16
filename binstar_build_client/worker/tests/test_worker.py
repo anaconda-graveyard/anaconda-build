@@ -5,7 +5,7 @@ import os
 import unittest
 from mock import Mock, patch
 
-from binstar_build_client.commands.register import get_platform
+from binstar_build_client.worker_commands.register import get_platform
 from binstar_build_client.worker.worker import Worker
 from binstar_build_client.worker.register import register_worker, deregister_worker
 
@@ -56,7 +56,7 @@ def default_build_data():
 
 class Test(unittest.TestCase):
 
-    
+
     def test_handle_job(self):
 
         class MyWorker(MockWorker):

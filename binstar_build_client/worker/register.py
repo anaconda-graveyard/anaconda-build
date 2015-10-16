@@ -85,6 +85,7 @@ class WorkerConfiguration(object):
             except ValueError:
                 os.unlink(fn)
 
+
             if pid_is_running(pid):
                 return pid
             else:

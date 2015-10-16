@@ -70,7 +70,8 @@ def main(args):
 
 def add_parser(subparsers, name='register',
                description='Register a build worker to build jobs off of a binstar build queue',
-               epilog=__doc__):
+               epilog=__doc__,
+               default_func=main):
 
     parser = subparsers.add_parser(name,
                                    help=description, description=description,
@@ -78,10 +79,7 @@ def add_parser(subparsers, name='register',
                                    )
 
     conda_platform = get_platform()
-    parser.add_argument('-l', '--list',
-                        help='List the workers registered by this user/machine and exit.',
-                        action='store_true')
-    parser.add_argument('-q', '--queue', metavar='OWNER/QUEUE',
+    parser.add_argument('queue', metavar='OWNER/QUEUE',
                         help='The queue to pull builds from')
     parser.add_argument('-p', '--platform',
                         default=conda_platform,
