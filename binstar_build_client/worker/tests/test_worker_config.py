@@ -24,19 +24,31 @@ class Test(unittest.TestCase):
 
         wc = WorkerConfiguration('worker_id', 'username', 'queue', 'platform', 'hostname', 'dist')
 
-        expected = """<WorkerConfiguration pid=None
-  dist='dist'
-  hostname='hostname'
-  platform='platform'
-  queue='queue'
-  username='username'
-  worker_id='worker_id'
->
+        expected = """WorkerConfiguration
+\tpid: None
+\tdist: dist
+\thostname: hostname
+\tplatform: platform
+\tqueue: queue
+\tusername: username
+\tworker_id: worker_id
 """
         self.assertEqual(str(wc), expected)
 
 
-    def test_save(self):
+    def test_save_load(self):
+
+        wc = WorkerConfiguration('worker_id', 'username', 'queue', 'platform', 'hostname', 'dist')
+        wc.save()
+
+        self.assertTrue(os.path.isfile(wc.filename))
+
+        wc2 = WorkerConfiguration.load('worker_id')
+
+        self.assertEqual(wc.to_dict(), wc2.to_dict())
+
+
+    def test_running(self):
 
         wc = WorkerConfiguration('worker_id', 'username', 'queue', 'platform', 'hostname', 'dist')
         wc.save()
