@@ -23,6 +23,8 @@ def pid_is_running(pid):
         raise
     return True
 
+class InvalidWorkerConfigFile(errors.BinstarError):
+    pass
 
 class WorkerConfiguration(object):
     REGISTERED_WORKERS_DIR = os.path.join(os.path.expanduser('~'), '.workers')
@@ -37,11 +39,12 @@ class WorkerConfiguration(object):
 
     def __str__(self):
         stream = io.StringIO()
-        print("<WorkerConfiguration pid={}".format(self.pid), file=stream)
-        for key, value in sorted(self.to_dict().items()):
-            print("  {}='{}'".format(key, value), file=stream)
+        print("WorkerConfiguration", file=stream)
 
-        print(">", file=stream)
+        print("\tpid: {}".format(self.pid), file=stream)
+
+        for key, value in sorted(self.to_dict().items()):
+            print("\t{}: {}".format(key, value), file=stream)
 
         return stream.getvalue()
 
@@ -123,9 +126,28 @@ class WorkerConfiguration(object):
             raise errors.BinstarError("Worker with ID {} does not exist locally".format(worker_id))
 
         with open(worker_file) as fd:
-            attrs = yaml.safe_load(fd)
+            try:
+                attrs = yaml.safe_load(fd)
+            except yaml.error.YAMLError as err:
+                log.error(err)
+                raise InvalidWorkerConfigFile("The worker registration file can not be read")
 
-        return cls(**attrs)
+        if not attrs:
+            raise InvalidWorkerConfigFile("The worker registration file {} "
+                                          "appears to be empty".format(worker_file))
+
+        expected = {'worker_id', 'username', 'queue', 'platform', 'hostname', 'dist'}
+
+        if set(attrs) != expected:
+            log.error("Expected the worker registration file to contain the values\n\t"
+                      "{}\ngot:\n\t{}".format(', '.join(expected), ' ,'.join(attrs)))
+            raise InvalidWorkerConfigFile("The worker registration file {} "
+                                          "does not contain the correct values".format(worker_file))
+
+        worker_config = cls(**attrs)
+
+
+        return worker_config
 
     @classmethod
     def print_registered_workers(cls):
@@ -139,8 +161,8 @@ class WorkerConfiguration(object):
                     has_workers = True
                     log.info('worker-id\t{}\tqueue\t{}/{}'.format(worker['worker_id'], worker['username'], worker['queue']))
                 except Exception:
-                    log.info('Skipping file worker config file: {} that could ' + \
-                             'not be yaml.load\'ed'.format(worker_file))
+                    log.info('Skipping file worker config file: {} that could '
+                             'not be loaded'.format(worker_file))
         if not has_workers:
             log.info('(No registered workers)')
 
@@ -178,8 +200,6 @@ class WorkerConfiguration(object):
                                           'worker_id\t{}\tqueue\t{}/{}'.format(*info))
 
             log.info('Deregistered worker with worker-id {}'.format(self.worker_id))
-            os.unlink(self.filename)
-            log.debug("Removed worker config {}".format(self.filename))
 
         except Exception:
 

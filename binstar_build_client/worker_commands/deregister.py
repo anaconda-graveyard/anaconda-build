@@ -3,12 +3,14 @@ from __future__ import (print_function, unicode_literals, division,
 
 import os
 import yaml
+import logging
 
-from binstar_client import errors
 from binstar_client.utils import get_binstar
 
 from binstar_build_client import BinstarBuildAPI
 from binstar_build_client.worker.register import WorkerConfiguration
+
+log = logging.getLogger('bisntar.build')
 
 def main(args, context="worker"):
 
@@ -16,6 +18,9 @@ def main(args, context="worker"):
 
     wconfig = WorkerConfiguration.load(args.worker_id)
     wconfig.deregister(bs)
+
+    os.unlink(wconfig.filename)
+    log.debug("Removed worker config {}".format(wconfig.filename))
 
 
 def add_parser(subparsers, name='deregister',

@@ -23,6 +23,8 @@ def main(args):
 
     worker_config = WorkerConfiguration.load(args.worker_id)
 
+    log.info(str(worker_config))
+
     bs = get_binstar(args, cls=BinstarBuildAPI)
 
     worker = Worker(bs, worker_config, args)
