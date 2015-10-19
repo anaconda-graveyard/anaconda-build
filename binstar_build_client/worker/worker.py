@@ -4,20 +4,24 @@ The worker
 from __future__ import print_function, absolute_import, unicode_literals
 
 from contextlib import contextmanager
-import logging
 import inspect
+import io
+import logging
 import os
 import time
-
-from binstar_build_client.utils.rm import rm_rf
-from binstar_client import errors
 import psutil
 import requests
+import subprocess as sp
 
-from binstar_build_client.worker.utils.buffered_io import BufferedPopen
+
+from binstar_build_client.utils.rm import rm_rf
 from binstar_build_client.worker.utils.build_log import BuildLog
 from binstar_build_client.worker.utils.script_generator import gen_build_script, \
     EXIT_CODE_OK, EXIT_CODE_ERROR, EXIT_CODE_FAILED
+from binstar_client import errors
+from binstar_build_client.worker.utils.timeout import read_with_timout
+from binstar_build_client.worker.utils import kill_tree
+
 
 log = logging.getLogger('binstar.build')
 
@@ -215,15 +219,25 @@ class Worker(object):
         rm_rf(working_dir)
         os.makedirs(working_dir)
 
-        build_log = BuildLog(self.bs, self.config.username, self.config.queue, self.worker_id, job_id,
+        raw_build_log = BuildLog(self.bs, self.config.username, self.config.queue, self.worker_id, job_id,
                              filename=self.build_logfile(job_data))
+
+        build_log = io.BufferedWriter(raw_build_log)
 
         with build_log:
 
 
             instructions = job_data['build_item_info'].get('instructions')
-            build_log.write("Building on worker %s (platform %s)\n" % (self.config.hostname, self.config.platform))
-            build_log.write("Starting build %s\n" % job_data['job_name'])
+
+
+            msg = "Building on worker {} (platform {})\n".format(
+                    self.config.hostname, self.config.platform)
+            build_log.write(msg.encode('utf-8', errors='replace'))
+
+            msg = "Starting build {}\n".format(job_data['job_name'])
+            build_log.write(msg.encode('utf-8', errors='replace'))
+
+            build_log.flush()
 
             if not os.path.exists('build_scripts'):
                 os.mkdir('build_scripts')
@@ -294,13 +308,13 @@ class Worker(object):
         if self.args.show_new_procs:
             already_running_procs = get_my_procs()
 
-        p0 = BufferedPopen(args, stdout=build_log, iotimeout=iotimeout, cwd=working_dir)
+        p0 = sp.Popen(args, stdout=sp.PIPE, stderr=sp.STDOUT, cwd=working_dir)
 
         try:
-            exit_code = p0.wait()
+            read_with_timout(p0, build_log, timeout, iotimeout, BuildLog.INTERVAL)
         except BaseException:
             log.error("Binstar build process caught an exception while waiting for the build to finish")
-            p0.kill_tree()
+            kill_tree(p0)
             p0.wait()
             raise
         finally:
@@ -317,7 +331,7 @@ class Worker(object):
                             pass
                         else:
                             build_log.write("    + %s\n" % cmdline)
-        return exit_code
+        return p0.poll()
 
     def download_build_source(self, job_id):
         """
