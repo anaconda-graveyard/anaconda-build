@@ -25,6 +25,7 @@ class BuildLog(object):
         self.queue = queue
         self.worker_id = worker_id
         self.job_id = job_id
+        self.terminate_build = False
 
         self.write_to_server = functools.partial(self.bs.log_build_output,
                                                  self.username,
@@ -35,9 +36,12 @@ class BuildLog(object):
 
         log.info("Writing build log to %s" % filename)
         if filename:
-            self.fd = codecs.open(filename, 'wb')
+            self.fd = codecs.open(filename, 'wb', buffering=0)
         else:
             self.fd = None
+
+    def terminated(self):
+        return self.terminate_build
 
 
     def write(self, msg):
@@ -47,12 +51,18 @@ class BuildLog(object):
         The if the io thread is running, msg will be appended an internal message buffer
         """
 
-        # TODO this may not work on python3
+        # msg is a memory view object
         terminate_build = self.write_to_server(msg)
         self.terminate_build = terminate_build
 
-        n = self.fd.write(msg)
-        print('write', n)
+
+        self.fd.write(msg)
+
+        log.info('Wrote {} bytes of build output to anaconda-server'.format(len(msg)))
+
+        if terminate_build:
+            log.info('anaconda-server responded that the build should be terminated')
+
         return len(msg)
 
     def writable(self):
@@ -75,4 +85,6 @@ class BuildLog(object):
         self.fd.close()
         return
 
+    def flush(self):
+        self.fd.flush()
 

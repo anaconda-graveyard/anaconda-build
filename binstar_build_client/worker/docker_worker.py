@@ -5,7 +5,6 @@ import logging
 import os
 from os.path import basename, abspath
 
-from binstar_build_client.worker.utils.streamio import IOStream
 from binstar_build_client.worker.worker import Worker
 from binstar_client import errors
 from requests import ConnectionError

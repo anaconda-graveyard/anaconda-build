@@ -264,7 +264,8 @@ class Worker(object):
                 exit_code = self.run(job_data, script_filename, build_log,
                                      timeout, iotimeout,
                                      api_token, git_oauth_token, build_filename,
-                                     instructions=instructions)
+                                     instructions=instructions,
+                                     build_was_stopped_by_user=raw_build_log.terminated)
 
             log.info("Build script exited with code %s" % exit_code)
             if exit_code == EXIT_CODE_OK:
@@ -287,7 +288,8 @@ class Worker(object):
             return failed, status
 
     def run(self, build_data, script_filename, build_log, timeout, iotimeout,
-            api_token=None, git_oauth_token=None, build_filename=None, instructions=None):
+            api_token=None, git_oauth_token=None, build_filename=None, instructions=None,
+            build_was_stopped_by_user=lambda:None):
 
         log.info("Running build script")
 
@@ -311,7 +313,8 @@ class Worker(object):
         p0 = sp.Popen(args, stdout=sp.PIPE, stderr=sp.STDOUT, cwd=working_dir)
 
         try:
-            read_with_timout(p0, build_log, timeout, iotimeout, BuildLog.INTERVAL)
+            read_with_timout(p0, build_log, timeout, iotimeout, BuildLog.INTERVAL,
+                             build_was_stopped_by_user)
         except BaseException:
             log.error("Binstar build process caught an exception while waiting for the build to finish")
             kill_tree(p0)
