@@ -101,11 +101,20 @@ class WorkerConfiguration(object):
 
     def is_running(self):
         'Test if this worker is running'
-        return self.pid is not None
+
+        if self.pid is None:
+            return False
+
+        return pid_is_running(self.pid)
 
     @contextmanager
     def running(self):
         'Flag this worker id as running'
+
+        if self.is_running():
+            msg = "This worker appears to already be running with pid {}".format(self.pid)
+            raise errors.BinstarError(msg)
+
         dst = '{}.{}'.format(self.filename, os.getpid())
         os.link(self.filename, dst)
         try:
@@ -123,7 +132,7 @@ class WorkerConfiguration(object):
 
         worker_file = os.path.join(cls.REGISTERED_WORKERS_DIR, worker_id)
         if not os.path.isfile(worker_file):
-            raise errors.BinstarError("Worker with ID {} does not exist locally".format(worker_id))
+            raise errors.BinstarError("Worker with ID {} does not exist locally ({})".format(worker_id, worker_file))
 
         with open(worker_file) as fd:
             try:
@@ -153,16 +162,14 @@ class WorkerConfiguration(object):
     def print_registered_workers(cls):
 
         has_workers = False
-        for f in os.listdir(cls.REGISTERED_WORKERS_DIR):
-            worker_file = os.path.join(cls.REGISTERED_WORKERS_DIR, f)
-            with open(worker_file, 'r') as fil:
-                try:
-                    worker = yaml.load(fil.read())
-                    has_workers = True
-                    log.info('worker-id\t{}\tqueue\t{}/{}'.format(worker['worker_id'], worker['username'], worker['queue']))
-                except Exception:
-                    log.info('Skipping file worker config file: {} that could '
-                             'not be loaded'.format(worker_file))
+
+        for wconfig in cls.registered_workers():
+            msg = 'id: {worker_id} hostname: {hostname} queue: {username}/{queue}'.format(**wconfig.to_dict())
+            if wconfig.pid:
+                msg += ' (running with pid: {})'.format(wconfig.pid)
+
+            log.info(msg)
+
         if not has_workers:
             log.info('(No registered workers)')
 
