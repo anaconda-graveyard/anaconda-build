@@ -46,9 +46,9 @@ class BuildLog(object):
         
         The if the io thread is running, msg will be appended an internal message buffer
         """
-        umsg = msg.encode('utf-8', errors='replace')
 
-        terminate_build = self.write_to_server(umsg)
+        # TODO this may not work on python3
+        terminate_build = self.write_to_server(msg)
         self.terminate_build = terminate_build
 
         n = self.fd.write(msg)
