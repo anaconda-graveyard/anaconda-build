@@ -1,7 +1,10 @@
-import unittest
-from binstar_build_client.worker.register import WorkerConfiguration
-import os
 from glob import glob
+import os
+import unittest
+
+from binstar_client import errors
+from binstar_build_client.worker.register import WorkerConfiguration
+
 
 test_workers = os.path.abspath('./test-workers')
 
@@ -56,6 +59,25 @@ class Test(unittest.TestCase):
         self.assertFalse(wc.is_running())
 
         with wc.running():
+            self.assertTrue(wc.is_running())
+
+        self.assertFalse(wc.is_running())
+
+    def test_already_running(self):
+
+        wc = WorkerConfiguration('worker_id', 'username', 'queue', 'platform', 'hostname', 'dist')
+        wc.save()
+
+        self.assertFalse(wc.is_running())
+
+        with wc.running():
+
+
+            with self.assertRaises(errors.BinstarError):
+
+                with wc.running():
+                    pass
+
             self.assertTrue(wc.is_running())
 
         self.assertFalse(wc.is_running())

@@ -101,13 +101,15 @@ class DockerWorker(Worker):
 
         def timeout_callback(reason='iotimeout'):
 
-            cli.kill(cont)
+            log.info("timeout occurred: {}".format(reason))
+            log.info("killing docker container")
 
+            cli.kill(cont)
             if reason == 'iotimeout':
                 build_log.write("\nTimeout: No output from program for %s seconds\n" % iotimeout)
                 build_log.write("\nTimeout: If you require a longer timeout you "
                           "may set the 'iotimeout' variable in your .binstar.yml file\n")
-                self._output.write("[Terminating]\n")
+                build_log.write("[Terminating]\n")
             elif reason == 'timeout':
                 build_log.write("\nTimeout: build exceeded maximum build time of %s seconds\n" % timeout)
                 build_log.write("[Terminating]\n")
