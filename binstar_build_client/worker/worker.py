@@ -64,10 +64,14 @@ class Worker(object):
     JOURNAL_FILE = 'journal.csv'
     SLEEP_TIME = 10
 
-    def __init__(self, bs, args):
+    def __init__(self, bs, worker_config, args):
         self.bs = bs
         self.args = args
-        self.worker_id = args.worker_id
+        self.config = worker_config
+
+    @property
+    def worker_id(self):
+        return self.config.worker_id
 
     def work_forever(self):
         """
@@ -90,16 +94,15 @@ class Worker(object):
 
         """
         bs = self.bs
-        args = self.args
         worker_idle = False
         while 1:
             try:
-                job_data = bs.pop_build_job(args.username,
-                                            args.queue,
+                job_data = bs.pop_build_job(self.config.username,
+                                            self.config.queue,
                                             self.worker_id)
             except errors.NotFound:
                 self.write_status(False, "worker not found")
-                if args.show_traceback:
+                if self.args.show_traceback:
                     raise
                 else:
                     msg = ("This worker can no longer "
@@ -134,7 +137,7 @@ class Worker(object):
 
             yield job_data
 
-            if args.one:
+            if self.args.one:
                 break
 
 
@@ -164,13 +167,12 @@ class Worker(object):
 
     def _finish_job(self, job_data, failed, status):
         bs = self.bs
-        args = self.args
 
-        if args.push_back:
-            bs.push_build_job(args.username, args.queue,
+        if self.args.push_back:
+            bs.push_build_job(self.config.username, self.config.queue,
                               self.worker_id, job_data['job']['_id'])
         else:
-            job_data = bs.fininsh_build(args.username, args.queue,
+            job_data = bs.fininsh_build(self.config.username, self.config.queue,
                                         self.worker_id, job_data['job']['_id'],
                                         failed=failed, status=status)
 
@@ -213,14 +215,14 @@ class Worker(object):
         rm_rf(working_dir)
         os.makedirs(working_dir)
 
-        build_log = BuildLog(self.bs, self.args.username, self.args.queue, self.worker_id, job_id,
+        build_log = BuildLog(self.bs, self.config.username, self.config.queue, self.worker_id, job_id,
                              filename=self.build_logfile(job_data))
 
         with build_log:
 
 
             instructions = job_data['build_item_info'].get('instructions')
-            build_log.write("Building on worker %s (platform %s)\n" % (self.args.hostname, self.args.platform))
+            build_log.write("Building on worker %s (platform %s)\n" % (self.config.hostname, self.config.platform))
             build_log.write("Starting build %s\n" % job_data['job_name'])
 
             if not os.path.exists('build_scripts'):
@@ -327,7 +329,7 @@ class Worker(object):
             os.mkdir('build_data')
 
         build_filename = os.path.join('build_data', '%s.tar.bz2' % job_id)
-        fp = self.bs.fetch_build_source(self.args.username, self.args.queue, self.worker_id, job_id)
+        fp = self.bs.fetch_build_source(self.config.username, self.config.queue, self.worker_id, job_id)
 
         with open(build_filename, 'wb') as bp:
             data = fp.read(2 ** 13)

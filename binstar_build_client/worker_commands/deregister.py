@@ -3,18 +3,25 @@ from __future__ import (print_function, unicode_literals, division,
 
 import os
 import yaml
+import logging
 
-from binstar_client import errors
 from binstar_client.utils import get_binstar
 
 from binstar_build_client import BinstarBuildAPI
-from binstar_build_client.worker.register import (deregister_worker,
-                                                  print_registered_workers)
+from binstar_build_client.worker.register import WorkerConfiguration
+
+log = logging.getLogger('bisntar.build')
 
 def main(args, context="worker"):
 
     bs = get_binstar(args, cls=BinstarBuildAPI)
-    return deregister_worker(bs, args, context=context)
+
+    wconfig = WorkerConfiguration.load(args.worker_id)
+    wconfig.deregister(bs)
+
+    os.unlink(wconfig.filename)
+    log.debug("Removed worker config {}".format(wconfig.filename))
+
 
 def add_parser(subparsers, name='deregister',
                description='Deregister a build worker to build jobs off of a binstar build queue',

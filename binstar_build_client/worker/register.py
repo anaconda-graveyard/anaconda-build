@@ -1,117 +1,210 @@
-from __future__ import (print_function, unicode_literals, division,
-    absolute_import)
+from __future__ import print_function, unicode_literals, division, absolute_import
 
-import os
-import yaml
 import logging
+import os
 
 from binstar_client import errors
+import yaml
+from glob import glob
+import io
+from contextlib import contextmanager
 
 
 log = logging.getLogger("binstar.build")
 
-REGISTERED_WORKERS_DIR = os.path.join(os.path.expanduser('~'), '.workers')
 
-if not os.path.exists(REGISTERED_WORKERS_DIR):
-    os.mkdir(REGISTERED_WORKERS_DIR)
-
-def print_registered_workers():
-
-    log.info('Registered workers:\n')
-    has_workers = False
-    for f in os.listdir(REGISTERED_WORKERS_DIR):
-        worker_file = os.path.join(REGISTERED_WORKERS_DIR, f)
-        with open(worker_file, 'r') as fil:
-            try:
-                worker = yaml.load(fil.read())
-                has_workers = True
-                log.info('worker-id\t{}\tqueue\t{}/{}'.format(worker['worker_id'], worker['username'], worker['queue']))
-            except Exception:
-                log.info('Skipping file worker config file: {} that could ' + \
-                         'not be yaml.load\'ed'.format(worker_file))
-    if not has_workers:
-        log.info('(No registered workers)')
-
-def register_worker(bs, args, context="worker"):
-    '''
-    Register the worker with anaconda
-    '''
-    worker_id = bs.register_worker(args.username, args.queue, args.platform,
-                                        args.hostname, args.dist)
-    log.info('Registered {} with worker_id:\t{}'.format(context, worker_id))
-    args.worker_id = worker_id
-
-    filename = os.path.join(REGISTERED_WORKERS_DIR, args.worker_id)
-    with open(filename, 'w') as fd:
-        yaml.dump(vars(args), fd)
-
-    log.info('{} config saved at {}.'.format(context, filename))
-    log.info('Now run:\n\tanaconda {} run {}'.format(context, worker_id))
-    return args
-
-def deregister_worker(bs, args, context="worker"):
-    ''' Deregister the worker with anaconda'''
+def pid_is_running(pid):
+    'Return true if the pid is running'
     try:
-        filename = os.path.join(REGISTERED_WORKERS_DIR, args.worker_id)
-
-        if not os.path.exists(filename):
-            raise errors.BinstarError('Cannot find {}.  Perhaps the worker was already removed.'.format(filename))
-
-        with open(filename, 'r') as fil:
-            vars(args).update(yaml.load(fil.read()))
-
-        removed_worker = bs.remove_worker(args.username, args.queue, args.worker_id)
-        if not removed_worker:
-            info = (context, args.worker_id, args.username, args.queue,)
-            raise errors.BinstarError('Failed to remove {} with argument of ' + \
-                                      'worker_id\t{}\tqueue\t{}/{}'.format(*info))
-
-        log.info('Deregistered {} with worker-id {}'.format(context, args.worker_id))
-        os.unlink(filename)
-        log.debug("Removed {} config {}".format(context, filename))
-        return args
-
-    except Exception:
-        log.info('Failed on anaconda build deregister.\n')
-        print_registered_workers()
-        log.info('deregister failed with error:\n')
+        os.kill(pid, 0)
+    except OSError as err:
+        if err.errno == 3:
+            return False
         raise
+    return True
 
-def print_worker_summary(args):
-    log.info('Starting worker:')
-    log.info('Hostname: {}'.format(args.hostname))
-    log.info('User: {}'.format(args.username))
-    log.info('Queue: {}'.format(args.queue))
-    log.info('Platform: {}'.format(args.platform))
-    log.info('Worker-id: {}'.format(args.worker_id))
-    log.info('Build Options:')
-    log.info('--conda-build-dir: {}'.format(args.conda_build_dir))
-    log.info('--show-new-procs: {}'.format(args.show_new_procs))
-    log.info('--status-file: {}'.format(args.status_file))
-    log.info('--push-back: {}'.format(args.push_back))
-    log.info('--one: {}'.format(args.one))
-    log.info('--dist: {}'.format(args.dist))
-    log.info('--cwd: {}'.format(args.cwd))
-    log.info('--max-job-duration: {} (seconds)'.format(args.timeout))
+class InvalidWorkerConfigFile(errors.BinstarError):
+    pass
+
+class WorkerConfiguration(object):
+    REGISTERED_WORKERS_DIR = os.path.join(os.path.expanduser('~'), '.workers')
+
+    def __init__(self, worker_id, username, queue, platform, hostname, dist):
+        self.worker_id = worker_id
+        self.username = username
+        self.queue = queue
+        self.platform = platform
+        self.hostname = hostname
+        self.dist = dist
+
+    def __str__(self):
+        stream = io.StringIO()
+        print("WorkerConfiguration", file=stream)
+
+        print("\tpid: {}".format(self.pid), file=stream)
+
+        for key, value in sorted(self.to_dict().items()):
+            print("\t{}: {}".format(key, value), file=stream)
+
+        return stream.getvalue()
+
+    def __repr__(self):
+        return "WorkerConfiguration({})".format(', '.join(self.to_dict().values()))
+
+    def to_dict(self):
+        return {
+            "worker_id": self.worker_id,
+            "username": self.username,
+            "queue": self.queue,
+            "platform": self.platform,
+            "hostname": self.hostname,
+            "dist": self.dist,
+        }
+
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return False
+
+        return self.to_dict() == other.to_dict()
+
+    @classmethod
+    def registered_workers(cls):
+        "Iterate over the registered workers on this machine"
+
+        log.info('Registered workers:\n')
+
+        for worker_id in os.listdir(cls.REGISTERED_WORKERS_DIR):
+            if '.' not in worker_id:
+                yield cls.load(worker_id)
+
+    @property
+    def filename(self):
+        'Filename for to load/save worker config'
+        return os.path.join(self.REGISTERED_WORKERS_DIR, self.worker_id)
+
+    @property
+    def pid(self):
+        for fn in glob(self.filename + '.*'):
+
+            try:
+                pid = int(fn.rsplit('.', 1)[-1])
+            except ValueError:
+                os.unlink(fn)
 
 
-def add_worker_options(args):
-    """
-    Add options from the worker file to the worker args
-    """
-    worker_file = os.path.join(REGISTERED_WORKERS_DIR, args.worker_id)
+            if pid_is_running(pid):
+                return pid
+            else:
+                os.unlink(fn)
 
-    if not os.path.exists(worker_file):
-        print_registered_workers()
-        msg = ('Could not find worker config file at {}. '
-            'See anaconda build register --help.').format(worker_file)
-        raise errors.BinstarError(msg)
+        return None
 
-    with open(worker_file) as f:
-        worker_config = yaml.load(f.read())
+    def is_running(self):
+        'Test if this worker is running'
+        return self.pid is not None
 
-    vars(args).update(worker_config)
-    args.conda_build_dir = args.conda_build_dir.format(args=args)
+    @contextmanager
+    def running(self):
+        'Flag this worker id as running'
+        dst = '{}.{}'.format(self.filename, os.getpid())
+        os.link(self.filename, dst)
+        try:
+            yield
+        finally:
+            if os.path.isfile(dst):
+                os.unlink(dst)
 
-    print_worker_summary(args)
+
+
+
+    @classmethod
+    def load(cls, worker_id):
+        'Load a worker config from a worker_id'
+
+        worker_file = os.path.join(cls.REGISTERED_WORKERS_DIR, worker_id)
+        if not os.path.isfile(worker_file):
+            raise errors.BinstarError("Worker with ID {} does not exist locally".format(worker_id))
+
+        with open(worker_file) as fd:
+            try:
+                attrs = yaml.safe_load(fd)
+            except yaml.error.YAMLError as err:
+                log.error(err)
+                raise InvalidWorkerConfigFile("The worker registration file can not be read")
+
+        if not attrs:
+            raise InvalidWorkerConfigFile("The worker registration file {} "
+                                          "appears to be empty".format(worker_file))
+
+        expected = {'worker_id', 'username', 'queue', 'platform', 'hostname', 'dist'}
+
+        if set(attrs) != expected:
+            log.error("Expected the worker registration file to contain the values\n\t"
+                      "{}\ngot:\n\t{}".format(', '.join(expected), ' ,'.join(attrs)))
+            raise InvalidWorkerConfigFile("The worker registration file {} "
+                                          "does not contain the correct values".format(worker_file))
+
+        worker_config = cls(**attrs)
+
+
+        return worker_config
+
+    @classmethod
+    def print_registered_workers(cls):
+
+        has_workers = False
+        for f in os.listdir(cls.REGISTERED_WORKERS_DIR):
+            worker_file = os.path.join(cls.REGISTERED_WORKERS_DIR, f)
+            with open(worker_file, 'r') as fil:
+                try:
+                    worker = yaml.load(fil.read())
+                    has_workers = True
+                    log.info('worker-id\t{}\tqueue\t{}/{}'.format(worker['worker_id'], worker['username'], worker['queue']))
+                except Exception:
+                    log.info('Skipping file worker config file: {} that could '
+                             'not be loaded'.format(worker_file))
+        if not has_workers:
+            log.info('(No registered workers)')
+
+    @classmethod
+    def register(cls, bs, username, queue, platform, hostname, dist):
+        '''
+        Register the worker with anaconda server
+        '''
+
+        worker_id = bs.register_worker(username, queue, platform, hostname, dist)
+        log.info('Registered worker with worker_id:\t{}'.format(worker_id))
+
+        return WorkerConfiguration(worker_id, username, queue, platform, hostname, dist)
+
+    def save(self):
+        'Store worker config in yaml file'
+
+        if not os.path.exists(self.REGISTERED_WORKERS_DIR):
+            os.mkdir(self.REGISTERED_WORKERS_DIR)
+
+        with open(self.filename, 'w') as fd:
+            yaml.safe_dump(self.to_dict(), fd, default_flow_style=False)
+
+
+    def deregister(self, bs):
+        'Deregister the worker from anaconda server'
+
+        try:
+
+            removed_worker = bs.remove_worker(self.username, self.queue, self.worker_id)
+
+            if not removed_worker:
+                info = (self.worker_id, self.username, self.queue,)
+                raise errors.BinstarError('Failed to remove_worker with argument of ' + \
+                                          'worker_id\t{}\tqueue\t{}/{}'.format(*info))
+
+            log.info('Deregistered worker with worker-id {}'.format(self.worker_id))
+
+        except Exception:
+
+            log.info('Failed on anaconda build deregister.\n')
+            self.print_registered_workers()
+            log.info('deregister failed with error:\n')
+            raise
 

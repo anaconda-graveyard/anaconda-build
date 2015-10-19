@@ -13,7 +13,7 @@ from binstar_client.utils import get_binstar
 from binstar_build_client import BinstarBuildAPI
 from binstar_build_client.worker.docker_worker import DockerWorker
 from binstar_build_client.worker_commands.run import add_parser as add_worker_parser
-from binstar_build_client.worker.register import add_worker_options
+from binstar_build_client.worker.register import WorkerConfiguration
 
 try:
     import docker
@@ -29,11 +29,11 @@ def main(args):
                                "Run:\n\tpip install docker-py")
 
 
-    add_worker_options(args)
+    worker_config = WorkerConfiguration.load(args.worker_id)
 
     bs = get_binstar(args, cls=BinstarBuildAPI)
 
-    woker = DockerWorker(bs, args)
+    woker = DockerWorker(bs, worker_config, args)
     woker.work_forever()
 
 def add_parser(subparsers):

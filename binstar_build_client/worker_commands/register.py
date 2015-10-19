@@ -6,14 +6,14 @@ anaconda build register
 from __future__ import (print_function, unicode_literals, division,
     absolute_import)
 
-import os
 import platform
+import logging
 
 from binstar_client import errors
 from binstar_client.utils import get_binstar
 
 from binstar_build_client import BinstarBuildAPI
-from binstar_build_client.worker.register import register_worker
+from binstar_build_client.worker.register import WorkerConfiguration
 
 OS_MAP = {'darwin': 'osx', 'windows':'win'}
 ARCH_MAP = {'x86': '32',
@@ -22,13 +22,20 @@ ARCH_MAP = {'x86': '32',
             'amd64' : '64',
             }
 
+log = logging.getLogger('binstar.build')
+
 def get_platform():
+    'Get the conda platform string of the current machine'
+
     operating_system = platform.system().lower()
     arch = platform.machine().lower()
     return '{}-{}'.format(OS_MAP.get(operating_system, operating_system),
                       ARCH_MAP.get(arch, arch))
 
 def get_dist():
+    '''
+    Get the current os and version
+    '''
     if platform.dist()[0]:
         return platform.dist()[0].lower()
     elif platform.mac_ver()[0]:
@@ -39,6 +46,10 @@ def get_dist():
     return 'unknown'
 
 def split_queue_arg(queue):
+    '''
+    Support old and new style queue
+    '''
+
     if queue.count('/') == 1:
         username, queue = queue.split('/', 1)
     elif queue.count('-') == 2:
@@ -47,10 +58,16 @@ def split_queue_arg(queue):
         raise errors.UserError("Build queue must be of the form build-USERNAME-QUEUENAME or USERNAME/QUEUENAME")
     return username, queue
 
-def main(args, context="worker"):
+def main(args):
+
     args.username, args.queue = split_queue_arg(args.queue)
     bs = get_binstar(args, cls=BinstarBuildAPI)
-    return register_worker(bs, args, context=context)
+    worker_config = WorkerConfiguration.register(bs, args.username, args.queue, args.platform, args.hostname, args.dist)
+    worker_config.save()
+
+    log.info('Worker config saved at {}.'.format(worker_config.filename))
+    log.info('Now run:\n\tanaconda worker run {}'.format(worker_config.worker_id))
+
 
 def add_parser(subparsers, name='register',
                description='Register a build worker to build jobs off of a binstar build queue',
@@ -75,11 +92,6 @@ def add_parser(subparsers, name='register',
     parser.add_argument('--dist', default=get_dist(),
                         help='The operating system distribution the worker should use (default: %(default)s)')
 
-    parser.add_argument('--cwd', default=os.path.abspath('.'), type=os.path.abspath,
-                        help='The root directory this build should use (default: "%(default)s")')
-    parser.add_argument('-t', '--max-job-duration', type=int, metavar='SECONDS',
-                        dest='timeout',
-                        help='Force jobs to stop after they exceed duration (default: %(default)s)', default=60 * 60)
-    parser.set_defaults(main=default_func)
+    parser.set_defaults(main=main)
 
     return parser

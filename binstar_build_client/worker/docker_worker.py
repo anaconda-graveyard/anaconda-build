@@ -22,10 +22,10 @@ except ImportError:
 class DockerWorker(Worker):
     """
     """
-    def __init__(self, bs, args):
-        Worker.__init__(self, bs, args)
+    def __init__(self, bs, worker_config, args):
+        Worker.__init__(self, bs, worker_config, args)
 
-        self.client = docker.Client(base_url=os.environ.get('DOCKER_HOST'), 
+        self.client = docker.Client(base_url=os.environ.get('DOCKER_HOST'),
                                     version=os.environ.get('DOCKER_VERSION'))
         log.info('Connecting to docker daemon ...')
         try:
