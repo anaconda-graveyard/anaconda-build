@@ -20,7 +20,7 @@ from binstar_build_client.worker.utils.script_generator import gen_build_script,
     EXIT_CODE_OK, EXIT_CODE_ERROR, EXIT_CODE_FAILED
 from binstar_client import errors
 from binstar_build_client.worker.utils.timeout import read_with_timeout
-from binstar_build_client.worker.utils import kill_tree
+from binstar_build_client.worker.utils.kill_tree import kill_tree
 
 
 log = logging.getLogger('binstar.build')

@@ -14,6 +14,7 @@ class MockWorker(Worker):
     def __init__(self):
         self.SLEEP_TIME = 0
         bs = Mock()
+        bs.log_build_output.return_value = False
         args = Mock()
         args.status_file = None
         args.timeout = 100
@@ -107,32 +108,40 @@ class Test(unittest.TestCase):
         self.assertEqual(data, expected)
 
 
-
-
     @patch('subprocess.Popen')
     @patch('binstar_build_client.worker.worker.gen_build_script')
-    def test_build(self, gen_build_script, Popen):
+    @patch('binstar_build_client.worker.utils.timeout.kill_tree')
+    def test_build(self, mock_kill_tree, gen_build_script, mock_Popen):
+
+        def mock_readline(l=[]):
+            l.append(None)
+            if len(l) >= 3:
+                return ''
+
+            return 'ping'
+
         class MyWorker(MockWorker):
             download_build_source = Mock()
             download_build_source.return_value = 'build_source_filename'
 
-        Popen.return_value.wait.return_value = 0
+        mock_Popen().wait.return_value = 0
+        mock_Popen().poll.return_value = 0
+        mock_Popen().stdout.readline = mock_readline
         gen_build_script.return_value = 'script_filename'
 
         worker = MyWorker()
         job_data = default_build_data()
-
         failed, status = worker.build(job_data)
         self.assertFalse(failed)
         self.assertEqual(status, 'success')
 
-        popen_args = Popen.call_args[0][0]
+        popen_args = mock_Popen.call_args[0][0]
         expected_args = ['script_filename', '--api-token', 'upload_token', '--build-tarball', 'build_source_filename']
         ending_posix = popen_args[0].split('/')[-1]
         ending_win = popen_args[0].split('\\')[-1]
         self.assertIn('script_filename', (ending_win, ending_posix))
         self.assertEqual(popen_args[1:], expected_args[1:])
-        popen_kwargs = Popen.call_args[1]
+        popen_kwargs = mock_Popen.call_args[1]
 
     def test_job_loop(self):
         worker = MockWorker()

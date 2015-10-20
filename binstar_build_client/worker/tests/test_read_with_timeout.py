@@ -3,6 +3,7 @@ import time
 import unittest
 
 import mock
+from binstar_build_client.worker.utils.timeout import read_with_timeout
 
 class MockProcess(object):
     class MockStdOut(object):
@@ -29,24 +30,22 @@ class MockProcess(object):
         return
 
 class TestReadWithTimeout(unittest.TestCase):
-    @mock.patch('binstar_build_client.worker.utils.kill_tree.kill_tree')
+    @mock.patch('binstar_build_client.worker.utils.timeout.kill_tree')
     def test_good_build(self, mock_kill_tree):
         """
         reads a process that takes 3s to complete, with 60s timeout
         """
-        from binstar_build_client.worker.utils.timeout import read_with_timeout
         pings = 3
         p0 = MockProcess(pings)
         output = StringIO.StringIO()
         read_with_timeout(p0, output)
         self.assertEqual(pings, output.getvalue().count('ping'))
 
-    @mock.patch('binstar_build_client.worker.utils.kill_tree.kill_tree')
-    def test_iotimeout_build(self, mock_kill_tree):
+    @mock.patch('binstar_build_client.worker.utils.timeout.kill_tree')
+    def test_iotimeout_build_1(self, mock_kill_tree):
         """
         reads a process that takes 1.5s to complete, with 0.5s timeout
         """
-        from binstar_build_client.worker.utils.timeout import read_with_timeout
 
         mock_kill_tree.return_value = True
         pings = 3
@@ -56,21 +55,9 @@ class TestReadWithTimeout(unittest.TestCase):
         out = output.getvalue()
         self.assertIn('iotimeout', out)
 
-    @mock.patch('binstar_build_client.worker.utils.kill_tree.kill_tree')
-    def test_iotimeout_build(self, mock_kill_tree):
-        from binstar_build_client.worker.utils.timeout import read_with_timeout
 
-        mock_kill_tree.return_value = True
-        pings = 3
-        p0 = MockProcess(pings, sleep_time=1)
-        output = StringIO.StringIO()
-        read_with_timeout(p0, output, iotimeout=0.5)
-        out = output.getvalue()
-        self.assertIn('iotimeout', out)
-
-    @mock.patch('binstar_build_client.worker.utils.kill_tree.kill_tree')
+    @mock.patch('binstar_build_client.worker.utils.timeout.kill_tree')
     def test_timeout_build(self, mock_kill_tree):
-        from binstar_build_client.worker.utils.timeout import read_with_timeout
 
         mock_kill_tree.return_value = True
         pings = 3
@@ -80,9 +67,8 @@ class TestReadWithTimeout(unittest.TestCase):
         out = output.getvalue()
         self.assertIn('\nTimeout', out)
 
-    @mock.patch('binstar_build_client.worker.utils.kill_tree.kill_tree')
+    @mock.patch('binstar_build_client.worker.utils.timeout.kill_tree')
     def test_user_terminated_build(self, mock_kill_tree):
-        from binstar_build_client.worker.utils.timeout import read_with_timeout
 
         def terminate(count=[]):
             count.append(None)
