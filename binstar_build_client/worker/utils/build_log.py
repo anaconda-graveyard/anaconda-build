@@ -12,7 +12,7 @@ log = logging.getLogger(__name__)
 
 class BuildLog(object):
     """
-    This IO object writes data build log output to the 
+    This IO object writes data build log output to the
     anaconda server and also to a file.
     """
 
@@ -47,7 +47,7 @@ class BuildLog(object):
     def write(self, msg):
         """
         Write to server and also stdout
-        
+
         The if the io thread is running, msg will be appended an internal message buffer
         """
 

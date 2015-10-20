@@ -9,11 +9,11 @@ log = logging.getLogger('binstar.build')
 class Timeout:
     """
     Timeout context
-    
+
     @timeout()
     def timeout1():
         #do somthing
-        
+
     with timeout1:
         wait()
     """
@@ -50,7 +50,7 @@ class Timeout:
         self.event.set()
         self._t.join()
 
-def read_with_timout(p0, output, timeout=60 * 60, iotimeout=60, flush_iterval=10, build_was_stopped_by_user=lambda:None):
+def read_with_timeout(p0, output, timeout=60 * 60, iotimeout=60, flush_iterval=10, build_was_stopped_by_user=lambda:None):
     """
     Read the stdout from a Popen object and wait for it to
     """
@@ -75,10 +75,10 @@ def read_with_timout(p0, output, timeout=60 * 60, iotimeout=60, flush_iterval=10
             iotimer.tick()
 
             output.write(line)
-
             if build_was_stopped_by_user():
                 log.info("Kill build process || user requested")
                 kill_tree(p0)
+                break
 
             if time.time() - last_flush > flush_iterval:
                 last_flush = time.time()

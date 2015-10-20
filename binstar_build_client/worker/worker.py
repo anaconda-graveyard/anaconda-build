@@ -19,7 +19,7 @@ from binstar_build_client.worker.utils.build_log import BuildLog
 from binstar_build_client.worker.utils.script_generator import gen_build_script, \
     EXIT_CODE_OK, EXIT_CODE_ERROR, EXIT_CODE_FAILED
 from binstar_client import errors
-from binstar_build_client.worker.utils.timeout import read_with_timout
+from binstar_build_client.worker.utils.timeout import read_with_timeout
 from binstar_build_client.worker.utils import kill_tree
 
 
@@ -182,7 +182,7 @@ class Worker(object):
 
     def _build_loop(self):
         """
-        This is the main build loop this checks anaconda.org for any jobs it can do and 
+        This is the main build loop this checks anaconda.org for any jobs it can do and
         """
 
         with open(self.JOURNAL_FILE, 'a') as journal:
@@ -209,7 +209,7 @@ class Worker(object):
 
     def build(self, job_data):
         """
-        Run a single build 
+        Run a single build
         """
         job_id = job_data['job']['_id']
 
@@ -313,7 +313,7 @@ class Worker(object):
         p0 = sp.Popen(args, stdout=sp.PIPE, stderr=sp.STDOUT, cwd=working_dir)
 
         try:
-            read_with_timout(p0, build_log, timeout, iotimeout, BuildLog.INTERVAL,
+            read_with_timeout(p0, build_log, timeout, iotimeout, BuildLog.INTERVAL,
                              build_was_stopped_by_user)
         except BaseException:
             log.error("Binstar build process caught an exception while waiting for the build to finish")
@@ -339,7 +339,7 @@ class Worker(object):
     def download_build_source(self, job_id):
         """
         If the source files for this job were tarred and uploaded to bisntar.
-        Download them. 
+        Download them.
         """
         log.info("Fetching build data")
         if not os.path.exists('build_data'):
@@ -361,7 +361,7 @@ class Worker(object):
     def job_context(self, journal, job_data):
         """
         Yields a context where a job can execute safely
-        
+
         If the context is not exited within 'args.timeout' seconds, an exception will be raised
         """
         ctx = (job_data['job']['_id'], job_data['job_name'])
