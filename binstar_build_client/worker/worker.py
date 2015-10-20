@@ -61,6 +61,13 @@ def remove_files_after(files):
                 os.unlink(filename)
 
 
+class BuildProcess(sp.Popen):
+    def kill(self):
+        kill_tree(self)
+
+    def readlines(self):
+        return self.stdout.readlines()
+
 class Worker(object):
     """
 
@@ -310,14 +317,15 @@ class Worker(object):
         if self.args.show_new_procs:
             already_running_procs = get_my_procs()
 
-        p0 = sp.Popen(args, stdout=sp.PIPE, stderr=sp.STDOUT, cwd=working_dir)
+        p0 = BuildProcess(args, stdout=sp.PIPE, stderr=sp.STDOUT, cwd=working_dir)
 
         try:
             read_with_timeout(p0, build_log, timeout, iotimeout, BuildLog.INTERVAL,
                              build_was_stopped_by_user)
         except BaseException:
             log.error("Binstar build process caught an exception while waiting for the build to finish")
-            kill_tree(p0)
+            # kill_tree(p0)
+            p0.kill()
             p0.wait()
             raise
         finally:

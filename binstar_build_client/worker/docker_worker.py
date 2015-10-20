@@ -5,8 +5,10 @@ import logging
 import os
 from os.path import basename, abspath
 
+from binstar_build_client.worker.utils.build_log import BuildLog
 from binstar_build_client.worker.worker import Worker
 from binstar_client import errors
+
 from requests import ConnectionError
 
 
@@ -14,9 +16,22 @@ log = logging.getLogger("binstar.build")
 
 try:
     import docker
+    from docker.utils import kwargs_from_env
 except ImportError:
     docker = None
 
+class DockerBuildProcess(object):
+    def __init__(cli, cont):
+        self.cli = cli
+        self.cont = cont
+        self.stream = self.cli.attach(cont, stream=True, stdout=True, stderr=True)
+
+    def kill(self):
+        self.cli.kill(self.cont)
+        self.cli.remove_container(self.cont, v=True)
+
+    def readline(self):
+        return self.stream.next()
 
 class DockerWorker(Worker):
     """
@@ -24,8 +39,7 @@ class DockerWorker(Worker):
     def __init__(self, bs, worker_config, args):
         Worker.__init__(self, bs, worker_config, args)
 
-        self.client = docker.Client(base_url=os.environ.get('DOCKER_HOST'),
-                                    version=os.environ.get('DOCKER_VERSION'))
+        self.client = docker.Client(**kwargs_from_env(assert_hostname=False))
         log.info('Connecting to docker daemon ...')
         try:
             images = self.client.images(args.image)
@@ -41,7 +55,8 @@ class DockerWorker(Worker):
 
 
     def run(self, build_data, script_filename, build_log, timeout, iotimeout,
-            api_token=None, git_oauth_token=None, build_filename=None, instructions=None):
+            api_token=None, git_oauth_token=None, build_filename=None, instructions=None,
+            build_was_stopped_by_user=lambda:None):
         """
         """
         cli = self.client
@@ -96,40 +111,42 @@ class DockerWorker(Worker):
         cont = cli.create_container(image, command=command, volumes=volumes)
 
         build_log.write("Docker: Attach output\n")
-        stream = cli.attach(cont, stream=True, stdout=True, stderr=True)
 
-        def timeout_callback(reason='iotimeout'):
+        # def timeout_callback(reason='iotimeout'):
 
-            log.info("timeout occurred: {}".format(reason))
-            log.info("killing docker container")
+        #     log.info("timeout occurred: {}".format(reason))
+        #     log.info("killing docker container")
 
-            cli.kill(cont)
-            if reason == 'iotimeout':
-                build_log.write("\nTimeout: No output from program for %s seconds\n" % iotimeout)
-                build_log.write("\nTimeout: If you require a longer timeout you "
-                          "may set the 'iotimeout' variable in your .binstar.yml file\n")
-                build_log.write("[Terminating]\n")
-            elif reason == 'timeout':
-                build_log.write("\nTimeout: build exceeded maximum build time of %s seconds\n" % timeout)
-                build_log.write("[Terminating]\n")
-            else:
-                build_log.write("\nTerminate: User requested build to be terminated\n")
-                build_log.write("[Terminating]\n")
-
-
-        ios = IOStream(stream, build_log, iotimeout, timeout, timeout_callback)
+        #     cli.kill(cont)
+        #     if reason == 'iotimeout':
+        #         build_log.write("\nTimeout: No output from program for %s seconds\n" % iotimeout)
+        #         build_log.write("\nTimeout: If you require a longer timeout you "
+        #                   "may set the 'iotimeout' variable in your .binstar.yml file\n")
+        #         build_log.write("[Terminating]\n")
+        #     elif reason == 'timeout':
+        #         build_log.write("\nTimeout: build exceeded maximum build time of %s seconds\n" % timeout)
+        #         build_log.write("[Terminating]\n")
+        #     else:
+        #         build_log.write("\nTerminate: User requested build to be terminated\n")
+        #         build_log.write("[Terminating]\n")
 
         build_log.write("Docker: Start\n")
-
-        ios.start()
-
+        p0 = DockerBuildProcess(cli, cont)
         log.info("Binds: %r" % binds)
 
         cli.start(cont, binds=binds)
 
-        exit_code = cli.wait(cont)
+        # ios = IOStream(stream, build_log, iotimeout, timeout, timeout_callback)
+        try:
+            read_with_timeout(p0, build_log, timeout, iotimeout, BuildLog.INTERVAL,
+                             build_was_stopped_by_user)
+        except BaseException:
+            log.error("Binstar build process caught an exception while waiting for the build to finish")
+            p0.kill()
+            p0.wait()
+            raise
 
-        ios.join()
+        exit_code = cli.wait(cont)
 
         log.info("Remove Container: %r" % cont)
         cli.remove_container(cont, v=True)
