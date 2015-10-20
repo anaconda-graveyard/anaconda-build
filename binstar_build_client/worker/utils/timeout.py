@@ -58,13 +58,13 @@ def read_with_timeout(p0, output, timeout=60 * 60, iotimeout=60, flush_iterval=1
     @Timeout(timeout)
     def timer():
         log.info("Kill build process || timeout")
-        kill_tree(p0)
+        p0.kill()
 
 
     @Timeout(iotimeout)
     def iotimer():
         log.info("Kill build process || iotimeout")
-        kill_tree(p0)
+        p0.kill()
 
     with timer, iotimer:
 
@@ -77,7 +77,7 @@ def read_with_timeout(p0, output, timeout=60 * 60, iotimeout=60, flush_iterval=1
             output.write(line)
             if build_was_stopped_by_user():
                 log.info("Kill build process || user requested")
-                kill_tree(p0)
+                p0.kill()
                 break
 
             if time.time() - last_flush > flush_iterval:
@@ -87,7 +87,7 @@ def read_with_timeout(p0, output, timeout=60 * 60, iotimeout=60, flush_iterval=1
             # Note: this is a blocking read, for any hanging operations
             # The user will not get any output for  iotimeout seconds
             # when the io timer kills the process
-            line = p0.stdout.readline()
+            line = p0.readline()
 
     p0.wait()
 
