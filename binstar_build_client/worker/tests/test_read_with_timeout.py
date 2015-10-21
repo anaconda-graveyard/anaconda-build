@@ -6,22 +6,18 @@ import mock
 from binstar_build_client.worker.utils.timeout import read_with_timeout
 
 class MockProcess(object):
-    class MockStdOut(object):
-        def __init__(self, limit_lines=10, sleep_time=0.1):
-            self.ct = 0
-            self.sleep_time = sleep_time
-            self.limit_lines = limit_lines
-
-        def readline(self, n=0):
-            if self.ct >= self.limit_lines:
-                return ''
-            time.sleep(self.sleep_time)
-            self.ct += 1
-            return 'ping'
-
-    def __init__(self, limit_lines=10, sleep_time=0.1):
+    def __init__(self, *args, **kwargs):
         self.pid = 1
-        self.stdout = self.MockStdOut(limit_lines, sleep_time)
+        self.ct = 0
+        self.sleep_time = kwargs.get('sleep_time', 0.1)
+        self.limit_lines = kwargs.get('limit_lines', 10)
+
+    def readline(self, n=0):
+        if self.ct >= self.limit_lines:
+            return ''
+        time.sleep(self.sleep_time)
+        self.ct += 1
+        return 'ping'
 
     def kill(self):
         return
@@ -36,7 +32,7 @@ class TestReadWithTimeout(unittest.TestCase):
         reads a process that takes 3s to complete, with 60s timeout
         """
         pings = 3
-        p0 = MockProcess(pings)
+        p0 = MockProcess(limit_lines=pings)
         output = StringIO.StringIO()
         read_with_timeout(p0, output)
         self.assertEqual(pings, output.getvalue().count('ping'))

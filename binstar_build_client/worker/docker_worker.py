@@ -6,6 +6,7 @@ import os
 from os.path import basename, abspath
 
 from binstar_build_client.worker.utils.build_log import BuildLog
+from binstar_build_client.worker.utils.process_wrappers import DockerBuildProcess
 from binstar_build_client.worker.utils.timeout import read_with_timeout
 from binstar_build_client.worker.worker import Worker
 from binstar_client import errors
@@ -21,27 +22,6 @@ try:
 except ImportError:
     docker = None
 
-class DockerBuildProcess(object):
-    def __init__(self, cli, cont):
-        self.cli = cli
-        self.cont = cont
-        self.stream = self.cli.attach(cont, stream=True, stdout=True, stderr=True)
-
-    def kill(self):
-        self.cli.kill(self.cont)
-
-    def wait(self):
-        return self.cli.wait(self.cont)
-
-    def remove(self):
-        self.cli.remove_container(self.cont, v=True)
-
-    def readline(self):
-        try:
-            return self.stream.next()
-        except StopIteration:
-            return ''
-
 class DockerWorker(Worker):
     """
     """
@@ -53,11 +33,13 @@ class DockerWorker(Worker):
         try:
             images = self.client.images(args.image)
         except ConnectionError as err:
-            raise errors.BinstarError("Docker client could not connect to daemon (is docker installed?)\n"
-                                      "You may need to set your DOCKER_HOST environment variable")
+            raise errors.BinstarError(
+                "Docker client could not connect to daemon (is docker installed?)\n"
+                "You may need to set your DOCKER_HOST environment variable")
         if not images:
-            raise errors.BinstarError("You do not have the docker image '%(image)s'\n"
-                                      "You may need to run:\n\n\tdocker pull %(image)s\n" % dict(image=args.image))
+            raise errors.BinstarError(
+                "You do not have the docker image '{image}'\n"
+                "You may need to run:\n\n\tdocker pull {image}s\n".format(image=args.image))
 
         if self.args.allow_user_images:
             log.warn("Allowing users to specify docker images")
@@ -70,7 +52,7 @@ class DockerWorker(Worker):
         """
         cli = self.client
         image = self.args.image
-        container_script_filename = '/%s' % basename(script_filename)
+        container_script_filename = '/{0}'.format(basename(script_filename))
 
         volumes = [container_script_filename,
                    ]
@@ -82,12 +64,12 @@ class DockerWorker(Worker):
             args.extend(['--git-oauth-token', git_oauth_token])
 
         elif build_filename:
-            container_build_filename = '/%s' % basename(build_filename)
+            container_build_filename = '/{0}'.format(basename(build_filename))
             volumes.append(container_build_filename)
             binds[build_filename] = {'bind': container_build_filename, 'ro': False}
             args.extend(['--build-tarball', container_build_filename])
 
-        log.info("Running command: (iotimeout=%s)" % iotimeout)
+        log.info("Running command: (iotimeout={0})".format(iotimeout))
         if self.args.allow_user_images:
             if instructions and instructions.get('docker_image'):
                 image = instructions['docker_image']
@@ -96,7 +78,7 @@ class DockerWorker(Worker):
                 else:
                     repository, tag = image, None
 
-                build_log.write('Docker: Pull %s\n' % image)
+                build_log.write('Docker: Pull {0}\n'.format(image))
                 for line in cli.pull(repository, tag=tag, stream=True):
                     msg = json.loads(line)
                     if msg.get('status') == 'Downloading':
@@ -113,35 +95,17 @@ class DockerWorker(Worker):
 
         command = " ".join(args)
         log.info(command)
-        build_log.write("Docker Image: %s\n" % image)
-        log.info("Volumes: %r" % volumes)
+        build_log.write("Docker Image: {0}\n".format(image))
+        log.info("Volumes: {0}".format(volumes))
 
         build_log.write("Docker: Create container\n")
         cont = cli.create_container(image, command=command, volumes=volumes)
 
         build_log.write("Docker: Attach output\n")
 
-        # def timeout_callback(reason='iotimeout'):
-
-        #     log.info("timeout occurred: {}".format(reason))
-        #     log.info("killing docker container")
-
-        #     cli.kill(cont)
-        #     if reason == 'iotimeout':
-        #         build_log.write("\nTimeout: No output from program for %s seconds\n" % iotimeout)
-        #         build_log.write("\nTimeout: If you require a longer timeout you "
-        #                   "may set the 'iotimeout' variable in your .binstar.yml file\n")
-        #         build_log.write("[Terminating]\n")
-        #     elif reason == 'timeout':
-        #         build_log.write("\nTimeout: build exceeded maximum build time of %s seconds\n" % timeout)
-        #         build_log.write("[Terminating]\n")
-        #     else:
-        #         build_log.write("\nTerminate: User requested build to be terminated\n")
-        #         build_log.write("[Terminating]\n")
-
         build_log.write("Docker: Start\n")
         p0 = DockerBuildProcess(cli, cont)
-        log.info("Binds: %r" % binds)
+        log.info("Binds: {0}".format(binds))
 
         cli.start(cont, binds=binds)
 
@@ -158,7 +122,7 @@ class DockerWorker(Worker):
 
         exit_code = p0.wait()
 
-        log.info("Remove Container: %r" % cont)
+        log.info("Remove Container: {0}".format(cont))
         cli.remove_container(cont, v=True)
 
         return exit_code
