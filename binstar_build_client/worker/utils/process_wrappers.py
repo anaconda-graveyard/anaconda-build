@@ -1,4 +1,9 @@
+import logging
+import psutil
 import subprocess
+
+log = logging.getLogger('binstar.build')
+
 
 class DockerBuildProcess(object):
     def __init__(self, cli, cont):
@@ -20,7 +25,22 @@ class DockerBuildProcess(object):
 
 class BuildProcess(subprocess.Popen):
     def kill(self):
-        kill_tree(self)
+        '''Kill all processes and child processes'''
+        try:
+            log.warning("Kill Tree parent pid: {0}".format(self.pid))
+            parent = psutil.Process(self.pid)
+        except psutil.NoSuchProcess:
+            log.warning("Parent pid {0} is already dead".format(self.pid))
+            # Already dead
+            return
+
+        children = parent.children(recursive=True)
+
+        self.kill()
+        for child in children:
+            if child.is_running():
+                log.warning(" - Kill child pid {}".format(child.pid))
+                child.kill()
 
     def readlines(self):
         return self.stdout.readline()

@@ -108,7 +108,7 @@ class Test(unittest.TestCase):
 
 
     @patch('binstar_build_client.worker.utils.process_wrappers.BuildProcess')
-    @patch('binstar_build_client.worker.worker.gen_build_script')
+    @patch('binstar_build_client.worker.utils.script_generator.gen_build_script')
     @patch('binstar_build_client.worker.utils.timeout.kill_tree')
     def test_build(self, mock_kill_tree, gen_build_script, mock_Popen):
 
@@ -134,7 +134,7 @@ class Test(unittest.TestCase):
         self.assertFalse(failed)
         self.assertEqual(status, 'success')
 
-        popen_args = BuildProcess.call_args[0][0]
+        popen_args = mock_Popen.call_args[0][0]
         expected_args = [
             'script_filename',
             '--api-token',
