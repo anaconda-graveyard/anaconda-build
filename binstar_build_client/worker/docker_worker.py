@@ -6,6 +6,7 @@ import os
 from os.path import basename, abspath
 
 from binstar_build_client.worker.utils.build_log import BuildLog
+from binstar_build_client.worker.utils.timeout import read_with_timeout
 from binstar_build_client.worker.worker import Worker
 from binstar_client import errors
 
@@ -21,17 +22,25 @@ except ImportError:
     docker = None
 
 class DockerBuildProcess(object):
-    def __init__(cli, cont):
+    def __init__(self, cli, cont):
         self.cli = cli
         self.cont = cont
         self.stream = self.cli.attach(cont, stream=True, stdout=True, stderr=True)
 
     def kill(self):
         self.cli.kill(self.cont)
+
+    def wait(self):
+        return self.cli.wait(self.cont)
+
+    def remove(self):
         self.cli.remove_container(self.cont, v=True)
 
     def readline(self):
-        return self.stream.next()
+        try:
+            return self.stream.next()
+        except StopIteration:
+            return ''
 
 class DockerWorker(Worker):
     """
@@ -144,9 +153,10 @@ class DockerWorker(Worker):
             log.error("Binstar build process caught an exception while waiting for the build to finish")
             p0.kill()
             p0.wait()
+            p0.remove()
             raise
 
-        exit_code = cli.wait(cont)
+        exit_code = p0.wait()
 
         log.info("Remove Container: %r" % cont)
         cli.remove_container(cont, v=True)
