@@ -70,13 +70,6 @@ class Worker(object):
     def worker_id(self):
         return self.config.worker_id
 
-    def work_forever(self):
-        """
-        Start a loop and continuously build forever
-        """
-        log.info('Working Forever')
-        self._build_loop()
-
     def write_status(self, ok=True, msg='ok'):
         if self.args.status_file:
             with open(self.args.status_file, 'w') as fd:
@@ -182,10 +175,12 @@ class Worker(object):
                 status=status
             )
 
-    def _build_loop(self):
+    def work_forever(self):
         """
+        Start a loop and continuously build forever
         This is the main build loop this checks anaconda.org for any jobs it can do and
         """
+        log.info('Working Forever')
 
         with open(self.JOURNAL_FILE, 'a') as journal:
             for job_data in self.job_loop():

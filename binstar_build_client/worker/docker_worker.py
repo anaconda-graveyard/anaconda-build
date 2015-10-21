@@ -28,7 +28,10 @@ class DockerWorker(Worker):
     def __init__(self, bs, worker_config, args):
         Worker.__init__(self, bs, worker_config, args)
 
-        self.client = docker.Client(**kwargs_from_env(assert_hostname=False))
+        self.client = docker.Client(
+            version=os.environ.get('DOCKER_VERSION'),
+            **kwargs_from_env(assert_hostname=False)
+        )
         log.info('Connecting to docker daemon ...')
         try:
             images = self.client.images(args.image)
@@ -111,8 +114,14 @@ class DockerWorker(Worker):
 
         # ios = IOStream(stream, build_log, iotimeout, timeout, timeout_callback)
         try:
-            read_with_timeout(p0, build_log, timeout, iotimeout, BuildLog.INTERVAL,
-                             build_was_stopped_by_user)
+            read_with_timeout(
+                p0,
+                build_log,
+                timeout,
+                iotimeout,
+                BuildLog.INTERVAL,
+                build_was_stopped_by_user
+            )
         except BaseException:
             log.error("Binstar build process caught an exception while waiting for the build to finish")
             p0.kill()

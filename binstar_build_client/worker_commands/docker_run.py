@@ -33,8 +33,8 @@ def main(args):
 
     bs = get_binstar(args, cls=BinstarBuildAPI)
 
-    woker = DockerWorker(bs, worker_config, args)
-    woker.work_forever()
+    worker = DockerWorker(bs, worker_config, args)
+    worker.work_forever()
 
 def add_parser(subparsers):
     description = 'Run a build worker in a docker container to build jobs off of a binstar build queue'
