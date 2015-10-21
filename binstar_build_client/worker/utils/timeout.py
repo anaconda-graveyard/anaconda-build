@@ -68,7 +68,7 @@ def read_with_timeout(p0, output, timeout=60 * 60, iotimeout=60, flush_iterval=1
 
     with timer, iotimer:
 
-        line = p0.stdout.readline()
+        line = p0.readline()
         last_flush = time.time()
 
         while line:
