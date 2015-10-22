@@ -76,7 +76,7 @@ def read_with_timeout(p0, output,
 
         while line:
             iotimer.tick()
-            output.write(line)
+            output.write(line.encode('utf8', errors='ignore'))
             if build_was_stopped_by_user():
                 log.info("Kill build process || user requested")
                 p0.kill()
@@ -106,7 +106,7 @@ def read_with_timeout(p0, output,
         output.write(b"[Terminated]\n")
 
     if build_was_stopped_by_user():
-        output.write("\n\nTerminate: User requested build to be terminated\n")
-        output.write("[Terminated]\n")
+        output.write(b"\n\nTerminate: User requested build to be terminated\n")
+        output.write(b"[Terminated]\n")
 
     output.flush()

@@ -1,4 +1,4 @@
-import StringIO
+import io
 import time
 import unittest
 
@@ -33,9 +33,9 @@ class TestReadWithTimeout(unittest.TestCase):
         """
         pings = 3
         p0 = MockProcess(limit_lines=pings)
-        output = StringIO.StringIO()
+        output = io.BytesIO()
         read_with_timeout(p0, output)
-        self.assertEqual(pings, output.getvalue().count('ping'))
+        self.assertEqual(pings, output.getvalue().count(b'ping'))
 
     @mock.patch('binstar_build_client.worker.utils.timeout.kill_tree')
     def test_iotimeout_build_1(self, mock_kill_tree):
@@ -45,11 +45,11 @@ class TestReadWithTimeout(unittest.TestCase):
 
         mock_kill_tree.return_value = True
         pings = 3
-        p0 = MockProcess(pings, sleep_time=1)
-        output = StringIO.StringIO()
+        p0 = MockProcess(limit_lines=pings, sleep_time=3)
+        output = io.BytesIO()
         read_with_timeout(p0, output, iotimeout=0.5)
         out = output.getvalue()
-        self.assertIn('iotimeout', out)
+        self.assertIn(b'iotimeout', out)
 
 
     @mock.patch('binstar_build_client.worker.utils.timeout.kill_tree')
@@ -57,11 +57,11 @@ class TestReadWithTimeout(unittest.TestCase):
 
         mock_kill_tree.return_value = True
         pings = 3
-        p0 = MockProcess(pings, sleep_time=1)
-        output = StringIO.StringIO()
+        p0 = MockProcess(limit_lines=pings, sleep_time=1)
+        output = io.BytesIO()
         read_with_timeout(p0, output, timeout=0.5)
         out = output.getvalue()
-        self.assertIn('\nTimeout', out)
+        self.assertIn(b'\nTimeout', out)
 
     @mock.patch('binstar_build_client.worker.utils.timeout.kill_tree')
     def test_user_terminated_build(self, mock_kill_tree):
@@ -72,11 +72,11 @@ class TestReadWithTimeout(unittest.TestCase):
 
         mock_kill_tree.return_value = True
         pings = 30
-        p0 = MockProcess(pings, sleep_time=1)
-        output = StringIO.StringIO()
+        p0 = MockProcess(limit_lines=pings, sleep_time=1)
+        output = io.BytesIO()
         read_with_timeout(p0, output, build_was_stopped_by_user=terminate)
         out = output.getvalue()
-        self.assertIn('User requested', out)
+        self.assertIn(b'User requested', out)
 
 if __name__ == '__main__':
     unittest.main()
