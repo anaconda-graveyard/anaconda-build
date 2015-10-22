@@ -1,7 +1,6 @@
 from threading import Event, Thread
 import time
 import logging
-from binstar_build_client.worker.utils.kill_tree import kill_tree
 
 log = logging.getLogger('binstar.build')
 
