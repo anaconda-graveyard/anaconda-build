@@ -50,8 +50,11 @@ class BuildLog(object):
 
         The if the io thread is running, msg will be appended an internal message buffer
         """
-
         # msg is a memory view object
+        if isinstance(msg, memoryview):
+            msg = msg.tobytes()
+        if isinstance(msg, str):
+            msg = msg.encode('utf8', errors='ignore')
         terminate_build = self.write_to_server(msg)
         self.terminate_build = terminate_build
 

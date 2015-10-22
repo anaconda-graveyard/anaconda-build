@@ -61,7 +61,7 @@ class Test(CLITestCase):
 
 
     @urlpatch
-    @patch('binstar_build_client.worker.worker.Worker._build_loop')
+    @patch('binstar_build_client.worker.worker.Worker.work_forever')
     def test_worker_simple(self, urls, loop):
 
         with self.assertRaises(errors.BinstarError):
