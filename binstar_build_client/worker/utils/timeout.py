@@ -76,7 +76,9 @@ def read_with_timeout(p0, output,
 
         while line:
             iotimer.tick()
-            output.write(line.encode('utf8', errors='ignore'))
+            if isinstance(line, str):
+                line = line.encode('utf8', errors='ignore')
+            output.write(line)
             if build_was_stopped_by_user():
                 log.info("Kill build process || user requested")
                 p0.kill()

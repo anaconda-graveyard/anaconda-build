@@ -98,15 +98,15 @@ class DockerWorker(Worker):
 
         command = " ".join(args)
         log.info(command)
-        build_log.write("Docker Image: {0}\n".format(image))
+        build_log.write("Docker Image: {0}\n".format(image).encode('utf8'))
         log.info("Volumes: {0}".format(volumes))
 
-        build_log.write("Docker: Create container\n")
+        build_log.write(b"Docker: Create container\n")
         cont = cli.create_container(image, command=command, volumes=volumes)
 
-        build_log.write("Docker: Attach output\n")
+        build_log.write(b"Docker: Attach output\n")
 
-        build_log.write("Docker: Start\n")
+        build_log.write(b"Docker: Start\n")
         p0 = DockerBuildProcess(cli, cont)
         log.info("Binds: {0}".format(binds))
 
