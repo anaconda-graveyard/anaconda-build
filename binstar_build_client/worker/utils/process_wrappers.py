@@ -23,7 +23,16 @@ class DockerBuildProcess(object):
     def readline(self):
         return next(self.stream, '')
 
+
 class BuildProcess(subprocess.Popen):
+
+    def __init__(self, args, cwd):
+
+        super(BuildProcess, self).__init__(args=args, cwd=cwd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+
     def kill(self):
         '''Kill all processes and child processes'''
         try:

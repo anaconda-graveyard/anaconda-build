@@ -310,9 +310,7 @@ class Worker(object):
 
         p0 = process_wrappers.BuildProcess(
             args,
-            cwd=working_dir,
-            stdout=process_wrappers.subprocess.PIPE,
-            stderr=process_wrappers.subprocess.STDOUT,
+            cwd=working_dir
         )
 
         try:
