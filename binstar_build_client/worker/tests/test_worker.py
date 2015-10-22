@@ -5,9 +5,12 @@ import io
 import os
 import unittest
 
+import requests
+
 from binstar_build_client.worker.register import WorkerConfiguration
 from binstar_build_client.worker.worker import Worker
 from binstar_build_client.worker_commands.register import get_platform
+from binstar_client import errors
 
 
 class MockWorker(Worker):
@@ -86,6 +89,35 @@ class Test(unittest.TestCase):
         with self.assertRaises(TypeError):
             for job in worker.job_loop():
                 raise TypeError("Expected Error")
+
+    def test_job_loop_expected_errors(self):
+        worker = MockWorker()
+        worker.write_status = Mock()
+        worker.args.one = False
+        exceptions = [
+            requests.ConnectionError(),
+            errors.ServerError("error"),
+            errors.NotFound("not found")
+        ]
+        def exception_factory(a, b, c, exceptions=exceptions):
+            """
+                raises each of the exceptions in order
+                NotFound exception should break the loop
+                The others should just trigger another iteration
+            """
+            raise exceptions.pop(0)
+
+        worker.bs.pop_build_job.side_effect = exception_factory
+
+        with self.assertRaises(errors.NotFound):
+            for i, job in enumerate(worker.job_loop()):
+                if i > 3:
+                    raise RuntimeError('Ran loop more times than expected')
+
+            worker.write_status.assert_called_with(False, "Trouble connecting to binstar")
+            worker.write_status.assert_called_with(False, "Server error")
+            worker.write_status.assert_called_with(False, "worker not found")
+
 
     def test_job_context(self):
 
