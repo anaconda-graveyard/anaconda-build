@@ -2,13 +2,15 @@ from __future__ import print_function, unicode_literals, absolute_import
 
 import unittest
 from mock import Mock, patch
+import os
+import stat
+import requests
 
 from binstar_build_client.worker.register import WorkerConfiguration
 from binstar_build_client.worker.worker import Worker
 from binstar_build_client.worker_commands.register import get_platform
-import os
-import stat
 from binstar_build_client.worker.utils import script_generator
+from binstar_build_client.worker.docker_worker import DockerWorker
 
 try_unlink = lambda path: os.unlink(path) if os.path.isfile(path) else None
 
@@ -66,7 +68,7 @@ class MyWorker(Worker):
         worker_config = WorkerConfiguration(
             'worker_id', 'username', 'queue', 'test_platform', 'test_hostname', 'dist')
 
-        Worker.__init__(self, bs, worker_config, args)
+        super(MyWorker, self).__init__(bs, worker_config, args)
 
     def working_dir(self, *args):
         return os.path.abspath('test_worker')
@@ -92,6 +94,10 @@ class Test(unittest.TestCase):
 
         st = os.stat(script_path)
         os.chmod(script_path, st.st_mode | stat.S_IEXEC)
+
+    def get_worker(self):
+        worker = MyWorker()
+        return worker
 
     @patch('binstar_build_client.worker.utils.process_wrappers.BuildProcess')
     @patch('binstar_build_client.worker.utils.script_generator.gen_build_script')
@@ -129,25 +135,28 @@ class Test(unittest.TestCase):
         self.assertIn('script_filename', (ending_win, ending_posix))
         self.assertEqual(popen_args[1:], expected_args[1:])
 
+    expected_output_success = (
+        "Building on worker test_hostname (platform test_platform)\n"
+        "Starting build job_name\n"
+        "hello\n"
+        "exit 0\n"
+    )
+
     @patch('binstar_build_client.worker.utils.script_generator.gen_build_script')
     def test_build_success(self, gen_build_script):
 
         self.write_sript(gen_build_script, script_generator.EXIT_CODE_OK)
-        worker = MyWorker()
+        worker = self.get_worker()
         job_data = default_build_data()
         failed, status = worker.build(job_data)
 
         self.assertFalse(failed)
         self.assertEqual(status, 'success')
 
-        expected_output = ("Building on worker test_hostname (platform test_platform)\n"
-            "Starting build job_name\n"
-            "hello\n"
-            "exit 0\n")
 
         with open(worker.build_logfile(job_data)) as fd:
             output = fd.read()
-            self.assertMultiLineEqual(output, expected_output)
+            self.assertMultiLineEqual(output, self.expected_output_success)
 
 
     @patch('binstar_build_client.worker.utils.script_generator.gen_build_script')
@@ -155,7 +164,7 @@ class Test(unittest.TestCase):
 
         self.write_sript(gen_build_script, script_generator.EXIT_CODE_FAILED)
 
-        worker = MyWorker()
+        worker = self.get_worker()
         job_data = default_build_data()
         failed, status = worker.build(job_data)
 
@@ -168,7 +177,7 @@ class Test(unittest.TestCase):
 
         self.write_sript(gen_build_script, script_generator.EXIT_CODE_ERROR)
 
-        worker = MyWorker()
+        worker = self.get_worker()
         job_data = default_build_data()
         failed, status = worker.build(job_data)
 
@@ -176,12 +185,22 @@ class Test(unittest.TestCase):
         self.assertEqual(status, 'error')
 
 
+    expected_output_timeout = (
+        "Building on worker test_hostname (platform test_platform)\n"
+        "Starting build job_name\n"
+        "hello\n"
+        "sleep for 2 seconds\n\n"
+        "Timeout: build exceeded maximum build time of 0.5 seconds\n"
+        "[Terminated]\n"
+    )
+
+
     @patch('binstar_build_client.worker.utils.script_generator.gen_build_script')
     def test_build_timeout(self, gen_build_script):
 
         self.write_sript(gen_build_script, script_generator.EXIT_CODE_OK, wait=2)
 
-        worker = MyWorker()
+        worker = self.get_worker()
         worker.args.timeout = 0.5
 
         job_data = default_build_data()
@@ -190,24 +209,28 @@ class Test(unittest.TestCase):
         self.assertTrue(failed)
         self.assertEqual(status, 'error')
 
-        expected_output = ("Building on worker test_hostname (platform test_platform)\n"
-            "Starting build job_name\n"
-            "hello\n"
-            "sleep for 2 seconds\n\n"
-            "Timeout: build exceeded maximum build time of 0.5 seconds\n"
-            "[Terminated]\n"
-        )
 
         with open(worker.build_logfile(job_data)) as fd:
             output = fd.read()
-            self.assertMultiLineEqual(output, expected_output)
+            self.assertMultiLineEqual(output, self.expected_output_timeout)
+
+    expected_output_iotimeout = (
+        "Building on worker test_hostname (platform test_platform)\n"
+        "Starting build job_name\n"
+        "hello\n"
+        "sleep for 2 seconds\n\n\n"
+        "Timeout: No output from program for 0.5 seconds\n\n"
+        "Timeout: If you require a longer timeout you may set the 'iotimeout' "
+          "variable in your .binstar.yml file\n"
+        "[Terminated]\n"
+    )
 
     @patch('binstar_build_client.worker.utils.script_generator.gen_build_script')
     def test_build_iotimeout(self, gen_build_script):
 
         self.write_sript(gen_build_script, script_generator.EXIT_CODE_OK, wait=2)
 
-        worker = MyWorker()
+        worker = self.get_worker()
 #         worker.args.timeout = 0.5
 
         job_data = default_build_data()
@@ -217,20 +240,99 @@ class Test(unittest.TestCase):
         self.assertTrue(failed)
         self.assertEqual(status, 'error')
 
-        expected_output = ("Building on worker test_hostname (platform test_platform)\n"
-            "Starting build job_name\n"
-            "hello\n"
-            "sleep for 2 seconds\n\n\n"
-            "Timeout: No output from program for 0.5 seconds\n\n"
-            "Timeout: If you require a longer timeout you may set the 'iotimeout' "
-              "variable in your .binstar.yml file\n"
-            "[Terminated]\n"
-        )
-
         with open(worker.build_logfile(job_data)) as fd:
             output = fd.read()
-            self.assertMultiLineEqual(output, expected_output)
+            self.assertMultiLineEqual(output, self.expected_output_iotimeout)
 
+def have_docker():
+    if os.environ.get('NO_DOCKER_TESTS'):
+        return False
+
+    try:
+        import docker
+        from docker.utils import kwargs_from_env
+    except:
+        return False
+
+    client = docker.Client(
+        version=os.environ.get('DOCKER_VERSION'),
+        **kwargs_from_env(assert_hostname=False)
+    )
+    try:
+        images = client.images('binstar/linux-64')
+    except requests.ConnectionError:
+        return False
+
+    return True
+
+class TestDockerWorker(DockerWorker):
+    download_build_source = Mock()
+    download_build_source.return_value = os.path.abspath('build_source_filename')
+
+    def __init__(self):
+        self.SLEEP_TIME = 0
+        bs = Mock()
+        bs.log_build_output.return_value = False
+
+        args = Mock()
+        args.status_file = None
+        args.timeout = 100
+        args.show_new_procs = False
+        args.image = 'binstar/linux-64'
+
+        worker_config = WorkerConfiguration(
+            'worker_id', 'username', 'queue', 'test_platform', 'test_hostname', 'dist')
+
+        super(TestDockerWorker, self).__init__(bs, worker_config, args)
+
+    def working_dir(self, *args):
+        return os.path.abspath('test_worker')
+
+
+@unittest.skipIf(not have_docker(), "Don't have docker")
+class DockerTest(Test):
+    def get_worker(self):
+        worker = TestDockerWorker()
+        return worker
+
+    expected_output_success = (
+        "Building on worker test_hostname (platform test_platform)\n"
+        "Starting build job_name\n"
+        "Docker Image: binstar/linux-64\n"
+        "Docker: Create container\n"
+        "Docker: Attach output\n"
+        "Docker: Start\n"
+        "hello\n"
+        "exit 0\n"
+    )
+
+    expected_output_timeout = (
+        "Building on worker test_hostname (platform test_platform)\n"
+        "Starting build job_name\n"
+        "Docker Image: binstar/linux-64\n"
+        "Docker: Create container\n"
+        "Docker: Attach output\n"
+        "Docker: Start\n"
+        "hello\n"
+        "sleep for 2 seconds\n\n"
+        "Timeout: build exceeded maximum build time of 0.5 seconds\n"
+        "[Terminated]\n"
+    )
+
+    expected_output_iotimeout = (
+        "Building on worker test_hostname (platform test_platform)\n"
+        "Starting build job_name\n"
+        "Docker Image: binstar/linux-64\n"
+        "Docker: Create container\n"
+        "Docker: Attach output\n"
+        "Docker: Start\n"
+        "hello\n"
+        "sleep for 2 seconds\n\n\n"
+        "Timeout: No output from program for 0.5 seconds\n\n"
+        "Timeout: If you require a longer timeout you may set the 'iotimeout' "
+          "variable in your .binstar.yml file\n"
+        "[Terminated]\n"
+    )
 
 
 if __name__ == "__main__":
