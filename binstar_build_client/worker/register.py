@@ -116,7 +116,11 @@ class WorkerConfiguration(object):
             raise errors.BinstarError(msg)
 
         dst = '{}.{}'.format(self.filename, os.getpid())
-        os.link(self.filename, dst)
+        try:
+            with open(dst, 'w') as out:
+                out.write('')
+        except (OSError, AttributeError):
+            log.warning("Could not link the pid to a pidfile")
         try:
             yield
         finally:
