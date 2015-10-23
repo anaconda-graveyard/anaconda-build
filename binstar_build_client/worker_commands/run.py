@@ -20,7 +20,6 @@ log = logging.getLogger('binstar.build')
 
 
 def main(args):
-
     worker_config = WorkerConfiguration.load(args.worker_id)
 
     log.info(str(worker_config))

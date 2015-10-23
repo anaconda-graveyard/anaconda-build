@@ -50,7 +50,6 @@ class Test(unittest.TestCase):
 
         self.assertEqual(wc.to_dict(), wc2.to_dict())
 
-
     def test_running(self):
 
         wc = WorkerConfiguration('worker_id', 'username', 'queue', 'platform', 'hostname', 'dist')
@@ -59,6 +58,7 @@ class Test(unittest.TestCase):
         self.assertFalse(wc.is_running())
 
         with wc.running():
+            self.assertIsNotNone(wc.pid)
             self.assertTrue(wc.is_running())
 
         self.assertFalse(wc.is_running())
@@ -71,7 +71,6 @@ class Test(unittest.TestCase):
         self.assertFalse(wc.is_running())
 
         with wc.running():
-
 
             with self.assertRaises(errors.BinstarError):
 
