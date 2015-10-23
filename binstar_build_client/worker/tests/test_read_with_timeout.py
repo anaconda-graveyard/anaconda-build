@@ -14,10 +14,10 @@ class MockProcess(object):
 
     def readline(self, n=0):
         if self.ct >= self.limit_lines:
-            return ''
+            return b''
         time.sleep(self.sleep_time)
         self.ct += 1
-        return 'ping'
+        return b'ping'
 
     def kill(self):
         return
