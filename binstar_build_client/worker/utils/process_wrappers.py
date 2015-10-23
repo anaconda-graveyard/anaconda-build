@@ -27,7 +27,6 @@ class DockerBuildProcess(object):
 class BuildProcess(subprocess.Popen):
 
     def __init__(self, args, cwd):
-
         super(BuildProcess, self).__init__(args=args, cwd=cwd,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
@@ -45,11 +44,11 @@ class BuildProcess(subprocess.Popen):
 
         children = parent.children(recursive=True)
 
-        self.kill()
+        super(BuildProcess, self).kill()
         for child in children:
             if child.is_running():
                 log.warning(" - Kill child pid {}".format(child.pid))
                 child.kill()
 
-    def readlines(self):
+    def readline(self):
         return self.stdout.readline()
