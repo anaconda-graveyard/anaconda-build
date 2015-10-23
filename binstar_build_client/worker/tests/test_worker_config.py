@@ -50,7 +50,6 @@ class Test(unittest.TestCase):
 
         self.assertEqual(wc.to_dict(), wc2.to_dict())
 
-    @unittest.skipIf(os.name =='nt', 'can not run on windows')
     def test_running(self):
 
         wc = WorkerConfiguration('worker_id', 'username', 'queue', 'platform', 'hostname', 'dist')
@@ -64,7 +63,6 @@ class Test(unittest.TestCase):
 
         self.assertFalse(wc.is_running())
 
-    @unittest.skipIf(os.name =='nt', 'can not run on windows')
     def test_already_running(self):
 
         wc = WorkerConfiguration('worker_id', 'username', 'queue', 'platform', 'hostname', 'dist')
@@ -73,7 +71,6 @@ class Test(unittest.TestCase):
         self.assertFalse(wc.is_running())
 
         with wc.running():
-
 
             with self.assertRaises(errors.BinstarError):
 
