@@ -975,7 +975,7 @@ def git_versions_from_keywords(keywords, tag_prefix, verbose):
         # "stabilization", as well as "HEAD" and "master".
         tags = set([r for r in refs if re.search(r'\d', r)])
         if verbose:
-            print("discarding '%s', no digits" % ",".join(refs-tags))
+            print("discarding '%s', no digits" % ",".join(refs - tags))
     if verbose:
         print("likely tags: %s" % ",".join(sorted(tags)))
     for ref in sorted(tags):
@@ -1460,6 +1460,7 @@ def get_cmdclass():
 
     class cmd_build_py(_build_py):
         def run(self):
+
             root = get_root()
             cfg = get_config_from_root(root)
             versions = get_versions()
@@ -1470,7 +1471,18 @@ def get_cmdclass():
                 target_versionfile = os.path.join(self.build_lib,
                                                   cfg.versionfile_build)
                 print("UPDATING %s" % target_versionfile)
+
                 write_to_version_file(target_versionfile, versions)
+
+            if '+' in versions['version']:
+                version, buildstr = versions['version'].split('+', 1)
+                build = buildstr.split('.', 1)[0]
+            else:
+                version = versions['version']
+                build = '0'
+
+            write_conda_files(version, build)
+
     cmds["build_py"] = cmd_build_py
 
     if "cx_Freeze" in sys.modules:  # cx_freeze enabled?
@@ -1689,6 +1701,20 @@ def scan_setup_py():
         print("")
         errors += 1
     return errors
+
+def write_conda_files(version, build):
+    SRC_DIR = os.environ.get('SRC_DIR', '.')
+
+    conda_version_path = os.path.join(SRC_DIR, '__conda_version__.txt')
+    print("Writing %s" % conda_version_path)
+    with open(conda_version_path, 'w') as conda_version:
+        conda_version.write(version)
+
+    conda_buildnum_path = os.path.join(SRC_DIR, '__conda_buildnum__.txt')
+    print("Writing %s" % conda_buildnum_path)
+
+    with open(conda_buildnum_path, 'w') as conda_buildnum:
+        conda_buildnum.write(build)
 
 if __name__ == "__main__":
     cmd = sys.argv[1]

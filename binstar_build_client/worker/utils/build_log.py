@@ -53,20 +53,24 @@ class BuildLog(object):
         # msg is a memory view object
         if isinstance(msg, memoryview):
             msg = msg.tobytes()
-        if isinstance(msg, str):
-            msg = msg.encode('utf8', errors='ignore')
+
+        if not isinstance(msg, bytes):
+            raise TypeError("a bytes-like object is required, not {}".format(type(msg)))
+
+        self.fd.write(msg)
+        n = len(msg)
+
+        msg = msg.decode('utf8', errors='replace')
+
         terminate_build = self.write_to_server(msg)
         self.terminate_build = terminate_build
 
-
-        self.fd.write(msg)
-
-        log.info('Wrote {} bytes of build output to anaconda-server'.format(len(msg)))
+        log.info('Wrote {} bytes of build output to anaconda-server'.format(n))
 
         if terminate_build:
             log.info('anaconda-server responded that the build should be terminated')
 
-        return len(msg)
+        return n
 
     def writable(self):
         return True

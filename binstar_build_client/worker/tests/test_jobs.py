@@ -126,9 +126,9 @@ class Test(unittest.TestCase):
         def mock_readline(l=[]):
             l.append(None)
             if len(l) >= 3:
-                return ''
+                return b''
 
-            return 'ping'
+            return b'ping'
 
         mock_BuildProcess().wait.return_value = 0
         mock_BuildProcess().poll.return_value = 0
