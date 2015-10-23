@@ -18,6 +18,7 @@ def pid_is_running(pid):
 
     try:
         psutil.Process(pid)
+        return True
     except psutil.NoSuchProcess:
         return False
 

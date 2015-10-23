@@ -59,6 +59,7 @@ class Test(unittest.TestCase):
         self.assertFalse(wc.is_running())
 
         with wc.running():
+            self.assertIsNotNone(wc.pid)
             self.assertTrue(wc.is_running())
 
         self.assertFalse(wc.is_running())

@@ -11,6 +11,7 @@ from binstar_build_client.worker.worker import Worker
 from binstar_build_client.worker_commands.register import get_platform
 from binstar_build_client.worker.utils import script_generator
 from binstar_build_client.worker.docker_worker import DockerWorker
+import warnings
 
 try_unlink = lambda path: os.unlink(path) if os.path.isfile(path) else None
 
@@ -271,15 +272,21 @@ def have_docker():
         import docker
         from docker.utils import kwargs_from_env
     except:
+        warnings.warn("Skip Docker Tests: dockerpy is not installed")
         return False
 
     client = docker.Client(
         version=os.environ.get('DOCKER_VERSION'),
         **kwargs_from_env(assert_hostname=False)
     )
+
     try:
         images = client.images('binstar/linux-64')
+    except docker.errors.NotFound as err:
+        warnings.warn("Skip Docker Tests: {}".format(err))
+        return False
     except requests.ConnectionError:
+        warnings.warn("Skip Docker Tests: image binstar/linux-64 is not pulled")
         return False
 
     return True
