@@ -8,20 +8,18 @@ import yaml
 from glob import glob
 import io
 from contextlib import contextmanager
-
+import psutil
 
 log = logging.getLogger("binstar.build")
 
 
 def pid_is_running(pid):
     'Return true if the pid is running'
+
     try:
-        os.kill(pid, 0)
-    except OSError as err:
-        if err.errno == 3:
-            return False
-        raise
-    return True
+        psutil.Process(pid)
+    except psutil.NoSuchProcess:
+        return False
 
 class InvalidWorkerConfigFile(errors.BinstarError):
     pass
