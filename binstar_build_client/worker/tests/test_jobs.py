@@ -75,25 +75,44 @@ class MyWorker(Worker):
 
 
 class Test(unittest.TestCase):
+    if os.name == 'nt':
 
-    def write_sript(self, mock_gen_build_script, exit_code, wait=None):
+        def write_sript(self, mock_gen_build_script, exit_code, wait=None):
 
-        mock_gen_build_script.return_value = script_path = os.path.abspath('script_filename.bash')
-        self.addCleanup(try_unlink, script_path)
+            mock_gen_build_script.return_value = script_path = os.path.abspath('script_filename.bat')
+            self.addCleanup(try_unlink, script_path)
 
-        with open(script_path, 'w') as fd:
-            print('#!/bin/bash', file=fd)
-            print('echo hello', file=fd)
+            with open(script_path, 'w') as fd:
+                print('@echo off', file=fd)
+                print('echo hello', file=fd)
 
-            if wait:
-                print('echo sleep for {} seconds'.format(wait), file=fd)
-                print('sleep {}'.format(wait), file=fd)
+                if wait:
+                    print('echo sleep for {} seconds'.format(wait), file=fd)
+                    print('sleep {}'.format(wait), file=fd)
 
-            print('echo exit {}'.format(exit_code), file=fd)
-            print('exit {}'.format(exit_code), file=fd)
+                print('echo exit {}'.format(exit_code), file=fd)
+                print('EXIT /B {}'.format(exit_code), file=fd)
 
-        st = os.stat(script_path)
-        os.chmod(script_path, st.st_mode | stat.S_IEXEC)
+    else:
+        def write_sript(self, mock_gen_build_script, exit_code, wait=None):
+
+            mock_gen_build_script.return_value = script_path = os.path.abspath('script_filename.bash')
+            self.addCleanup(try_unlink, script_path)
+
+            with open(script_path, 'w') as fd:
+                print('#!/bin/bash', file=fd)
+                print('echo hello', file=fd)
+
+                if wait:
+                    print('echo sleep for {} seconds'.format(wait), file=fd)
+                    print('sleep {}'.format(wait), file=fd)
+
+                print('echo exit {}'.format(exit_code), file=fd)
+                print('exit {}'.format(exit_code), file=fd)
+
+            st = os.stat(script_path)
+            os.chmod(script_path, st.st_mode | stat.S_IEXEC)
+
 
     def get_worker(self):
         worker = MyWorker()
