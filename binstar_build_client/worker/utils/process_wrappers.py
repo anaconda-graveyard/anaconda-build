@@ -21,7 +21,7 @@ class DockerBuildProcess(object):
         self.cli.remove_container(self.cont, v=True)
 
     def readline(self):
-        return next(self.stream, '')
+        return next(self.stream, b'')
 
 
 class BuildProcess(subprocess.Popen):
