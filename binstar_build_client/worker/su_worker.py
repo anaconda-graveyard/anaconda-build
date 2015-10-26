@@ -72,10 +72,10 @@ class SuWorker(Worker):
     '''Overrides the run method of Worker to run builds
     as a lesser user. '''
 
-    def __init__(self, bs, args, build_user, python_install_dir):
-        super(SuWorker, self).__init__(bs, args)
-        self.build_user = build_user
-        self.python_install_dir = python_install_dir
+    def __init__(self, bs, worker_config, args):
+        super(SuWorker, self).__init__(bs, worker_config, args)
+        self.build_user = args.build_user
+        self.python_install_dir = args.python_install_dir
         validate_su_worker(self.build_user, self.python_install_dir)
 
     @property

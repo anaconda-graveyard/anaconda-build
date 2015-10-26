@@ -14,25 +14,31 @@ import os
 from binstar_client.utils import get_binstar
 
 from binstar_build_client import BinstarBuildAPI
+from binstar_client.utils import get_binstar
+
+from binstar_build_client import BinstarBuildAPI
+from binstar_build_client.utils import get_conda_root_prefix
 from binstar_build_client.worker.su_worker import (SuWorker,
                                                    SU_WORKER_DEFAULT_PATH)
-from binstar_build_client.utils import get_conda_root_prefix
-from binstar_build_client.worker.register import (add_worker_options,
-                                                  REGISTERED_WORKERS_DIR,
-                                                  print_registered_workers)
-from binstar_build_client.worker_commands.run import print_worker_summary
+from binstar_build_client.worker.register import WorkerConfiguration
 
 log = logging.getLogger('binstar.build')
 
 
 def main(args):
-    add_worker_options(args)
+    worker_config = WorkerConfiguration.load(args.worker_id)
+
+    log.info(str(worker_config))
+
     bs = get_binstar(args, cls=BinstarBuildAPI)
-    print_worker_summary(args, starting="su_worker")
-    worker = SuWorker(bs, args, args.build_user, args.python_install_dir)
+
+    worker = SuWorker(bs, worker_config, args)
+
     worker.write_status(True, "Starting")
+
     try:
-        worker.work_forever()
+        with worker_config.running():
+            worker.work_forever()
     finally:
         worker.write_status(False, "Exited")
 

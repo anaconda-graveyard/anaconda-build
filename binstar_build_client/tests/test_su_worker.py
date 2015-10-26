@@ -11,6 +11,7 @@ from argparse import Namespace
 from mock import patch
 import io
 import os
+from glob import glob
 import psutil
 import subprocess as sp
 import unittest
@@ -20,9 +21,13 @@ from binstar_client.tests.urlmock import urlpatch
 from binstar_client.utils import get_binstar
 import yaml
 
+from binstar_client.tests.fixture import CLITestCase
 from binstar_build_client import BinstarBuildAPI
 from binstar_build_client.scripts.worker import main
-from binstar_build_client.tests.test_worker_script import worker_data
+from binstar_build_client.worker.register import WorkerConfiguration
+from binstar_build_client.tests.test_worker_script import (worker_data,
+                                                           test_workers)
+
 import binstar_build_client.worker.su_worker as su_worker
 
 TEST_BUILD_WORKER = 'test_build_worker'
@@ -36,16 +41,28 @@ except errors.BinstarError:
 standard_root_install = os.path.exists(SU_WORKER_DEFAULT_PATH)
 
 
-class TestSuWorker(unittest.TestCase):
+class TestSuWorker(CLITestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        WorkerConfiguration.REGISTERED_WORKERS_DIR = test_workers
+        super(TestSuWorker, cls).setUpClass()
+
+    def tearDown(self):
+
+        for fn in glob(os.path.join(test_workers, '*')):
+            os.unlink(fn)
+
+        unittest.TestCase.tearDown(self)
+
     @unittest.skipIf(not is_valid_su_worker, 'Skipping as not valid su_worker')
     @urlpatch
     @patch('binstar_build_client.worker.su_worker.SuWorker')
     def test_su_worker(self, urls, SuWorker):
         '''Test su_worker CLI '''
-        with open(worker_data['output'], 'w') as f:
-            f.write(yaml.dump(worker_data))
+        self.new_worker_config()
         main(['--show-traceback', 'su_worker_run',
-              worker_data['worker_id'], TEST_BUILD_WORKER], False)
+              'worker_id', TEST_BUILD_WORKER], False)
         self.assertEqual(SuWorker().work_forever.call_count, 1)
 
     def test_validate_su_worker(self):
@@ -113,6 +130,7 @@ class TestSuWorker(unittest.TestCase):
         return found_pids
 
     def test_run(self):
+        self.new_worker_config()
         ok = ['echo','su_worker_test_ok']
         with patch.object(su_worker.SuWorker, 'su_with_env', return_value=ok) as su_with_env:
             with patch.object(su_worker.SuWorker, 'destroy_user_procs', return_value=True) as destroy_user_procs:
@@ -155,13 +173,17 @@ class TestSuWorker(unittest.TestCase):
         args.site = 'http://api.anaconda.org'
         args.token = None
         args.worker_id = 'worker_id'
+        args.build_user = TEST_BUILD_WORKER
+        args.python_install_dir = SU_WORKER_DEFAULT_PATH
         bs = get_binstar(args, cls=BinstarBuildAPI)
-        return su_worker.SuWorker(bs, args, TEST_BUILD_WORKER, SU_WORKER_DEFAULT_PATH)
+        worker_config = self.new_worker_config()
+        return su_worker.SuWorker(bs, worker_config, args)
 
-    @classmethod
-    def tearDownClass(cls):
-        if os.path.exists(worker_data['output']):
-            os.remove(worker_data['output'])
+    def new_worker_config(self):
+        worker_config = WorkerConfiguration('worker_id', 'username', 'queue',
+                                            'platform', 'hostname', 'dist')
+        worker_config.save()
+        return worker_config
 
 if __name__ == '__main__':
     unittest.main()

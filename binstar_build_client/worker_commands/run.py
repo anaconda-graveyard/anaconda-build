@@ -7,51 +7,18 @@ from __future__ import (print_function, unicode_literals, division,
 
 import logging
 import os
-
-from binstar_client import errors
-from binstar_client.utils import get_binstar
 import yaml
+
+from binstar_client.utils import get_binstar
 
 from binstar_build_client import BinstarBuildAPI
 from binstar_build_client.utils import get_conda_root_prefix
 from binstar_build_client.worker.worker import Worker
-from binstar_build_client.worker.register import (REGISTERED_WORKERS_DIR,
-                                                  print_registered_workers,
-                                                  WorkerConfiguration)
+from binstar_build_client.worker.register import WorkerConfiguration
+
 
 log = logging.getLogger('binstar.build')
 
-
-def print_worker_summary(args, starting='worker'):
-    log.info('Starting {}:'.format(starting))
-    log.info('Hostname: {}'.format(args.hostname))
-    log.info('User: {}'.format(args.username))
-    log.info('Queue: {}'.format(args.queue))
-    log.info('Platform: {}'.format(args.platform))
-    log.info('Worker-id: {}'.format(args.worker_id))
-    log.info('Build Options:')
-    log.info('--conda-build-dir: {}'.format(args.conda_build_dir))
-    log.info('--show-new-procs: {}'.format(args.show_new_procs))
-    log.info('--status-file: {}'.format(args.status_file))
-    log.info('--push-back: {}'.format(args.push_back))
-    log.info('--one: {}'.format(args.one))
-    log.info('--dist: {}'.format(args.dist))
-    log.info('--cwd: {}'.format(args.cwd))
-    log.info('--max-job-duration: {} (seconds)'.format(args.timeout))
-
-
-def update_args_from_worker_file(args):
-    worker_file = os.path.join(REGISTERED_WORKERS_DIR, args.worker_id)
-    if not os.path.exists(worker_file):
-        print_registered_workers()
-        msg = '''Could not find worker config file at {}.
-              See anaconda build register --help.'''.format(worker_file)
-        raise errors.BinstarError(msg)
-    with open(worker_file) as f:
-        worker_config = yaml.load(f.read())
-    vars(args).update(worker_config)
-    args.conda_build_dir = args.conda_build_dir.format(args=args)
-    return args
 
 
 def main(args):
