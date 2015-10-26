@@ -11,14 +11,13 @@ import os
 from binstar_client import errors
 from binstar_client.utils import get_binstar
 import yaml
-from binstar_client.utils import get_binstar
 
 from binstar_build_client import BinstarBuildAPI
 from binstar_build_client.utils import get_conda_root_prefix
 from binstar_build_client.worker.worker import Worker
-from binstar_build_client.worker.register import (add_worker_options,
-                                                  REGISTERED_WORKERS_DIR,
-                                                  print_registered_workers)
+from binstar_build_client.worker.register import (REGISTERED_WORKERS_DIR,
+                                                  print_registered_workers,
+                                                  WorkerConfiguration)
 
 log = logging.getLogger('binstar.build')
 
@@ -56,17 +55,19 @@ def update_args_from_worker_file(args):
 
 
 def main(args):
+    worker_config = WorkerConfiguration.load(args.worker_id)
 
-    add_worker_options(args)
+    log.info(str(worker_config))
 
     bs = get_binstar(args, cls=BinstarBuildAPI)
 
-    worker = Worker(bs, args)
+    worker = Worker(bs, worker_config, args)
 
     worker.write_status(True, "Starting")
 
     try:
-        worker.work_forever()
+        with worker_config.running():
+            worker.work_forever()
     finally:
         worker.write_status(False, "Exited")
 
@@ -89,6 +90,7 @@ def add_parser(subparsers, name='run',
     parser.add_argument('--push-back', action='store_true',
                         help='Developers only, always push the build *back* ' + \
                              'onto the build queue')
+
     dgroup = parser.add_argument_group('development options')
 
     dgroup.add_argument("--conda-build-dir",
@@ -96,6 +98,7 @@ def add_parser(subparsers, name='run',
                                              'conda-bld', '{args.platform}'),
                         help="[Advanced] The conda build directory (default: %(default)s)",
                         )
+
     dgroup.add_argument('--show-new-procs', action='store_true', dest='show_new_procs',
                         help='Print any process that started during the build '
                              'and is still running after the build finished')
@@ -103,6 +106,13 @@ def add_parser(subparsers, name='run',
     dgroup.add_argument('--status-file',
                         help='If given, binstar will update this file with the ' + \
                              'time it last checked the anaconda server for updates')
+
+    parser.add_argument('--cwd', default=os.path.abspath('.'), type=os.path.abspath,
+                        help='The root directory this build should use (default: "%(default)s")')
+
+    parser.add_argument('-t', '--max-job-duration', type=int, metavar='SECONDS',
+                        dest='timeout',
+                        help='Force jobs to stop after they exceed duration (default: %(default)s)', default=60 * 60)
 
     parser.set_defaults(main=default_func)
     return parser

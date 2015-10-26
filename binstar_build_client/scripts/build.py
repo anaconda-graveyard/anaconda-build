@@ -32,7 +32,7 @@ def add_parser(subparsers):
                                       help=description,
                                       epilog=__doc__,
                                       formatter_class=RawDescriptionHelpFormatter,
-                                      version='anaconda-build v{}'.format(version),
+
                                       )
 
     add_subparser_modules(parser, build_commands, 'conda_server_build.subcommand')

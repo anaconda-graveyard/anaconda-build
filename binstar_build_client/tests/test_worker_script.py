@@ -8,7 +8,6 @@ from __future__ import (print_function, unicode_literals, division,
                         absolute_import)
 
 import os
-import tempfile
 import yaml
 from mock import patch
 import os
@@ -19,62 +18,63 @@ from binstar_client.tests.fixture import CLITestCase
 from binstar_client.tests.urlmock import urlpatch
 from binstar_build_client.worker.worker import get_my_procs
 from binstar_build_client.scripts.worker import main
-from binstar_build_client.worker.register import REGISTERED_WORKERS_DIR
 from binstar_build_client.worker.worker import Worker
+from binstar_build_client.worker.register import WorkerConfiguration
+from glob import glob
+from binstar_client import errors
 
-worker_data = {'cwd': '.',
-               'output': os.path.join(REGISTERED_WORKERS_DIR, 'worker_id'),
+test_workers = os.path.abspath('./test-workers')
+worker_data = {
                'username': 'username',
                'queue': 'queue-1',
-               'conda_build_dir': 'conda_build_dir',
-               'site': 'http://api.anaconda.org',
-               'token': 'token',
                'platform': 'platform',
                'worker_id': 'worker_id',
-               'status_file': 'status_file',
                'hostname': 'localhost',
                'dist': 'dist',
-               'timeout': 1000,
-               }
-
-
+            }
 class Test(CLITestCase):
 
-    @urlpatch
-    @patch('binstar_build_client.worker_commands.register.register_worker')
-    def test_register(self, urls, register_worker):
+    @classmethod
+    def setUpClass(cls):
+        WorkerConfiguration.REGISTERED_WORKERS_DIR = test_workers
+        super(Test, cls).setUpClass()
 
-        main(['register', 'username/queue-1','--cwd','.'], False)
-        self.assertEqual(register_worker.call_count, 1)
+    def tearDown(self):
 
-    @urlpatch
-    @patch('binstar_build_client.worker_commands.deregister.deregister_worker')
-    def test_deregister_from_config(self, urls, deregister_worker):
+        for fn in glob(os.path.join(test_workers, '*')):
+            os.unlink(fn)
 
-        with open(worker_data['output'], 'w') as f:
-            f.write(yaml.dump(worker_data))
-        main(['deregister', worker_data['output']], False)
-        self.assertEqual(deregister_worker.call_count, 1)
+        unittest.TestCase.tearDown(self)
 
     @urlpatch
-    @patch('binstar_build_client.worker_commands.deregister.deregister_worker')
-    def test_deregister_from_id(self, urls, deregister_worker):
+    def test_register(self, urls):
 
-        main(['deregister', worker_data['worker_id']], False)
-        self.assertEqual(deregister_worker.call_count, 1)
+        register = urls.register(method='POST', path='/build-worker/username/queue-1', content='{"worker_id": "worker_id"}')
+
+        main(['register', 'username/queue-1'], False)
+        self.assertEqual(register.called, 1)
+
+        deregister = urls.register(method='DELETE', path='/build-worker/username/queue-1/worker_id')
+
+
+        main(['deregister', 'worker_id'], False)
+        self.assertEqual(register.called, 1)
+        self.assertEqual(deregister.called, 1)
 
     @urlpatch
-    def test_worker_simple(self, urls):
-        with patch.object(Worker, '_build_loop', return_value=True) as loop:
-            with open(worker_data['output'], 'w') as f:
-                f.write(yaml.dump(worker_data))
+    @patch('binstar_build_client.worker.worker.Worker.work_forever')
+    def test_worker_simple(self, urls, loop):
+
+        with self.assertRaises(errors.BinstarError):
             main(['--show-traceback', 'worker', 'run', worker_data['worker_id']], False)
+
+        self.assertEqual(loop.call_count, 0)
+
+        worker_config = WorkerConfiguration('worker_id', 'username', 'queue', 'platform', 'hostname', 'dist')
+        worker_config.save()
+        main(['--show-traceback', 'worker', 'run', worker_data['worker_id']], False)
         self.assertEqual(loop.call_count, 1)
 
-    @classmethod
-    def tearDownClass(cls):
-        if os.path.exists(worker_data['output']):
-            os.remove(worker_data['output'])
 
     def test_get_my_procs(self):
         pids = []

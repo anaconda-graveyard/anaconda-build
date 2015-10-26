@@ -3,116 +3,95 @@ Write IO back to build log on the binstar server
 """
 from __future__ import print_function, unicode_literals, absolute_import
 
-import logging
-import sys
-from threading import Lock, Thread, Event
-import traceback
-from requests import ConnectionError
 import codecs
+import functools
+import logging
+
 
 log = logging.getLogger(__name__)
 
 class BuildLog(object):
     """
-    This IO object writes data build log output to the binstar server and also to stdout
-    
-    This object first writes to a buffer that is sent to the server every BuildLog.INTERVAL 
-    seconds
+    This IO object writes data build log output to the
+    anaconda server and also to a file.
     """
 
     INTERVAL = 10  # Send logs to server every `INTERVAL` seconds
 
     def __init__(self, bs, username, queue, worker_id, job_id, filename=None):
+
         self.bs = bs
         self.username = username
         self.queue = queue
         self.worker_id = worker_id
         self.job_id = job_id
-        self._buffer = ''
-        self._write_lock = Lock()
-        self._running = False
-        self.event = Event()
+        self.terminate_build = False
+
+        self.write_to_server = functools.partial(self.bs.log_build_output,
+                                                 self.username,
+                                                 self.queue,
+                                                 self.worker_id,
+                                                 self.job_id)
+
 
         log.info("Writing build log to %s" % filename)
         if filename:
-            self.fd = codecs.open(filename, 'wb', encoding='utf-8', errors='replace')
+            self.fd = codecs.open(filename, 'wb', buffering=0)
         else:
             self.fd = None
+
+    def terminated(self):
+        return self.terminate_build
 
 
     def write(self, msg):
         """
         Write to server and also stdout
-        
+
         The if the io thread is running, msg will be appended an internal message buffer
         """
-        if self.fd:
-            n = self.fd.write(msg)
-        else:
-            n = len(msg)
+        # msg is a memory view object
+        if isinstance(msg, memoryview):
+            msg = msg.tobytes()
 
-        if self._running:
-            with self._write_lock:
-                self._buffer += msg
-        else:
-            terminate_build = self.bs.log_build_output(self.username, self.queue, self.worker_id, self.job_id, msg)
-            self.terminate_build = terminate_build
+        if not isinstance(msg, bytes):
+            raise TypeError("a bytes-like object is required, not {}".format(type(msg)))
+
+        self.fd.write(msg)
+        n = len(msg)
+
+        msg = msg.decode('utf8', errors='replace')
+
+        terminate_build = self.write_to_server(msg)
+        self.terminate_build = terminate_build
+
+        log.info('Wrote {} bytes of build output to anaconda-server'.format(n))
+
+        if terminate_build:
+            log.info('anaconda-server responded that the build should be terminated')
+
         return n
 
+    def writable(self):
+        return True
+
+    def readable(self):
+        return False
+
+    @property
+    def closed(self):
+        return self.fd.closed
+
     def __enter__(self):
-        """
-        Start a thread that will post to the server 
-        """
-        self._running = True
-        self._io_thread = Thread(target=self._io_loop, name='io_loop')
-        self._io_thread.start()
-        self.terminate_build = False
         return self
 
     def __exit__(self, *args):
+        self.close()
 
-        if args[0] is not None:
-            self.write("Build Error: An unhandled exception occurred in the build worker")
-            self.write('---\n' + ''.join(traceback.format_exception(*args)) + '\n---')
-
-        self._running = False
-        self.event.set()
-        self._io_thread.join()
+    def close(self):
+        self.fd.close()
+        return
 
     def flush(self):
-        """
-        Flush the current buffer to the server 
-        """
-        with self._write_lock:
-            msg = self._buffer
-            self._buffer = ''
-
-        if not msg:
-            return
-
-        try:
-            terminate_build = self.bs.log_build_output(self.username, self.queue, self.worker_id, self.job_id, msg)
-            self.terminate_build = terminate_build
-        except Exception as err:
-            log.exception(err)
-            # Insert data back to buffer for next write attempt
-            with self._write_lock:
-                self._buffer = msg + self._buffer
-
-
-    def _io_loop(self):
-        """
-        Loop to write buffer to server 
-        every self.INTERVAL seconds
-        """
-        while self._running:
-            self.flush()
-            self.event.wait(self.INTERVAL)
-
-        self.flush()
-
-
-
-
-
+        self.fd.flush()
 
