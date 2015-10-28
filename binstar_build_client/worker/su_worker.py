@@ -11,13 +11,16 @@ import logging
 import os
 import pipes
 import shutil
+import subprocess as sp
 
 from binstar_client import errors
 from binstar_client.utils import get_config
 
 from binstar_build_client.utils.rm import rm_rf
-from binstar_build_client.worker.utils.buffered_io import BufferedPopen
 from binstar_build_client.worker.worker import Worker
+from binstar_build_client.worker.utils import process_wrappers
+from binstar_build_client.worker.utils.build_log import BuildLog
+from binstar_build_client.worker.utils.timeout import read_with_timeout
 
 SU_WORKER_DEFAULT_PATH = '/opt/anaconda'
 
@@ -25,10 +28,7 @@ log = logging.getLogger('binstar.build')
 
 
 def cmd(cmd):
-    stdout = io.StringIO()
-    proc = BufferedPopen(cmd, stdout=stdout)
-    proc.wait()
-    return stdout.getvalue()
+    return sp.Popen(cmd, stdout=sp.PIPE,stderr=sp.PIPE).communicate()[0]
 
 
 def check_conda_path(build_user, python_install_dir):
@@ -123,7 +123,8 @@ class SuWorker(Worker):
             log.info(out)
 
     def run(self, build_data, script_filename, build_log, timeout, iotimeout,
-            api_token=None, git_oauth_token=None, build_filename=None, instructions=None):
+            api_token=None, git_oauth_token=None, build_filename=None, instructions=None,
+            build_was_stopped_by_user=lambda:None):
 
         log.info("Running build script")
 
@@ -144,17 +145,24 @@ class SuWorker(Worker):
 
         args = self.su_with_env(" ".join(pipes.quote(arg) for arg in args))
         log.info(args)
-        p0 = BufferedPopen(args, stdout=build_log, iotimeout=iotimeout, cwd=working_dir)
+        p0 = process_wrappers.BuildProcess(
+            args,
+            cwd=working_dir
+        )
 
         try:
-            exit_code = p0.wait()
+            read_with_timeout(
+                p0,
+                build_log,
+                timeout,
+                iotimeout,
+                BuildLog.INTERVAL,
+                build_was_stopped_by_user
+            )
         except BaseException:
-            log.error("Binstar build process caught an exception while waiting for the build to finish")
-            self.destroy_user_procs()
+            log.error(
+                "Binstar build process caught an exception while waiting for the build to" "finish")
+            p0.kill()
+            p0.wait()
             raise
-        finally:
-            self.destroy_user_procs()
-            if p0.stdout and not p0.stdout.closed:
-                log.info("Closing subprocess stdout PIPE")
-                p0.stdout.close()
-        return exit_code
+        return p0.poll()

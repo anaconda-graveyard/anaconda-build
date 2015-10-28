@@ -38,25 +38,7 @@ def main(args):
     finally:
         worker.write_status(False, "Exited")
 
-
-def add_parser(subparsers, name='run',
-               description='Run a build worker to build jobs off of a binstar build queue',
-               epilog=__doc__,
-               default_func=main):
-
-    parser = subparsers.add_parser(name,
-                                   help=description, description=description,
-                                   epilog=epilog
-                                   )
-    parser.add_argument('worker_id',
-                        help="worker_id that was given in anaconda build register")
-    parser.add_argument('-f', '--fail', action='store_true',
-                        help='Exit main loop on any un-handled exception')
-    parser.add_argument('-1', '--one', action='store_true',
-                        help='Exit main loop after only one build')
-    parser.add_argument('--push-back', action='store_true',
-                        help='Developers only, always push the build *back* ' + \
-                             'onto the build queue')
+def add_worker_dev_options(parser):
 
     dgroup = parser.add_argument_group('development options')
 
@@ -80,6 +62,27 @@ def add_parser(subparsers, name='run',
     parser.add_argument('-t', '--max-job-duration', type=int, metavar='SECONDS',
                         dest='timeout',
                         help='Force jobs to stop after they exceed duration (default: %(default)s)', default=60 * 60)
+    return parser
 
+def add_parser(subparsers, name='run',
+               description='Run a build worker to build jobs off of a binstar build queue',
+               epilog=__doc__,
+               default_func=main):
+
+    parser = subparsers.add_parser(name,
+                                   help=description, description=description,
+                                   epilog=epilog
+                                   )
+    parser.add_argument('worker_id',
+                        help="worker_id that was given in anaconda build register")
+    parser.add_argument('-f', '--fail', action='store_true',
+                        help='Exit main loop on any un-handled exception')
+    parser.add_argument('-1', '--one', action='store_true',
+                        help='Exit main loop after only one build')
+    parser.add_argument('--push-back', action='store_true',
+                        help='Developers only, always push the build *back* ' + \
+                             'onto the build queue')
+
+    parser = add_worker_dev_options(parser)
     parser.set_defaults(main=default_func)
     return parser
