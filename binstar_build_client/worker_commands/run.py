@@ -22,6 +22,8 @@ log = logging.getLogger('binstar.build')
 def main(args):
     worker_config = WorkerConfiguration.load(args.worker_id)
 
+    args.conda_build_dir = args.conda_build_dir.format(platform=worker_config.platform)
+    log.info("Using conda build directory: {}".format(args.conda_build_dir))
     log.info(str(worker_config))
 
     bs = get_binstar(args, cls=BinstarBuildAPI)
@@ -60,7 +62,7 @@ def add_parser(subparsers, name='run',
 
     dgroup.add_argument("--conda-build-dir",
                         default=os.path.join(get_conda_root_prefix(),
-                                             'conda-bld', '{args.platform}'),
+                                             'conda-bld', '{platform}'),
                         help="[Advanced] The conda build directory (default: %(default)s)",
                         )
 
