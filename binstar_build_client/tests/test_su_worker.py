@@ -138,7 +138,7 @@ class TestSuWorker(CLITestCase):
                     with patch.object(su_worker, 'validate_su_worker', return_value=True) as validate_su_worker:
                         worker = self.new_su_worker()
                         build_data = {}
-                        build_log = io.StringIO()
+                        build_log = io.BytesIO()
                         timeout = iotimeout = 200
                         script_filename = 'script'
                         exit_code = worker.run(build_data, script_filename,
