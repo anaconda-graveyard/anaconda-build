@@ -134,23 +134,23 @@ class TestSuWorker(CLITestCase):
         ok = ['echo','su_worker_test_ok']
         with patch.object(su_worker.SuWorker, 'su_with_env', return_value=ok) as su_with_env:
             with patch.object(su_worker.SuWorker, 'destroy_user_procs', return_value=True) as destroy_user_procs:
-                with patch.object(su_worker.SuWorker, 'working_dir', return_value='.') as working_dir:
-                    with patch.object(su_worker, 'validate_su_worker', return_value=True) as validate_su_worker:
-                        worker = self.new_su_worker()
-                        build_data = {}
-                        build_log = io.BytesIO()
-                        timeout = iotimeout = 200
-                        script_filename = 'script'
-                        exit_code = worker.run(build_data, script_filename,
-                                                  build_log, timeout, iotimeout,
-                                                  api_token='api_token',
-                                                  git_oauth_token='git_oauth_token',
-                                                  build_filename=None, instructions=None)
-                        build_log = build_log.getvalue()
-                        self.assertIn('su_worker_test_ok', build_log)
-                        self.assertEqual(exit_code, 0)
+                with patch.object(su_worker.SuWorker, 'clean_home_dir', return_value=True) as clean_home_dir:
+                    with patch.object(su_worker.SuWorker, 'working_dir', return_value='.') as working_dir:
+                        with patch.object(su_worker, 'validate_su_worker', return_value=True) as validate_su_worker:
+                            worker = self.new_su_worker()
+                            build_data = {}
+                            build_log = io.BytesIO()
+                            timeout = iotimeout = 200
+                            script_filename = 'script'
+                            exit_code = worker.run(build_data, script_filename,
+                                                      build_log, timeout, iotimeout,
+                                                      api_token='api_token',
+                                                      git_oauth_token='git_oauth_token',
+                                                      build_filename=None, instructions=None)
+                            build_log = build_log.getvalue()
+                            self.assertIn('su_worker_test_ok', build_log)
+                            self.assertEqual(exit_code, 0)
         self.assertEqual(su_with_env.call_count, 1)
-        self.assertEqual(destroy_user_procs.call_count, 1)
         self.assertEqual(working_dir.call_count, 1)
         self.assertEqual(validate_su_worker.call_count, 1)
 
