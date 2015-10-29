@@ -12,6 +12,7 @@ from binstar_build_client.worker_commands.register import get_platform
 from binstar_build_client.worker.utils import script_generator
 from binstar_build_client.worker.docker_worker import DockerWorker
 import warnings
+import tempfile
 
 try_unlink = lambda path: os.unlink(path) if os.path.isfile(path) else None
 
@@ -69,10 +70,12 @@ class MyWorker(Worker):
         worker_config = WorkerConfiguration(
             'worker_id', 'username', 'queue', 'test_platform', 'test_hostname', 'dist')
 
+        self._working_dir = tempfile.mkdtemp()
         super(MyWorker, self).__init__(bs, worker_config, args)
 
     def working_dir(self, *args):
-        return os.path.abspath('test_worker')
+
+        return self._working_dir
 
 
 class Test(unittest.TestCase):
@@ -166,6 +169,7 @@ class Test(unittest.TestCase):
     def test_build_success(self, gen_build_script):
 
         self.write_sript(gen_build_script, script_generator.EXIT_CODE_OK)
+
         worker = self.get_worker()
         job_data = default_build_data()
         failed, status = worker.build(job_data)
@@ -255,6 +259,7 @@ class Test(unittest.TestCase):
 
         job_data = default_build_data()
         job_data['build_item_info']['instructions']['iotimeout'] = 0.5
+
         failed, status = worker.build(job_data)
 
         self.assertTrue(failed)
