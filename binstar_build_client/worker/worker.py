@@ -241,10 +241,7 @@ class Worker(object):
 
             build_log.flush()
 
-            if not os.path.exists('build_scripts'):
-                os.mkdir('build_scripts')
-
-            script_filename = script_generator.gen_build_script(
+            script_filename = script_generator.gen_build_script(working_dir,
                 job_data, conda_build_dir=self.args.conda_build_dir)
 
             iotimeout = instructions.get('iotimeout', DEFAULT_IO_TIMEOUT)

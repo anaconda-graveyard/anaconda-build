@@ -9,7 +9,6 @@ import requests
 
 from binstar_build_client.worker.register import WorkerConfiguration
 from binstar_build_client.worker.worker import Worker
-from binstar_build_client.worker_commands.register import get_platform
 from binstar_client import errors
 import tempfile
 
