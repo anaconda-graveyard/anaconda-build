@@ -45,16 +45,6 @@ def get_my_procs():
     return {proc.pid for proc in psutil.process_iter() if ismyproc(proc)}
 
 
-@contextmanager
-def remove_files_after(files):
-    try:
-        yield
-    finally:
-        for filename in files:
-            if os.path.isfile(filename):
-                os.unlink(filename)
-
-
 class Worker(object):
     """
 
@@ -249,20 +239,16 @@ class Worker(object):
 
             api_token = job_data['upload_token']
 
-            files = [script_filename]
-
             git_oauth_token = job_data.get('git_oauth_token')
             if not job_data.get('build_info', {}).get('github_info'):
                 build_filename = self.download_build_source(working_dir, job_id)
-                files.append(build_filename)
             else:
                 build_filename = None
 
-            with remove_files_after(files):
-                exit_code = self.run(
-                    job_data, script_filename, build_log, timeout, iotimeout, api_token,
-                    git_oauth_token, build_filename, instructions=instructions,
-                    build_was_stopped_by_user=raw_build_log.terminated)
+            exit_code = self.run(
+                job_data, script_filename, build_log, timeout, iotimeout, api_token,
+                git_oauth_token, build_filename, instructions=instructions,
+                build_was_stopped_by_user=raw_build_log.terminated)
 
             log.info("Build script exited with code {0}".format(exit_code))
             if exit_code == script_generator.EXIT_CODE_OK:
