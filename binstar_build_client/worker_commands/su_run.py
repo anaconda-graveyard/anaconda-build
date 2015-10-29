@@ -29,7 +29,12 @@ log = logging.getLogger('binstar.build')
 def main(args):
     worker_config = WorkerConfiguration.load(args.worker_id)
 
+
     log.info(str(worker_config))
+    worker_home = os.path.expanduser('~{0}'.format(args.build_user))
+    args.conda_build_dir = args.conda_build_dir.format(platform=worker_config.platform,
+                                                       build_user_home=worker_home)
+    log.info("Using conda build directory: {}".format(args.conda_build_dir))
 
     bs = get_binstar(args, cls=BinstarBuildAPI)
 
@@ -44,7 +49,7 @@ def main(args):
         worker.write_status(False, "Exited")
 
 
-def add_parser(subparsers, name='su_worker_run',
+def add_parser(subparsers, name='su_run',
                description='Run a build worker to build jobs off of a binstar build queue',
                epilog=__doc__):
 
