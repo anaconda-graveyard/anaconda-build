@@ -11,6 +11,7 @@ class DockerBuildProcess(object):
         self.cli = cli
         self.cont = cont
         self.stream = self.cli.attach(cont, stream=True, stdout=True, stderr=True)
+        self.pid = 'docker container'
 
     def kill(self):
         self.cli.kill(self.cont)
