@@ -33,10 +33,12 @@ class Timeout:
         while not self.event.wait(1):
             diff_time = time.time() - self.last_tick
             if diff_time > self.seconds:
+                log.debug("Timer: timout_occurred")
                 self.event.set()
                 self.timout_occurred = True
                 self.callback()
                 break
+        log.debug("Timer: finished")
 
     def __enter__(self):
         self.event.clear()
@@ -69,6 +71,7 @@ def read_with_timeout(p0, output,
         log.info("Kill build process || iotimeout")
         p0.kill()
 
+    log.debug("Starting timers")
     with timer, iotimer:
         line = p0.readline()
         last_flush = time.time()
@@ -84,17 +87,21 @@ def read_with_timeout(p0, output,
 
             if time.time() - last_flush > flush_iterval:
                 last_flush = time.time()
+                log.debug("Flush output")
                 output.flush()
 
             # Note: this is a blocking read, for any hanging operations
             # The user will not get any output for  iotimeout seconds
             # when the io timer kills the process
+            log.debug("Wait for line ...")
             line = p0.readline()
+            log.debug("Got line")
 
     while p0.poll() is None:
         log.info("Waiting for build process with pid {} to end".format(p0.pid))
         time.sleep(1)
 
+    log.debug("Waiting for process  {} to finish".format(p0.pid))
     p0.wait()
 
     if timer.timout_occurred:
