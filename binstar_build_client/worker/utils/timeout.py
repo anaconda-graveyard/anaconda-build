@@ -91,6 +91,10 @@ def read_with_timeout(p0, output,
             # when the io timer kills the process
             line = p0.readline()
 
+    while p0.poll() is None:
+        log.info("Waiting for build process with pid {} to end".format(p0.pid))
+        time.sleep(1)
+
     p0.wait()
 
     if timer.timout_occurred:

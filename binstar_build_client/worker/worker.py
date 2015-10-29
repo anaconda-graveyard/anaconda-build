@@ -314,6 +314,8 @@ class Worker(object):
             cwd=working_dir
         )
 
+        log.info("Started build script with pid: {}".format(p0.pid))
+
         try:
             read_with_timeout(
                 p0,

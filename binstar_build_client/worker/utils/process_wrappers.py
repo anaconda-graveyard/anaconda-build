@@ -1,5 +1,6 @@
 import logging
 import psutil
+import requests
 import subprocess
 
 log = logging.getLogger('binstar.build')
@@ -23,6 +24,12 @@ class DockerBuildProcess(object):
     def readline(self):
         return next(self.stream, b'')
 
+    def poll(self):
+        try:
+            return self.cli.wait(self.cont, timeout=0.1)
+        except requests.exceptions.ReadTimeout:
+            return None
+
 
 class BuildProcess(subprocess.Popen):
 
@@ -44,11 +51,13 @@ class BuildProcess(subprocess.Popen):
 
         children = parent.children(recursive=True)
 
+        log.info("BuildProcess.kill: parent pid {} is being killed".format(parent.pid))
         super(BuildProcess, self).kill()
         for child in children:
             if child.is_running():
-                log.warning(" - Kill child pid {}".format(child.pid))
+                log.info("BuildProcess.kill: child pid {} is being killed".format(child.pid))
                 child.kill()
+
 
     def readline(self):
         return self.stdout.readline()
