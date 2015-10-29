@@ -213,8 +213,9 @@ class Worker(object):
 
         working_dir = self.working_dir(job_data)
 
-        log.info("Creating working dir: {0}".format(working_dir))
+        log.info("Removing previous build dir: {0}".format(working_dir))
         rm_rf(working_dir)
+        log.info("Creating working dir: {0}".format(working_dir))
         os.makedirs(working_dir)
 
         raw_build_log = BuildLog(
@@ -255,7 +256,7 @@ class Worker(object):
 
             git_oauth_token = job_data.get('git_oauth_token')
             if not job_data.get('build_info', {}).get('github_info'):
-                build_filename = self.download_build_source(job_id)
+                build_filename = self.download_build_source(working_dir, job_id)
                 files.append(build_filename)
             else:
                 build_filename = None
@@ -351,16 +352,14 @@ class Worker(object):
                             build_log.write("    + {0}\n".format(cmdline))
         return p0.poll()
 
-    def download_build_source(self, job_id):
+    def download_build_source(self, working_dir, job_id):
         """
         If the source files for this job were tarred and uploaded to bisntar.
         Download them.
         """
         log.info("Fetching build data")
-        if not os.path.exists('build_data'):
-            os.mkdir('build_data')
 
-        build_filename = os.path.join('build_data', '{0}.tar.bz2'.format(job_id))
+        build_filename = os.path.join(working_dir, 'source.tar.bz2')
 
         fp = self.bs.fetch_build_source(
             self.config.username,
