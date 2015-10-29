@@ -62,11 +62,13 @@ def main(args):
 
     args.username, args.queue = split_queue_arg(args.queue)
     bs = get_binstar(args, cls=BinstarBuildAPI)
-    worker_config = WorkerConfiguration.register(bs, args.username, args.queue, args.platform, args.hostname, args.dist)
+    worker_config = WorkerConfiguration.register(bs, args.username, args.queue,
+                                                 args.platform, args.hostname,
+                                                 args.dist, as_json=args.json)
     worker_config.save()
-
-    log.info('Worker config saved at {}.'.format(worker_config.filename))
-    log.info('Now run:\n\tanaconda worker run {}'.format(worker_config.worker_id))
+    if not args.json:
+        log.info('Worker config saved at {}.'.format(worker_config.filename))
+        log.info('Now run:\n\tanaconda worker run {}'.format(worker_config.worker_id))
 
 
 def add_parser(subparsers, name='register',
@@ -91,6 +93,10 @@ def add_parser(subparsers, name='register',
 
     parser.add_argument('--dist', default=get_dist(),
                         help='The operating system distribution the worker should use (default: %(default)s)')
+
+    parser.add_argument('-j','--json',
+                        help="Output as json for machine reading.",
+                        action="store_true")
 
     parser.set_defaults(main=main)
 

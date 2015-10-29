@@ -1,5 +1,6 @@
 from __future__ import print_function, unicode_literals, division, absolute_import
 
+import json
 import logging
 import os
 
@@ -67,10 +68,10 @@ class WorkerConfiguration(object):
         return self.to_dict() == other.to_dict()
 
     @classmethod
-    def registered_workers(cls):
+    def registered_workers(cls, print_heading=True):
         "Iterate over the registered workers on this machine"
-
-        log.info('Registered workers:\n')
+        if print_heading:
+            log.info('Registered workers:\n')
 
         for worker_id in os.listdir(cls.REGISTERED_WORKERS_DIR):
             if '.' not in worker_id:
@@ -162,10 +163,13 @@ class WorkerConfiguration(object):
         return worker_config
 
     @classmethod
-    def print_registered_workers(cls):
+    def print_registered_workers(cls, as_json=False):
 
         has_workers = False
-
+        if as_json:
+            reg_workers = cls.registered_workers(print_heading=False)
+            print(json.dumps([_.to_dict() for _ in reg_workers]))
+            return
         for wconfig in cls.registered_workers():
             msg = 'id: {worker_id} hostname: {hostname} queue: {username}/{queue}'.format(**wconfig.to_dict())
             if wconfig.pid:
@@ -177,14 +181,21 @@ class WorkerConfiguration(object):
             log.info('(No registered workers)')
 
     @classmethod
-    def register(cls, bs, username, queue, platform, hostname, dist):
+    def register(cls, bs, username, queue, platform, hostname, dist, as_json=False):
         '''
         Register the worker with anaconda server
         '''
 
         worker_id = bs.register_worker(username, queue, platform, hostname, dist)
-        log.info('Registered worker with worker_id:\t{}'.format(worker_id))
-
+        if not as_json:
+            log.info('Registered worker with worker_id:\t{}'.format(worker_id))
+        else:
+            print(json.dumps({'register': {'worker_id': worker_id,
+                              'username': username,
+                              'queue': queue,
+                              'platform': platform,
+                              'hostname': hostname,
+                              'dist': dist}}))
         return WorkerConfiguration(worker_id, username, queue, platform, hostname, dist)
 
     def save(self):
@@ -197,7 +208,7 @@ class WorkerConfiguration(object):
             yaml.safe_dump(self.to_dict(), fd, default_flow_style=False)
 
 
-    def deregister(self, bs):
+    def deregister(self, bs, as_json=False):
         'Deregister the worker from anaconda server'
 
         try:
@@ -209,12 +220,19 @@ class WorkerConfiguration(object):
                 raise errors.BinstarError('Failed to remove_worker with argument of ' + \
                                           'worker_id\t{}\tqueue\t{}/{}'.format(*info))
 
-            log.info('Deregistered worker with worker-id {}'.format(self.worker_id))
-
+            if not as_json:
+                log.info('Deregistered worker with worker-id {}'.format(self.worker_id))
+            else:
+                print(json.dumps({'deregister': {'worker_id': self.worker_id,
+                                                 'status': 'success',}}))
         except Exception:
-
-            log.info('Failed on anaconda build deregister.\n')
-            self.print_registered_workers()
-            log.info('deregister failed with error:\n')
+            if not as_json:
+                log.info('Failed on anaconda build deregister.\n')
+            self.print_registered_workers(as_json=as_json)
+            if not as_json:
+                log.info('deregister failed with error:\n')
+            else:
+                print(json.dumps({'deregister': {'worker_id': self.worker_id,
+                                                 'status': 'failed'}}))
             raise
 

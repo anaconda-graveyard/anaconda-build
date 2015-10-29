@@ -17,10 +17,11 @@ def main(args, context="worker"):
     bs = get_binstar(args, cls=BinstarBuildAPI)
 
     wconfig = WorkerConfiguration.load(args.worker_id)
-    wconfig.deregister(bs)
+    wconfig.deregister(bs, as_json=args.json)
 
     os.unlink(wconfig.filename)
-    log.debug("Removed worker config {}".format(wconfig.filename))
+    if not args.json:
+        log.debug("Removed worker config {}".format(wconfig.filename))
 
 
 def add_parser(subparsers, name='deregister',
@@ -36,5 +37,8 @@ def add_parser(subparsers, name='deregister',
                         action='store_true')
     parser.add_argument('worker_id',
                         help="Worker id (required if no --config arg")
+    parser.add_argument('-j','--json',
+                        help="Output as json for machine reading",
+                        action="store_true")
     parser.set_defaults(main=default_func)
     return parser
