@@ -61,7 +61,7 @@ class TestSuWorker(CLITestCase):
     def test_su_worker(self, urls, SuWorker):
         '''Test su_worker CLI '''
         self.new_worker_config()
-        main(['--show-traceback', 'su_worker_run',
+        main(['--show-traceback', 'su_run',
               'worker_id', TEST_BUILD_WORKER], False)
         self.assertEqual(SuWorker().work_forever.call_count, 1)
 
@@ -128,31 +128,44 @@ class TestSuWorker(CLITestCase):
                 except psutil.AccessDenied:
                     pass
         return found_pids
-
-    def test_run(self):
+    @patch('binstar_build_client.worker.su_worker.SuWorker.su_with_env')
+    @patch('binstar_build_client.worker.su_worker.SuWorker.destroy_user_procs')
+    @patch('binstar_build_client.worker.su_worker.SuWorker.clean_home_dir')
+    @patch('binstar_build_client.worker.su_worker.validate_su_worker')
+    @patch('binstar_build_client.worker.worker.Worker._finish_job')
+    def test_run(self, finish, validate, clean, destroy, su_with_env):
         self.new_worker_config()
+
         ok = ['echo','su_worker_test_ok']
-        with patch.object(su_worker.SuWorker, 'su_with_env', return_value=ok) as su_with_env:
-            with patch.object(su_worker.SuWorker, 'destroy_user_procs', return_value=True) as destroy_user_procs:
-                with patch.object(su_worker.SuWorker, 'clean_home_dir', return_value=True) as clean_home_dir:
-                    with patch.object(su_worker.SuWorker, 'working_dir', return_value='.') as working_dir:
-                        with patch.object(su_worker, 'validate_su_worker', return_value=True) as validate_su_worker:
-                            worker = self.new_su_worker()
-                            build_data = {}
-                            build_log = io.BytesIO()
-                            timeout = iotimeout = 200
-                            script_filename = 'script'
-                            exit_code = worker.run(build_data, script_filename,
-                                                      build_log, timeout, iotimeout,
-                                                      api_token='api_token',
-                                                      git_oauth_token='git_oauth_token',
-                                                      build_filename=None, instructions=None)
-                            build_log = build_log.getvalue()
-                            self.assertIn('su_worker_test_ok', build_log)
-                            self.assertEqual(exit_code, 0)
+
+        su_with_env.return_value = ok
+        destroy.return_value = True
+        clean.return_value = True
+        validate.return_value = True
+        finish.return_value = True
+        worker = self.new_su_worker()
+        build_data = {
+            'owner':{'login': '.',},
+            'package':{'name':'.',},
+            'job': {'_id': '_id',},
+        }
+        build_log = io.BytesIO()
+        timeout = iotimeout = 200
+        script_filename = 'script'
+        exit_code = worker.run(build_data, script_filename,
+                                  build_log, timeout, iotimeout,
+                                  api_token='api_token',
+                                  git_oauth_token='git_oauth_token',
+                                  build_filename=None, instructions=None)
+        worker._finish_job(build_data, False, 'ok')
+        build_log = build_log.getvalue()
+        self.assertIn('su_worker_test_ok', build_log)
+        self.assertEqual(exit_code, 0)
         self.assertEqual(su_with_env.call_count, 1)
-        self.assertEqual(working_dir.call_count, 1)
-        self.assertEqual(validate_su_worker.call_count, 1)
+        self.assertEqual(destroy.call_count, 1)
+        self.assertEqual(validate.call_count, 1)
+        self.assertEqual(clean.call_count, 1)
+        self.assertEqual(finish.call_count, 1)
 
     @unittest.skipIf(not is_valid_su_worker, 'Skipping as not valid su_worker')
     @unittest.skipIf(not standard_root_install,
@@ -174,6 +187,7 @@ class TestSuWorker(CLITestCase):
         args.token = None
         args.worker_id = 'worker_id'
         args.build_user = TEST_BUILD_WORKER
+        args.push_back = True
         args.python_install_dir = SU_WORKER_DEFAULT_PATH
         bs = get_binstar(args, cls=BinstarBuildAPI)
         worker_config = self.new_worker_config()
