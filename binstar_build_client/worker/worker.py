@@ -29,6 +29,7 @@ from binstar_client import errors
 
 log = logging.getLogger('binstar.build')
 
+DEFAULT_IO_TIMEOUT = 60 * 5
 
 def get_my_procs():
     this_proc = psutil.Process()
@@ -250,7 +251,7 @@ class Worker(object):
             script_filename = script_generator.gen_build_script(
                 job_data, conda_build_dir=self.args.conda_build_dir)
 
-            iotimeout = instructions.get('iotimeout', 60)
+            iotimeout = instructions.get('iotimeout', DEFAULT_IO_TIMEOUT)
             timeout = self.args.timeout
 
             api_token = job_data['upload_token']

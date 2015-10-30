@@ -60,8 +60,6 @@ class BuildLog(object):
         self.fd.write(msg)
         n = len(msg)
 
-        msg = msg.decode('utf8', errors='replace')
-
         terminate_build = self.write_to_server(msg)
         self.terminate_build = terminate_build
 

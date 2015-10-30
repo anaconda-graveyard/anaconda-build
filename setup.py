@@ -15,6 +15,7 @@ setup(
     install_requires=['anaconda-client',
                       'jinja2', 'psutil'],
 
+    package_data = {'binstar_build_client': ['worker/utils/data/*'],},
     include_package_data=True,
     zip_safe=False,
 

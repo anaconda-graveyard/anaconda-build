@@ -27,6 +27,7 @@ def main(args):
     log.info(str(worker_config))
     args.conda_build_dir = args.conda_build_dir.format(platform=worker_config.platform,
                                                        build_user_home=os.path.expanduser('~'))
+    log.info("Using conda build directory: {}".format(args.conda_build_dir))
     bs = get_binstar(args, cls=BinstarBuildAPI)
 
     worker = Worker(bs, worker_config, args)
@@ -45,6 +46,8 @@ def add_worker_dev_options(parser):
 
     dgroup.add_argument("--conda-build-dir",
                         default=os.path.join('{build_user_home}', 'conda-bld', '{platform}'),
+                        default=os.path.join(get_conda_root_prefix(),
+                                             'conda-bld', '{platform}'),
                         help="[Advanced] The conda build directory (default: %(default)s)",
                         )
 

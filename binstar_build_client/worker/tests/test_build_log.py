@@ -38,7 +38,7 @@ class TestBuildLog(unittest.TestCase):
         with log:
             log.write(b'this can not be unicode \xe2')
 
-        self.assertIn('this can not be unicode', bs.last_log)
+        self.assertEqual(b'this can not be unicode \xe2', bs.last_log)
 
 
     def test_read(self):
