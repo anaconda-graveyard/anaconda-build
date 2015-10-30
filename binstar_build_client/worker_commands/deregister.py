@@ -13,9 +13,12 @@ from binstar_build_client.worker.register import WorkerConfiguration
 log = logging.getLogger('bisntar.build')
 
 def main(args, context="worker"):
-
+    if args.json:
+        old_log_level = args.log_level
+        args.log_level = -1
     bs = get_binstar(args, cls=BinstarBuildAPI)
-
+    if args.json:
+        args.log_level = old_log_level
     wconfig = WorkerConfiguration.load(args.worker_id)
     wconfig.deregister(bs, as_json=args.json)
 

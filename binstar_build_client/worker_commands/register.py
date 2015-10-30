@@ -61,7 +61,12 @@ def split_queue_arg(queue):
 def main(args):
 
     args.username, args.queue = split_queue_arg(args.queue)
+    if args.json:
+        old_log_level = args.log_level
+        args.log_level = -1
     bs = get_binstar(args, cls=BinstarBuildAPI)
+    if args.json:
+        args.log_level = old_log_level
     worker_config = WorkerConfiguration.register(bs, args.username, args.queue,
                                                  args.platform, args.hostname,
                                                  args.dist, as_json=args.json)

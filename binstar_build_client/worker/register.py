@@ -228,7 +228,6 @@ class WorkerConfiguration(object):
         except Exception:
             if not as_json:
                 log.info('Failed on anaconda build deregister.\n')
-            self.print_registered_workers(as_json=as_json)
             if not as_json:
                 log.info('deregister failed with error:\n')
             else:
