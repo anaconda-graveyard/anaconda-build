@@ -24,6 +24,7 @@ import yaml
 from binstar_client.tests.fixture import CLITestCase
 from binstar_build_client import BinstarBuildAPI
 from binstar_build_client.scripts.worker import main
+from binstar_build_client.worker.utils import process_wrappers
 from binstar_build_client.worker.register import WorkerConfiguration
 from binstar_build_client.tests.test_worker_script import (worker_data,
                                                            test_workers)
@@ -128,17 +129,18 @@ class TestSuWorker(CLITestCase):
                 except psutil.AccessDenied:
                     pass
         return found_pids
-    @patch('binstar_build_client.worker.su_worker.SuWorker.su_with_env')
+    @patch('binstar_build_client.worker.utils.process_wrappers.SuBuildProcess')
     @patch('binstar_build_client.worker.su_worker.SuWorker.destroy_user_procs')
     @patch('binstar_build_client.worker.su_worker.SuWorker.clean_home_dir')
     @patch('binstar_build_client.worker.su_worker.validate_su_worker')
     @patch('binstar_build_client.worker.worker.Worker._finish_job')
-    def test_run(self, finish, validate, clean, destroy, su_with_env):
+    @patch('subprocess.check_output')
+    def test_run(self, check_output, finish, validate, clean, destroy, su_build):
         self.new_worker_config()
 
         ok = ['echo','su_worker_test_ok']
-
-        su_with_env.return_value = ok
+        check_output.return_value = 'su_worker_test_ok'
+        su_build.return_value = process_wrappers.BuildProcess(ok, '.')
         destroy.return_value = True
         clean.return_value = True
         validate.return_value = True
@@ -161,11 +163,12 @@ class TestSuWorker(CLITestCase):
         build_log = build_log.getvalue()
         self.assertIn('su_worker_test_ok', build_log)
         self.assertEqual(exit_code, 0)
-        self.assertEqual(su_with_env.call_count, 1)
+        self.assertEqual(su_build.call_count, 1)
         self.assertEqual(destroy.call_count, 1)
         self.assertEqual(validate.call_count, 1)
         self.assertEqual(clean.call_count, 1)
         self.assertEqual(finish.call_count, 1)
+        self.assertEqual(check_output.call_count, 1)
 
     @unittest.skipIf(not is_valid_su_worker, 'Skipping as not valid su_worker')
     @unittest.skipIf(not standard_root_install,

@@ -9,12 +9,10 @@ from __future__ import print_function, absolute_import, unicode_literals
 import io
 import logging
 import os
-import pipes
 import shutil
 import subprocess as sp
 
 from binstar_client import errors
-from binstar_client.utils import get_config
 
 from binstar_build_client.utils.rm import rm_rf
 from binstar_build_client.worker.worker import Worker
@@ -27,21 +25,17 @@ SU_WORKER_DEFAULT_PATH = '/opt/anaconda'
 log = logging.getLogger('binstar.build')
 
 
-def cmd(cmd):
-    return sp.Popen(cmd, stdout=sp.PIPE,stderr=sp.PIPE).communicate()[0]
-
-
 def check_conda_path(build_user, python_install_dir):
     conda_exe = os.path.join(python_install_dir, 'bin', 'conda')
     check_conda = "{} && echo has_conda_installed".format(conda_exe)
-    conda_output = cmd(['su', '--login', '-c', check_conda, '-', build_user])
+    conda_output = sp.check_output(['su', '--login', '-c', check_conda, '-', build_user])
     if 'has_conda_installed' not in conda_output:
         raise errors.BinstarError('Did not find conda at {}'.format(conda_exe))
     return True
 
 
 def test_su_as_user(build_user):
-    whoami_as_user = cmd(['su', '--login', '-c', 'whoami', '-', build_user]).strip()
+    whoami_as_user = sp.check_output(['su', '--login', '-c', 'whoami', '-', build_user]).strip()
     has_build_user = build_user in whoami_as_user
     if not has_build_user:
         info = (build_user, whoami_as_user)
@@ -78,10 +72,6 @@ class SuWorker(Worker):
         self.python_install_dir = args.python_install_dir
         validate_su_worker(self.build_user, self.python_install_dir)
 
-    @property
-    def source_env(self):
-        return ("export PATH={0}/bin:${{PATH}} "
-                "&& source activate anaconda.org ").format(self.python_install_dir)
 
     def _finish_job(self, job_data, failed, status):
         '''Count job as finished, destroy build user processes,
@@ -90,19 +80,6 @@ class SuWorker(Worker):
         self.clean_home_dir()
         super(SuWorker, self)._finish_job(job_data, failed, status)
 
-    @property
-    def anaconda_url(self):
-        config = get_config(remote_site=self.args.site)
-        return config.get('url', 'https://api.anaconda.org')
-
-    def su_with_env(self, cmd):
-        '''args for su as build_user with the anaconda settings'''
-        cmds = ['su', '--login', '-c', self.source_env]
-        cmds[-1] += " && anaconda config --set url {} && ".format(self.anaconda_url)
-        cmds[-1] += " conda config --set always_yes true && "
-        cmds[-1] += cmd
-        cmds += ['-', self.build_user]
-        return cmds
 
     def clean_home_dir(self):
         '''Delete lesser build_user's home dir and
@@ -111,14 +88,14 @@ class SuWorker(Worker):
         log.info('Remove build worker home directory: {}'.format(home_dir))
         rm_rf(home_dir)
         shutil.copytree('/etc/worker-skel', home_dir, symlinks=False)
-        out = cmd(['chown', '-R', "{}:{}".format(self.build_user, self.build_user), home_dir])
+        out = sp.check_output(['chown', '-R', "{}:{}".format(self.build_user, self.build_user), home_dir])
         if out:
             log.info(out)
         log.info('Copied /etc/worker-skel to {}.  Changed permissions.'.format(home_dir))
 
     def destroy_user_procs(self):
         log.info("Destroy {}'s processes".format(self.build_user))
-        out = cmd(['pkill', '-U', self.build_user])
+        out = sp.check_output(['pkill', '-U', self.build_user])
         if out:
             log.info(out)
 
@@ -131,7 +108,7 @@ class SuWorker(Worker):
         working_dir = self.working_dir(build_data)
         own_script = ['chown', '{}:{}'.format(self.build_user, self.build_user), os.path.abspath(script_filename)]
         log.info('Running: {}'.format(" ".join(own_script)))
-        log.info(cmd(own_script))
+        log.info(sp.check_output(own_script))
 
         args = [os.path.abspath(script_filename), '--api-token', api_token]
 
@@ -142,14 +119,10 @@ class SuWorker(Worker):
             args.extend(['--build-tarball', build_filename])
 
         log.info("Running command: (iotimeout={})".format(iotimeout))
-
-        args = self.su_with_env(" ".join(pipes.quote(arg) for arg in args))
         log.info(args)
-        p0 = process_wrappers.BuildProcess(
-            args,
-            cwd=working_dir
-        )
-
+        p0 = process_wrappers.SuBuildProcess(args, working_dir,
+                                           self.build_user, self.args.site,
+                                           self.python_install_dir)
         try:
             read_with_timeout(
                 p0,
