@@ -3,7 +3,7 @@ from __future__ import print_function, unicode_literals, absolute_import
 from subprocess import Popen, PIPE, STDOUT
 import unittest
 
-from binstar_build_client.commands.worker import get_platform
+from binstar_build_client.worker_commands.register import get_platform
 from binstar_build_client.worker.utils.script_generator import gen_build_script
 from os import path
 import os
