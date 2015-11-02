@@ -15,7 +15,7 @@ try:
     unicode
 except NameError:
     unicode = str
-    basestring = (str,bytes)
+    basestring = (str, bytes)
 
 log = logging.getLogger(__name__)
 
@@ -155,7 +155,7 @@ def create_exports(build_data):
 # Generate
 #===============================================================================
 
-def gen_build_script(build_data, **context):
+def gen_build_script(working_dir, build_data, **context):
     """
     Generate a build script from a submitted build
 
@@ -163,17 +163,16 @@ def gen_build_script(build_data, **context):
     """
 
     platform = build_data['build_item_info']['platform']
-    job_id = build_data['job']['_id']
 
     env = jinja2.Environment(loader=jinja2.PackageLoader(__name__, 'data'))
     env.globals.update(get_list=get_list, quote=lambda item: pipes.quote(str(item)))
 
     if platform in ['win-32', 'win-64']:
         build_script_template = env.get_or_select_template('build_script.bat')
-        script_filename = os.path.join('build_scripts', '%s.bat' % job_id)
+        script_filename = os.path.join(working_dir, 'build_script.bat')
     else:
         build_script_template = env.get_or_select_template('build_script.sh')
-        script_filename = os.path.join('build_scripts', '%s.sh' % job_id)
+        script_filename = os.path.join(working_dir, 'build_script.sh')
 
 
     exports = create_exports(build_data)
@@ -193,9 +192,6 @@ def gen_build_script(build_data, **context):
 
 
     build_script = build_script_template.render(**context)
-
-    if not os.path.isdir('build_scripts'):
-        os.mkdir('build_scripts')
 
     with open(script_filename, 'w') as fd:
         fd.write(build_script)

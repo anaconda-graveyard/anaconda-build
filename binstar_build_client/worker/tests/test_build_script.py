@@ -7,6 +7,7 @@ from binstar_build_client.worker_commands.register import get_platform
 from binstar_build_client.worker.utils.script_generator import gen_build_script
 from os import path
 import os
+import tempfile
 
 def default_build_data():
     return {
@@ -57,7 +58,8 @@ class Test(unittest.TestCase):
 
     def test_bad_tarball(self):
         build_data = default_build_data()
-        script_filename = gen_build_script(build_data, ignore_setup_build=True)
+
+        script_filename = gen_build_script(tempfile.mkdtemp(), build_data, ignore_setup_build=True)
         self.addCleanup(os.unlink, script_filename)
 
         build_tarball = path.join(path.dirname(__file__), 'data', 'does_not_exist.tar.bz2')
@@ -70,7 +72,7 @@ class Test(unittest.TestCase):
     def test_instructions_success(self):
 
         build_data = default_build_data()
-        script_filename = gen_build_script(build_data,
+        script_filename = gen_build_script(tempfile.mkdtemp(), build_data,
                                            ignore_setup_build=True,
                                            ignore_fetch_build_source=True)
 
@@ -94,7 +96,8 @@ class Test(unittest.TestCase):
 
         build_data = default_build_data()
         build_data['build_item_info']['instructions']['install'] = 'invalid_command'
-        script_filename = gen_build_script(build_data,
+        script_filename = gen_build_script(tempfile.mkdtemp(),
+                                           build_data,
                                            ignore_setup_build=True,
                                            ignore_fetch_build_source=True)
 
@@ -116,7 +119,8 @@ class Test(unittest.TestCase):
 
         build_data = default_build_data()
         build_data['build_item_info']['instructions']['test'] = 'invalid_command'
-        script_filename = gen_build_script(build_data,
+        script_filename = gen_build_script(tempfile.mkdtemp(),
+                                           build_data,
                                            ignore_setup_build=True,
                                            ignore_fetch_build_source=True)
 
@@ -139,7 +143,8 @@ class Test(unittest.TestCase):
 
         build_data = default_build_data()
         build_data['build_item_info']['instructions']['script'] = 'invalid_command'
-        script_filename = gen_build_script(build_data,
+        script_filename = gen_build_script(tempfile.mkdtemp(),
+                                           build_data,
                                            ignore_setup_build=True,
                                            ignore_fetch_build_source=True)
 
