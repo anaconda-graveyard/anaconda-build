@@ -1,7 +1,7 @@
 Anaconda Build Client
 =====================
 
-This is a command line client that provides an interface to the [anaconda.org](https://anaconda.org), build system.
+This is a command line client that provides an interface to the [anaconda.org](https://anaconda.org) build system.
 
 ## Quickstart:
 
