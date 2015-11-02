@@ -9,8 +9,8 @@ import requests
 
 from binstar_build_client.worker.register import WorkerConfiguration
 from binstar_build_client.worker.worker import Worker
-from binstar_build_client.worker_commands.register import get_platform
 from binstar_client import errors
+import tempfile
 
 
 class MockWorker(Worker):
@@ -64,7 +64,8 @@ class Test(unittest.TestCase):
         expected = b"build source"
         worker.bs.fetch_build_source.return_value = io.BytesIO(expected)
 
-        filename = worker.download_build_source('job_id')
+
+        filename = worker.download_build_source(tempfile.mkdtemp(), 'job_id')
         self.assertTrue(os.path.isfile(filename))
         self.addCleanup(os.unlink, filename)
 

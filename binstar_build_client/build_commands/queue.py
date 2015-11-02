@@ -23,7 +23,7 @@ def show_queue(queue):
         try:
             last_seen = parse_date(worker['last_seen'])
             last_seen = '%s ago' % format_timedelta(last_seen, False)
-        except TypeError:
+        except (TypeError, ValueError):
             last_seen = worker['last_seen']
 
         print('   - Id {0[id]}'.format(worker))
