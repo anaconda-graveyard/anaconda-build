@@ -72,10 +72,18 @@ def main(args):
                                                  args.platform, args.hostname,
                                                  args.dist, as_json=args.json)
     worker_config.save()
-    log.info('Worker config saved at {0}.', worker_config.filename)
+    msg = 'Worker config saved at {0}.'
+    if args.json:
+        log.info(msg, worker_config.filename)
+    else:
+        log.info(msg.format(worker_config.filename))
     info = worker_config.to_dict()
     info['registered'] = True
-    log.info('Now run:\n\tanaconda worker run {0}', worker_config.worker_id)
+    msg = 'Now run:\n\tanaconda worker run {0}'
+    if args.json:
+        log.info(msg, worker_config.worker_id)
+    else:
+        log.info(msg.format(worker_config.worker_id))
 
 
 def add_parser(subparsers, name='register',
