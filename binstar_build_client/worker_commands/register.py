@@ -61,26 +61,26 @@ def split_queue_arg(queue):
 def main(args):
 
     args.username, args.queue = split_queue_arg(args.queue)
-    if args.json:
+    if args.json_output:
         # avoid a print sys.stderr message from binstar
         old_log_level = args.log_level
         args.log_level = -1
     bs = get_binstar(args, cls=BinstarBuildAPI)
-    if args.json:
+    if args.json_output:
         args.log_level = old_log_level
     worker_config = WorkerConfiguration.register(bs, args.username, args.queue,
                                                  args.platform, args.hostname,
-                                                 args.dist, as_json=args.json)
+                                                 args.dist, as_json=args.json_output)
     worker_config.save()
     msg = 'Worker config saved at {0}.'
-    if args.json:
+    if args.json_output:
         log.info(msg, worker_config.filename)
     else:
         log.info(msg.format(worker_config.filename))
     info = worker_config.to_dict()
     info['registered'] = True
     msg = 'Now run:\n\tanaconda worker run {0}'
-    if args.json:
+    if args.json_output:
         log.info(msg, worker_config.worker_id)
     else:
         log.info(msg.format(worker_config.worker_id))
@@ -108,10 +108,6 @@ def add_parser(subparsers, name='register',
 
     parser.add_argument('--dist', default=get_dist(),
                         help='The operating system distribution the worker should use (default: %(default)s)')
-
-    parser.add_argument('-j','--json',
-                        help="Output as json for machine reading.",
-                        action="store_true")
 
     parser.set_defaults(main=main)
 
