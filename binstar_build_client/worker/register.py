@@ -2,6 +2,7 @@ from __future__ import print_function, unicode_literals, division, absolute_impo
 
 import logging
 import os
+import platform
 
 from binstar_client import errors
 import yaml
@@ -69,8 +70,6 @@ class WorkerConfiguration(object):
     @classmethod
     def registered_workers(cls):
         "Iterate over the registered workers on this machine"
-
-        log.info('Registered workers:\n')
 
         for worker_id in os.listdir(cls.REGISTERED_WORKERS_DIR):
             if '.' not in worker_id:
@@ -218,3 +217,11 @@ class WorkerConfiguration(object):
             log.info('deregister failed with error:\n')
             raise
 
+    @classmethod
+    def deregister_all(cls, bs):
+
+        this_node = platform.node()
+        for worker in cls.registered_workers():
+            if worker.hostname == this_node:
+                worker.deregister(bs)
+                os.unlink(worker.filename)
