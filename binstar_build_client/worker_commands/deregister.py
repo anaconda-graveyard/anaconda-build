@@ -23,8 +23,7 @@ def main(args, context="worker"):
     wconfig.deregister(bs, as_json=args.json)
 
     os.unlink(wconfig.filename)
-    if not args.json:
-        log.debug("Removed worker config {}".format(wconfig.filename))
+    log.debug("Removed worker config {0}", wconfig.filename)
 
 
 def add_parser(subparsers, name='deregister',

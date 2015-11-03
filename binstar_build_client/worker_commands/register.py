@@ -62,6 +62,7 @@ def main(args):
 
     args.username, args.queue = split_queue_arg(args.queue)
     if args.json:
+        # avoid a print sys.stderr message from binstar
         old_log_level = args.log_level
         args.log_level = -1
     bs = get_binstar(args, cls=BinstarBuildAPI)
@@ -71,9 +72,10 @@ def main(args):
                                                  args.platform, args.hostname,
                                                  args.dist, as_json=args.json)
     worker_config.save()
-    if not args.json:
-        log.info('Worker config saved at {}.'.format(worker_config.filename))
-        log.info('Now run:\n\tanaconda worker run {}'.format(worker_config.worker_id))
+    log.info('Worker config saved at {0}.', worker_config.filename)
+    info = worker_config.to_dict()
+    info['registered'] = True
+    log.info('Now run:\n\tanaconda worker run {0}', worker_config.worker_id)
 
 
 def add_parser(subparsers, name='register',

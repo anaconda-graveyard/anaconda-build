@@ -163,12 +163,13 @@ class WorkerConfiguration(object):
         return worker_config
 
     @classmethod
-    def print_registered_workers(cls, as_json=False):
+    def print_registered_workers(cls, as_json):
 
         has_workers = False
         if as_json:
-            reg_workers = cls.registered_workers(print_heading=False)
-            print(json.dumps([_.to_dict() for _ in reg_workers]))
+            reg_workers = list(_.to_dict() for _ in cls.registered_workers(print_heading=False))
+            reg_workers = {'metadata': {'registered': reg_workers}}
+            log.info('Registered', extra=reg_workers)
             return
         for wconfig in cls.registered_workers():
             msg = 'id: {worker_id} hostname: {hostname} queue: {username}/{queue}'.format(**wconfig.to_dict())
@@ -176,6 +177,7 @@ class WorkerConfiguration(object):
                 msg += ' (running with pid: {})'.format(wconfig.pid)
 
             log.info(msg)
+            has_workers = True
 
         if not has_workers:
             log.info('(No registered workers)')
@@ -190,12 +192,14 @@ class WorkerConfiguration(object):
         if not as_json:
             log.info('Registered worker with worker_id:\t{}'.format(worker_id))
         else:
-            print(json.dumps({'register': {'worker_id': worker_id,
-                              'username': username,
-                              'queue': queue,
-                              'platform': platform,
-                              'hostname': hostname,
-                              'dist': dist}}))
+            info = {'worker_id': worker_id,
+                    'username': username,
+                    'queue': queue,
+                    'platform': platform,
+                    'hostname': hostname,
+                    'dist': dist,
+                    'registered': True}
+            log.info('Registered {0}', worker_id, extra={'metadata': info}),
         return WorkerConfiguration(worker_id, username, queue, platform, hostname, dist)
 
     def save(self):
@@ -214,24 +218,24 @@ class WorkerConfiguration(object):
         try:
 
             removed_worker = bs.remove_worker(self.username, self.queue, self.worker_id)
-
+            info = self.to_dict()
+            info['deregistered'] = removed_worker
             if not removed_worker:
                 info = (self.worker_id, self.username, self.queue,)
                 raise errors.BinstarError('Failed to remove_worker with argument of ' + \
                                           'worker_id\t{}\tqueue\t{}/{}'.format(*info))
 
             if not as_json:
-                log.info('Deregistered worker with worker-id {}'.format(self.worker_id))
+                log.info('Deregistered worker with worker-id {0}'.format(self.worker_id))
             else:
-                print(json.dumps({'deregister': {'worker_id': self.worker_id,
-                                                 'status': 'success',}}))
+
+                log.info('Deregistered {0}',
+                         self.worker_id,
+                         extra={'metadata': info})
         except Exception:
             if not as_json:
-                log.info('Failed on anaconda build deregister.\n')
-            if not as_json:
-                log.info('deregister failed with error:\n')
-            else:
-                print(json.dumps({'deregister': {'worker_id': self.worker_id,
-                                                 'status': 'failed'}}))
+                info = {}
+            log.info('deregister failed with error on worker_id {0}:\n',
+                     self.worker_id, **info)
             raise
 
