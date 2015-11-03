@@ -214,12 +214,14 @@ class WorkerConfiguration(object):
 
     def deregister(self, bs, as_json=False):
         'Deregister the worker from anaconda server'
-
         try:
 
-            removed_worker = bs.remove_worker(self.username, self.queue, self.worker_id)
+            removed_worker = bs.remove_worker(self.username,
+                                              self.queue,
+                                              self.worker_id)
             info = self.to_dict()
             info['deregistered'] = removed_worker
+            info = {'metadata': info}
             if not removed_worker:
                 info = (self.worker_id, self.username, self.queue,)
                 raise errors.BinstarError('Failed to remove_worker with argument of ' + \
@@ -231,11 +233,12 @@ class WorkerConfiguration(object):
 
                 log.info('Deregistered {0}',
                          self.worker_id,
-                         extra={'metadata': info})
+                         extra=info)
         except Exception:
+            failure_msg = 'deregister failed with error on worker_id {0}:'
             if not as_json:
                 info = {}
-            log.info('deregister failed with error on worker_id {0}:\n',
-                     self.worker_id, **info)
+                log.info(failure_msg.format(self.worker_id))
+            else:
+                log.info(failure_msg, self.worker_id, extra=info)
             raise
-
