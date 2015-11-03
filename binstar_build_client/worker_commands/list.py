@@ -14,8 +14,7 @@ log = logging.getLogger('binstar.build')
 
 def main(args):
 
-    log.info('Registered workers:\n')
-    WorkerConfiguration.print_registered_workers()
+    WorkerConfiguration.print_registered_workers(as_json=args.json_output)
 
 def add_parser(subparsers, name='list',
                description='List build workers and queues',

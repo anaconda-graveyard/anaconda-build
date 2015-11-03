@@ -1,5 +1,6 @@
 from __future__ import print_function, unicode_literals, division, absolute_import
 
+import json
 import logging
 import os
 
@@ -67,10 +68,10 @@ class WorkerConfiguration(object):
         return self.to_dict() == other.to_dict()
 
     @classmethod
-    def registered_workers(cls):
+    def registered_workers(cls, print_heading=True):
         "Iterate over the registered workers on this machine"
-
-        log.info('Registered workers:\n')
+        if print_heading:
+            log.info('Registered workers:\n')
 
         for worker_id in os.listdir(cls.REGISTERED_WORKERS_DIR):
             if '.' not in worker_id:
@@ -162,29 +163,43 @@ class WorkerConfiguration(object):
         return worker_config
 
     @classmethod
-    def print_registered_workers(cls):
+    def print_registered_workers(cls, as_json):
 
         has_workers = False
-
+        if as_json:
+            reg_workers = list(_.to_dict() for _ in cls.registered_workers(print_heading=False))
+            reg_workers = {'metadata': {'registered': reg_workers}}
+            log.info('Registered', extra=reg_workers)
+            return
         for wconfig in cls.registered_workers():
             msg = 'id: {worker_id} hostname: {hostname} queue: {username}/{queue}'.format(**wconfig.to_dict())
             if wconfig.pid:
                 msg += ' (running with pid: {})'.format(wconfig.pid)
 
             log.info(msg)
+            has_workers = True
 
         if not has_workers:
             log.info('(No registered workers)')
 
     @classmethod
-    def register(cls, bs, username, queue, platform, hostname, dist):
+    def register(cls, bs, username, queue, platform, hostname, dist, as_json=False):
         '''
         Register the worker with anaconda server
         '''
 
         worker_id = bs.register_worker(username, queue, platform, hostname, dist)
-        log.info('Registered worker with worker_id:\t{}'.format(worker_id))
-
+        if not as_json:
+            log.info('Registered worker with worker_id:\t{}'.format(worker_id))
+        else:
+            info = {'worker_id': worker_id,
+                    'username': username,
+                    'queue': queue,
+                    'platform': platform,
+                    'hostname': hostname,
+                    'dist': dist,
+                    'registered': True}
+            log.info('Registered {0}', worker_id, extra={'metadata': info}),
         return WorkerConfiguration(worker_id, username, queue, platform, hostname, dist)
 
     def save(self):
@@ -197,24 +212,33 @@ class WorkerConfiguration(object):
             yaml.safe_dump(self.to_dict(), fd, default_flow_style=False)
 
 
-    def deregister(self, bs):
+    def deregister(self, bs, as_json=False):
         'Deregister the worker from anaconda server'
-
         try:
 
-            removed_worker = bs.remove_worker(self.username, self.queue, self.worker_id)
-
+            removed_worker = bs.remove_worker(self.username,
+                                              self.queue,
+                                              self.worker_id)
+            info = self.to_dict()
+            info['deregistered'] = removed_worker
+            info = {'metadata': info}
             if not removed_worker:
                 info = (self.worker_id, self.username, self.queue,)
                 raise errors.BinstarError('Failed to remove_worker with argument of ' + \
                                           'worker_id\t{}\tqueue\t{}/{}'.format(*info))
 
-            log.info('Deregistered worker with worker-id {}'.format(self.worker_id))
+            if not as_json:
+                log.info('Deregistered worker with worker-id {0}'.format(self.worker_id))
+            else:
 
+                log.info('Deregistered {0}',
+                         self.worker_id,
+                         extra=info)
         except Exception:
-
-            log.info('Failed on anaconda build deregister.\n')
-            self.print_registered_workers()
-            log.info('deregister failed with error:\n')
+            failure_msg = 'deregister failed with error on worker_id {0}:'
+            if not as_json:
+                info = {}
+                log.info(failure_msg.format(self.worker_id))
+            else:
+                log.info(failure_msg, self.worker_id, extra=info)
             raise
-

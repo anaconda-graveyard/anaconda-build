@@ -61,12 +61,29 @@ def split_queue_arg(queue):
 def main(args):
 
     args.username, args.queue = split_queue_arg(args.queue)
+    if args.json_output:
+        # avoid a print sys.stderr message from binstar
+        old_log_level = args.log_level
+        args.log_level = -1
     bs = get_binstar(args, cls=BinstarBuildAPI)
-    worker_config = WorkerConfiguration.register(bs, args.username, args.queue, args.platform, args.hostname, args.dist)
+    if args.json_output:
+        args.log_level = old_log_level
+    worker_config = WorkerConfiguration.register(bs, args.username, args.queue,
+                                                 args.platform, args.hostname,
+                                                 args.dist, as_json=args.json_output)
     worker_config.save()
-
-    log.info('Worker config saved at {}.'.format(worker_config.filename))
-    log.info('Now run:\n\tanaconda worker run {}'.format(worker_config.worker_id))
+    msg = 'Worker config saved at {0}.'
+    if args.json_output:
+        log.info(msg, worker_config.filename)
+    else:
+        log.info(msg.format(worker_config.filename))
+    info = worker_config.to_dict()
+    info['registered'] = True
+    msg = 'Now run:\n\tanaconda worker run {0}'
+    if args.json_output:
+        log.info(msg, worker_config.worker_id)
+    else:
+        log.info(msg.format(worker_config.worker_id))
 
 
 def add_parser(subparsers, name='register',

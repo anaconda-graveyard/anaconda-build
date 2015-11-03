@@ -11,6 +11,7 @@ import os
 import yaml
 from mock import patch
 import unittest
+import subprocess as sp
 
 from binstar_client.tests.fixture import CLITestCase
 from binstar_client.tests.urlmock import urlpatch
@@ -74,6 +75,16 @@ class Test(CLITestCase):
         main(['--show-traceback', 'worker', 'run', worker_data['worker_id']], False)
         self.assertEqual(loop.call_count, 1)
 
+    def as_json_list(self):
+        out, err = sp.Popen(['anaconda', '--json-output', 'worker', 'list', ],
+                stdout=sp.PIPE, stderr=sp.PIPE).communicate()
+        assert err == ''
+        for line in out.split('\n'):
+            try:
+                can_json_load = json.loads(line.rstrip())
+            except:
+                can_json_load = False
+        self.assertTrue(can_json_load)
 
 if __name__ == '__main__':
     unittest.main()
