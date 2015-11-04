@@ -22,8 +22,6 @@ def main(args, context="worker"):
     else:
         wconfig = WorkerConfiguration.load(args.worker_id)
         wconfig.deregister(bs)
-        os.unlink(wconfig.filename)
-        log.debug("Removed worker config {0}".format(wconfig.filename))
 
 
 def add_parser(subparsers, name='deregister',
