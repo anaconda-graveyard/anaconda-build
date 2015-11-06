@@ -183,7 +183,8 @@ class Worker(object):
         owner = build_data['owner']['login']
         package = build_data['package']['name']
 
-        working_dir = os.path.abspath(os.path.join('builds', owner, package))
+        working_dir = os.path.join(self.args.cwd, 'builds', owner, package)
+        working_dir = os.path.abspath(working_dir)
 
         return working_dir
 
