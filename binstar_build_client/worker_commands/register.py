@@ -70,13 +70,13 @@ def main(args):
     worker_config = WorkerConfiguration.register(
         bs, args.username, args.queue,
         args.platform, args.hostname, args.dist,
-        name=args.name
+        name=args.name,
     )
 
     worker_config.save()
 
     log.info('Worker config saved at {}.'.format(worker_config.filename))
-    log.info('Now run:\n\tanaconda worker run {}'.format(worker_config.worker_id))
+    log.info('Now run:\n\tanaconda worker run {}'.format(worker_config.worker_name))
 
 
 def add_parser(subparsers, name='register',

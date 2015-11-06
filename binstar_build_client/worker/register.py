@@ -71,8 +71,6 @@ class WorkerConfiguration(object):
     def registered_workers(cls):
         "Iterate over the registered workers on this machine"
 
-        log.info('Registered workers:\n')
-
         for worker_name in os.listdir(cls.REGISTERED_WORKERS_DIR):
             if '.' not in worker_name:
                 yield cls.load(worker_name)
@@ -171,8 +169,12 @@ class WorkerConfiguration(object):
 
         has_workers = False
 
+        log.info('Registered workers:')
+
         for wconfig in cls.registered_workers():
-            msg = 'id: {worker_id} hostname: {hostname} queue: {username}/{queue}'.format(**wconfig.to_dict())
+            has_workers = True
+
+            msg = '{name}, id:{worker_id}, hostname:{hostname}, queue:{username}/{queue}'.format(name=wconfig.name, **wconfig.to_dict())
             if wconfig.pid:
                 msg += ' (running with pid: {})'.format(wconfig.pid)
 
