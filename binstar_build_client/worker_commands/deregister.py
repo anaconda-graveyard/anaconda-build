@@ -14,15 +14,22 @@ from binstar_build_client.worker.register import WorkerConfiguration
 
 log = logging.getLogger('binstar.build')
 
+context_info = """Use one of:
+    anaconda worker deregister --all
+    anaconda worker deregister <some-worker-id>
+See also:
+    anaconda worker deregister -h
+"""
 def main(args, context="worker"):
 
     bs = get_binstar(args, cls=BinstarBuildAPI)
-    if args.worker_id.lower() == 'all':
+    if args.all:
         WorkerConfiguration.deregister_all(bs)
-    else:
+    elif args.worker_id:
         wconfig = WorkerConfiguration.load(args.worker_id)
         wconfig.deregister(bs)
-
+    else:
+        log.info(context_info)
 
 def add_parser(subparsers, name='deregister',
                description='Deregister a build worker to build jobs off of a binstar build queue',
@@ -33,9 +40,11 @@ def add_parser(subparsers, name='deregister',
                                    help=description, description=description,
                                    epilog=epilog)
     parser.add_argument('worker_id',
-                        help="Worker id to deregister or \"all\" to " +\
-                             "deregister all workers registered by this " +\
-                             "hostname: {0}".format(platform.node()),
-                        )
+                        help="Worker id to deregister",
+                        nargs="?")
+    parser.add_argument('-a','--all',
+                        help="Deregister all workers " +\
+                             "registered by this hostname {}.".format(platform.node()),
+                        action="store_true")
     parser.set_defaults(main=default_func)
     return parser
