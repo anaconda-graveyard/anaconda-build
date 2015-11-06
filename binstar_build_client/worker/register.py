@@ -2,6 +2,7 @@ from __future__ import print_function, unicode_literals, division, absolute_impo
 
 import logging
 import os
+import platform
 
 from binstar_client import errors
 import yaml
@@ -69,8 +70,6 @@ class WorkerConfiguration(object):
     @classmethod
     def registered_workers(cls):
         "Iterate over the registered workers on this machine"
-
-        log.info('Registered workers:\n')
 
         for worker_id in os.listdir(cls.REGISTERED_WORKERS_DIR):
             if '.' not in worker_id:
@@ -197,7 +196,7 @@ class WorkerConfiguration(object):
             yaml.safe_dump(self.to_dict(), fd, default_flow_style=False)
 
 
-    def deregister(self, bs):
+    def deregister(self, bs, as_json=False):
         'Deregister the worker from anaconda server'
 
         try:
@@ -210,7 +209,9 @@ class WorkerConfiguration(object):
                                           'worker_id\t{}\tqueue\t{}/{}'.format(*info))
 
             log.info('Deregistered worker with worker-id {}'.format(self.worker_id))
-
+            os.unlink(self.filename)
+            msg = 'Removed worker config file {0}'
+            log.info(msg.format(self.filename))
         except Exception:
 
             log.info('Failed on anaconda build deregister.\n')
@@ -218,3 +219,8 @@ class WorkerConfiguration(object):
             log.info('deregister failed with error:\n')
             raise
 
+    @classmethod
+    def deregister_all(cls, bs):
+
+        for worker in cls.registered_workers():
+            worker.deregister(bs)
