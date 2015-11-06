@@ -128,6 +128,10 @@ class WorkerConfiguration(object):
                 os.unlink(dst)
 
 
+    @classmethod
+    def exists(cls, worker_name):
+        worker_file = os.path.join(cls.REGISTERED_WORKERS_DIR, worker_name)
+        return os.path.isfile(worker_file)
 
 
     @classmethod
@@ -182,6 +186,10 @@ class WorkerConfiguration(object):
         '''
         Register the worker with anaconda server
         '''
+        if name and cls.exists(name):
+            raise errors.Conflict("Worker with name {} already exists".format(name))
+
+
 
         worker_id = bs.register_worker(username, queue, platform, hostname, dist)
         log.info('Registered worker with worker_id:\t{}'.format(worker_id))
