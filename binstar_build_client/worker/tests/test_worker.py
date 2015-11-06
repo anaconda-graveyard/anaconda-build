@@ -23,7 +23,10 @@ class MockWorker(Worker):
         args.timeout = 100
 
         worker_config = WorkerConfiguration(
-            'worker_id', 'username', 'queue', 'test_platform', 'test_hostname', 'dist')
+            'worker_name',
+            'worker_id', 'username', 'queue',
+            'test_platform', 'test_hostname', 'dist'
+        )
 
         Worker.__init__(self, bs, worker_config, args)
 

@@ -14,7 +14,7 @@ log = logging.getLogger('binstar.build')
 
 def main(args):
 
-    log.info('Registered workers:\n')
+#     log.info('Registered workers:\n')
     WorkerConfiguration.print_registered_workers()
 
 def add_parser(subparsers, name='list',

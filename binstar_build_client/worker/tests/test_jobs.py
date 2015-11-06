@@ -68,7 +68,10 @@ class MyWorker(Worker):
         args.show_new_procs = False
 
         worker_config = WorkerConfiguration(
-            'worker_id', 'username', 'queue', 'test_platform', 'test_hostname', 'dist')
+            'worker_name',
+            'worker_id', 'username', 'queue',
+            'test_platform', 'test_hostname', 'dist'
+        )
 
         self._working_dir = tempfile.mkdtemp()
         super(MyWorker, self).__init__(bs, worker_config, args)
