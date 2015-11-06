@@ -15,7 +15,6 @@ import unittest
 from binstar_client.tests.fixture import CLITestCase
 from binstar_client.tests.urlmock import urlpatch
 from binstar_build_client.scripts.worker import main
-from binstar_build_client.worker.worker import Worker
 from binstar_build_client.worker.register import WorkerConfiguration
 from glob import glob
 from binstar_client import errors
@@ -69,9 +68,9 @@ class Test(CLITestCase):
 
         self.assertEqual(loop.call_count, 0)
 
-        worker_config = WorkerConfiguration('worker_id', 'username', 'queue', 'platform', 'hostname', 'dist')
+        worker_config = WorkerConfiguration('worker_name', 'worker_id', 'username', 'queue', 'platform', 'hostname', 'dist')
         worker_config.save()
-        main(['--show-traceback', 'worker', 'run', worker_data['worker_id']], False)
+        main(['--show-traceback', 'worker', 'run', 'worker_name'], False)
         self.assertEqual(loop.call_count, 1)
 
 

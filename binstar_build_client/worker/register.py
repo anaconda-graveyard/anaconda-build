@@ -28,7 +28,8 @@ class InvalidWorkerConfigFile(errors.BinstarError):
 class WorkerConfiguration(object):
     REGISTERED_WORKERS_DIR = os.path.join(os.path.expanduser('~'), '.workers')
 
-    def __init__(self, worker_id, username, queue, platform, hostname, dist):
+    def __init__(self, name, worker_id, username, queue, platform, hostname, dist):
+        self.name = name
         self.worker_id = worker_id
         self.username = username
         self.queue = queue
@@ -72,14 +73,14 @@ class WorkerConfiguration(object):
 
         log.info('Registered workers:\n')
 
-        for worker_id in os.listdir(cls.REGISTERED_WORKERS_DIR):
-            if '.' not in worker_id:
-                yield cls.load(worker_id)
+        for worker_name in os.listdir(cls.REGISTERED_WORKERS_DIR):
+            if '.' not in worker_name:
+                yield cls.load(worker_name)
 
     @property
     def filename(self):
         'Filename for to load/save worker config'
-        return os.path.join(self.REGISTERED_WORKERS_DIR, self.worker_id)
+        return os.path.join(self.REGISTERED_WORKERS_DIR, self.name)
 
     @property
     def pid(self):
@@ -130,12 +131,12 @@ class WorkerConfiguration(object):
 
 
     @classmethod
-    def load(cls, worker_id):
+    def load(cls, worker_name):
         'Load a worker config from a worker_id'
 
-        worker_file = os.path.join(cls.REGISTERED_WORKERS_DIR, worker_id)
+        worker_file = os.path.join(cls.REGISTERED_WORKERS_DIR, worker_name)
         if not os.path.isfile(worker_file):
-            raise errors.BinstarError("Worker with ID {} does not exist locally ({})".format(worker_id, worker_file))
+            raise errors.BinstarError("Worker with ID {} does not exist locally ({})".format(worker_name, worker_file))
 
         with open(worker_file) as fd:
             try:
@@ -156,7 +157,7 @@ class WorkerConfiguration(object):
             raise InvalidWorkerConfigFile("The worker registration file {} "
                                           "does not contain the correct values".format(worker_file))
 
-        worker_config = cls(**attrs)
+        worker_config = cls(worker_name, **attrs)
 
 
         return worker_config
@@ -177,7 +178,7 @@ class WorkerConfiguration(object):
             log.info('(No registered workers)')
 
     @classmethod
-    def register(cls, bs, username, queue, platform, hostname, dist):
+    def register(cls, bs, username, queue, platform, hostname, dist, name=None):
         '''
         Register the worker with anaconda server
         '''
@@ -185,7 +186,10 @@ class WorkerConfiguration(object):
         worker_id = bs.register_worker(username, queue, platform, hostname, dist)
         log.info('Registered worker with worker_id:\t{}'.format(worker_id))
 
-        return WorkerConfiguration(worker_id, username, queue, platform, hostname, dist)
+        if name is None:
+            name = worker_id
+
+        return WorkerConfiguration(name, worker_id, username, queue, platform, hostname, dist)
 
     def save(self):
         'Store worker config in yaml file'
