@@ -222,7 +222,5 @@ class WorkerConfiguration(object):
     @classmethod
     def deregister_all(cls, bs):
 
-        this_node = platform.node()
         for worker in cls.registered_workers():
-            if worker.hostname == this_node:
-                worker.deregister(bs)
+            worker.deregister(bs)
