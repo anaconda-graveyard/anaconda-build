@@ -1,6 +1,7 @@
 
 
 import os
+import sys
 
 CONDA_EXE = 'conda.exe' if os.name == 'nt' else 'conda'
 
@@ -16,3 +17,4 @@ def get_conda_root_prefix():
             conda_exe_path = os.path.realpath(os.path.join(entry, 'conda'))
             bin_dir = os.path.dirname(conda_exe_path)
             return os.path.dirname(bin_dir)
+
