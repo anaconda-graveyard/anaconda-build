@@ -3,12 +3,12 @@ Binstar Build command
 
 To get started with binstar build run:
 
-    binstar-build init
-    binstar-build submit
+    anaconda build init
+    anacodna build submit .
 
 See also:
 
-  * [Binstar Build](http://docs.anaconda.org/examples.html#BinstarBuild)
+  * [Anaconda Build](http://docs.anaconda.org/building.html)
 
 '''
 
