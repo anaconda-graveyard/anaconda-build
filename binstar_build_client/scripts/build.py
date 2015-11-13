@@ -4,7 +4,7 @@ Binstar Build command
 To get started with binstar build run:
 
     anaconda build init
-    anacodna build submit .
+    anaconda build submit .
 
 See also:
 
