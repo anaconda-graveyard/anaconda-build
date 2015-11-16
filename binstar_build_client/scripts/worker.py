@@ -1,14 +1,14 @@
 '''
-Binstar Build command
+Anaconda Build command
 
-To get started with binstar build run:
+To get started with anaconda worker run:
 
-    binstar-build init
-    binstar-build submit
+    anaconda worker register USER/QUEUE -n NAME
+    anaconda worker run NAME
 
 See also:
 
-  * [Binstar Build](http://docs.anaconda.org/examples.html#BinstarBuild)
+  * [Anaconda Build](http://docs.anaconda.org/build-config.html#BuildWorkers)
 
 '''
 
