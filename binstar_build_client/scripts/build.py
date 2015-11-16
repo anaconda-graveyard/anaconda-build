@@ -1,7 +1,7 @@
 '''
-Binstar Build command
+Anaconda Build command
 
-To get started with binstar build run:
+To get started with anaconda build run:
 
     anaconda build init
     anaconda build submit .
