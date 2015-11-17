@@ -2,7 +2,7 @@
 FROM binstar/build-base:centos6
 
 
-RUN yum install -y gcc gcc-c++
+RUN yum install -y gcc gcc-c++ patch
 
 MAINTAINER Sean Ross-Ross <srossross@gmail.com>
 
