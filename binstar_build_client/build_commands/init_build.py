@@ -63,8 +63,8 @@ def init_build(args):
         _ = binstar.package(user['login'], package_name)
     except errors.NotFound:
         log.warn('The package %(username)s/%(name)s does not exist\n'
-                 'Please run:\n   binstar package %(username)s/%(name)s --create' % dict(username=user['login'], name=package_name))
-    log.info("Run 'binstar-build submit' to submit your first build")
+                 'Please run:\n   anaconda package %(username)s/%(name)s --create' % dict(username=user['login'], name=package_name))
+    log.info("Run 'anaconda build submit' to submit your first build")
     return
 
 def add_parser(subparsers):

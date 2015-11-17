@@ -31,7 +31,7 @@ def clone_repo(path):
     git_url = urlunparse((scheme, url.netloc, url.path, '', '', ''))
     import tempfile
     from subprocess import check_call
-    tmp_dir = tempfile.mkdtemp('.git', 'binstar-build')
+    tmp_dir = tempfile.mkdtemp('.git', 'anaconda-build')
     log.info(' '.join(['git', 'clone', git_url, tmp_dir]))
     check_call(['git', 'clone', git_url, tmp_dir])
     log.info(' '.join(['git', 'checkout', fragment]))

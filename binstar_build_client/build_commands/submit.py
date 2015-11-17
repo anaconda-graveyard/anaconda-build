@@ -109,7 +109,7 @@ def print_build_results(args, build):
         build_result_url = 'http://anaconda.org/%s/%s/builds/matrix/%s' % (args.package.user, args.package.name, build['build_no'])
     log.info('To view this build go to %s' % build_result_url)
     log.info('')
-    log.info('You may also run\n\n    binstar-build tail -f %s/%s %s\n' % (args.package.user, args.package.name, build['build_no']))
+    log.info('You may also run\n\n    anaconda build tail -f %s/%s %s\n' % (args.package.user, args.package.name, build['build_no']))
     log.info('')
     log.info('Build %s submitted' % build['build_no'])
 
@@ -170,7 +170,7 @@ def main(args):
         binstar_yml = join(args.path, '.binstar.yml')
 
         if not isfile(binstar_yml):
-            raise UserError("file %s does not exist\n perhaps you should run\n\n    binstar-build init\n" % binstar_yml)
+            raise UserError("file %s does not exist\n perhaps you should run\n\n    anaconda build init\n" % binstar_yml)
 
         package_name = None
         user_name = None
@@ -238,7 +238,7 @@ def add_parser(subparsers):
 
     fgroup.add_argument('--dist',
                         help=("The os distribution of intended build worker (e.g centos, ubuntu) "
-                              "Use 'binstar-build queue' to view the workers")
+                              "Use 'anaconda build queue' to view the workers")
                         )
 
     fgroup.add_argument('--platform',
