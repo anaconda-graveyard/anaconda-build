@@ -25,7 +25,7 @@ log = logging.getLogger('binstar.build')
 
 def main(args):
     if docker is None:
-        raise errors.UserError("anacodna worker docker_run requires docker and docker-py to be installed\n"
+        raise errors.UserError("anaconda worker docker_run requires docker and docker-py to be installed\n"
                                "Run:\n\tpip install docker-py")
 
 
