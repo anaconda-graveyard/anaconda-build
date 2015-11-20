@@ -208,7 +208,7 @@ def main(args):
 
 
 def add_parser(subparsers):
-    description = 'Submit a diectory or github repo for building'
+    description = 'Submit a directory or github repo for building'
     parser = subparsers.add_parser('submit',
                                    help=description, description=description,
                                    epilog=__doc__,
