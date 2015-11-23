@@ -5,8 +5,8 @@ Submit a build from your local path or  via a git url:
 
 See also: 
 
-  * [Submit Your First Build](http://docs.anaconda.org/examples.html#SubmitYourFirstBuild)
-  * [Submit A Build From Github](http://docs.anaconda.org/examples.html#SubmitABuildFromGithub)
+  * [Submit A Build](http://docs.anaconda.org/build.html#SubmitABuild)
+  * [Submit A Build From Github](http://docs.anaconda.org/build.html#GithubBuilds)
 
 '''
 
@@ -264,4 +264,3 @@ def add_parser(subparsers):
                        help="The sub directory within the git repository (github url submits only)")
 
     parser.set_defaults(main=main)
-

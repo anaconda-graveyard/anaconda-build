@@ -32,9 +32,9 @@ Test your login with the whoami command:
 
 ` $ anaconda whoami`
 
-For a complete tutorial on building and uploading Conda packages to Binstar read the [Getting Started Guide](http://docs.anaconda.org/examples.html#BuildsInAnacondaOrg).
+For a complete tutorial on building and uploading Conda packages to Binstar read the [Getting Started Guide](http://docs.anaconda.org/quickstart.html#BuildAndUploadPackages).
 
-For detailed information on registering Workers with Anaconda Build Queues read the [Build Config Reference](http://docs.anaconda.org/build-config.html).
+For detailed information on registering Workers with Anaconda Build Queues read the [Build Reference](http://docs.anaconda.org/build.html).
 
 ## Installing from source
 
