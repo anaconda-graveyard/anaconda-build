@@ -116,14 +116,16 @@ def create_exports(build_data):
     build = build_data['build_info']
 
     api_site = build['api_endpoint']
-
+    engine = build_item.get('engine')
+    if engine.lower().strip() == 'r':
+        engine = 'r -c r'
     exports = {
             # The build number as MAJOR.MINOR
             'BINSTAR_BUILD': build_item['build_no'],
             'BINSTAR_BUILD_MAJOR': build['build_no'],
             'BINSTAR_BUILD_MINOR': build_item['sub_build_no'],
             # the engine from the engine tag
-            'BINSTAR_ENGINE': build_item.get('engine'),
+            'BINSTAR_ENGINE': engine,
             # the platform from the platform tag
             'BINSTAR_PLATFORM': build_item.get('platform', 'linux-64'),
             'BINSTAR_API_SITE': api_site,
