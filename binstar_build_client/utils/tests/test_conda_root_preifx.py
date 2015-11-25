@@ -1,8 +1,3 @@
-'''
-Created on Feb 12, 2015
-
-@author: sean
-'''
 import unittest
 import mock
 from binstar_build_client.utils import get_conda_root_prefix, CONDA_EXE
@@ -10,7 +5,9 @@ import os
 class Test(unittest.TestCase):
 
     @mock.patch.dict(os.environ, {'PATH': '/does_not_exist!!'})
-    def test_path_does_not_exist(self):
+    @mock.patch('os.listdir')
+    def test_path_does_not_exist(self, listdir):
+        listdir.return_value = []
         prefix = get_conda_root_prefix()
         self.assertIsNone(prefix)
 

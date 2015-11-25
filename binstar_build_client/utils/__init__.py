@@ -9,7 +9,7 @@ def get_conda_root_prefix():
     """
     get the directory prefix to where conda is installed
     """
-    canonical_dir_current_executable = os.path.dirname(os.path.realpath(sys.argv[0]))
+    canonical_dir_current_executable = os.path.dirname(os.path.realpath(sys.executable))
     paths = [canonical_dir_current_executable, ] + os.environ.get('PATH').split(os.pathsep)
 
     for entry in paths:
