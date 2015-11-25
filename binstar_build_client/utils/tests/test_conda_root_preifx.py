@@ -18,7 +18,16 @@ class Test(unittest.TestCase):
     @mock.patch('os.path.isdir')
     @mock.patch('os.listdir')
     def test_finds_conda(self, listdir, isdir):
-        listdir.return_value = [CONDA_EXE, 'not_conda']
+
+        def list_dir(dirname):
+            print("dirname", dirname)
+            if dirname == '/a/bin':
+                return [CONDA_EXE, 'not_conda']
+            else:
+                return ['not_conda']
+
+        listdir.side_effect = list_dir
+
         prefix = get_conda_root_prefix()
         self.assertTrue(prefix in ('/a', "C:\\a"))
 
