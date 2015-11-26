@@ -6,31 +6,37 @@ Created on Feb 18, 2014
 
 
 initial_build_config = '''
-## The package attribute specifies a binstar package namespace to build the package to. 
+## The package attribute specifies a binstar package namespace to build the package to.
 ## This can be specified here or on the command line
 package: %(PACKAGE_NAME)s
 
 ## You can also specify the account to upload to,
-## you must be an admin of that account, this 
+## you must be an admin of that account, this
 ## defaults to your user account
-# user: USERNAME 
+# user: USERNAME
+
+## You can give install_channels, the channels needed for
+## install and build.  For example, the r channel is needed for
+## r builds.
+# install_channels:
+#  - defaults
 
 #===============================================================================
 # Build Matrix Options
 # These options may be a single item, a list or empty
-# The resulting number of builds is [platform * engine * env] 
+# The resulting number of builds is [platform * engine * env]
 #===============================================================================
 
 ## The platforms to build on.
-## platform defaults to linux-64 
-# platform: 
+## platform defaults to linux-64
+# platform:
 #  - linux-64
 #  - linux-32
-## The engine are the inital conda packages you want to run with 
+## The engine are the inital conda packages you want to run with
 # engine:
 #  - python=2
 #  - python=3
-## The env param is an environment variable list 
+## The env param is an environment variable list
 # env:
 #  - MY_ENV=A CC=gcc
 #  - MY_ENV=B
@@ -38,17 +44,17 @@ package: %(PACKAGE_NAME)s
 #===============================================================================
 # Script options
 # These options may be broken out into the before_script, script and after_script
-# or not, that is up to you 
+# or not, that is up to you
 #===============================================================================
 
 ## Run before the script
 # before_script:
 #   - echo "before_script!"
-## Put your main computations here!  
+## Put your main computations here!
 script:
   - echo "This is my binstar build!"
 ## This will run after the script regardless of the result of script
-## BINSTAR_BUILD_RESULT=[succcess|failure] 
+## BINSTAR_BUILD_RESULT=[succcess|failure]
 # after_script:
 #   - echo "The build was a $BINSTAR_BUILD_RESULT" | tee artifact1.txt
 ## This will be run only after a successful build
@@ -67,8 +73,8 @@ script:
 
 ## Build Targets: Upload these files to your binstar package
 ## build targets may be a list of files (globs allows) to upload
-## The special build targets 'conda' and 'pypi' may be used to 
-## upload conda builds  
+## The special build targets 'conda' and 'pypi' may be used to
+## upload conda builds
 ## e.g. conda is an alias for /opt/anaconda/conda-bld/<os-arch>/*.tar.bz2
 # build_targets:
 #   - conda

@@ -117,8 +117,6 @@ def create_exports(build_data):
 
     api_site = build['api_endpoint']
     engine = build_item.get('engine')
-    if engine.lower().strip() == 'r':
-        engine = 'r -c r'
     exports = {
             # The build number as MAJOR.MINOR
             'BINSTAR_BUILD': build_item['build_no'],
@@ -178,14 +176,18 @@ def gen_build_script(working_dir, build_data, **context):
 
 
     exports = create_exports(build_data)
-
+    instructions = build_data['build_item_info'].get('instructions', {})
+    install_channels = instructions.get('install_channels', None) or ['defaults']
+    if not 'defaults' in install_channels:
+        install_channels.append('defaults')
     context.update({'exports': sorted(exports.items()),
-                    'instructions': build_data['build_item_info'].get('instructions', {}),
+                    'instructions': instructions,
                     'git_info': create_git_context(build_data['build_info']),
                     'test_only': build_data['build_info'].get('test_only', False),
                     'sub_dir': build_data['build_info'].get('sub_dir'),
                     'channels': get_channels(build_data),
                     'files': get_files(context, build_data),
+                    'install_channels': install_channels,
                     'EXIT_CODE_OK': 0,
                     'EXIT_CODE_ERROR': 11,
                     'EXIT_CODE_FAILED': 12,

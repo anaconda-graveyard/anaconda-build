@@ -85,8 +85,9 @@ setup_build(){
 
     echo "export CONDARC=$CONDARC"
     touch "$CONDARC"
-
-    conda config --file "$CONDARC" --add channels defaults
+    {% for install_channel in install_channels -%}
+    conda config --file "$CONDARC" --add channels {{install_channel}}
+    {% endfor %}
     conda config --file "$CONDARC" \
                  --set binstar_upload no \
                  --set always_yes yes \
