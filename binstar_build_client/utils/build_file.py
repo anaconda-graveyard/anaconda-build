@@ -17,7 +17,7 @@ package: %(PACKAGE_NAME)s
 
 ## You can give install_channels, the channels needed for
 ## install and build.  For example, the r channel is needed for
-## r builds.
+## r builds.  Channel 'defaults' is always added.
 # install_channels:
 #  - defaults
 
