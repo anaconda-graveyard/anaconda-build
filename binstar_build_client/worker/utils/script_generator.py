@@ -180,6 +180,8 @@ def gen_build_script(working_dir, build_data, **context):
     install_channels = instructions.get('install_channels', None) or ['defaults']
     if not 'defaults' in install_channels:
         install_channels.append('defaults')
+    if 'r' == exports['BINSTAR_ENGINE'] and not 'r' in install_channels:
+        install_channels.append('r')
     context.update({'exports': sorted(exports.items()),
                     'instructions': instructions,
                     'git_info': create_git_context(build_data['build_info']),
