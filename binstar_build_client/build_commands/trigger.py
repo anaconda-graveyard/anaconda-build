@@ -3,7 +3,7 @@ Trigger a build that has been saved
 
 See also: 
 
-  * [Save and Trigger Your Builds](http://docs.anaconda.org/examples.html#SaveAndTriggerYourBuilds)
+  * [Save and Trigger Your Builds](http://docs.anaconda.org/build.html#SaveAndTriggerYourBuilds)
 '''
 
 from __future__ import (print_function, unicode_literals, division,
@@ -69,4 +69,3 @@ def add_parser(subparsers):
 
 
     parser.set_defaults(main=main)
-
