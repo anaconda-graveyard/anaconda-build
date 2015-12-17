@@ -21,11 +21,11 @@ class Test(unittest.TestCase):
         self.assertEqual(p0.readline().strip(), b'hello')
         self.assertEqual(p0.readline().strip(), b'')
 
+    @unittest.skipIf(WIN_32, 'This test should only run on posix')
     def test_terminate_process_group_naive(self):
 
-
         p0 = BuildProcess([sys.executable, run_sub_process], '.')
-        time.sleep(.1)
+        time.sleep(.3)
 
         parent = psutil.Process(p0.pid)
         children = parent.children()
@@ -45,7 +45,7 @@ class Test(unittest.TestCase):
 
 
         p0 = BuildProcess([sys.executable, run_sub_process], '.')
-        time.sleep(.1)
+        time.sleep(.3)
 
         parent = psutil.Process(p0.pid)
         children = parent.children()
@@ -64,7 +64,7 @@ class Test(unittest.TestCase):
     def test_terminate_job_object(self):
 
         p0 = BuildProcess([sys.executable, run_sub_process], '.')
-        time.sleep(.1)
+        time.sleep(.3)
 
         parent = psutil.Process(p0.pid)
         children = parent.children()
