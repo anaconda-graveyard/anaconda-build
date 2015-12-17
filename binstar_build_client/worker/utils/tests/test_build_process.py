@@ -7,13 +7,15 @@ import psutil
 import signal
 
 module_dir = os.path.dirname(__file__)
+
 run_sub_process = os.path.join(module_dir, 'run_sub_process.py')
+echo_hello = os.path.join(module_dir, 'echo_hello.py')
 
 class Test(unittest.TestCase):
 
     def test_build_process_can_create_processes(self):
 
-        p0 = BuildProcess(['echo', 'hello'], '.')
+        p0 = BuildProcess([sys.executable, echo_hello], '.')
         p0.wait()
 
         self.assertEqual(p0.readline().strip(), 'hello')
@@ -67,11 +69,8 @@ class Test(unittest.TestCase):
         parent = psutil.Process(p0.pid)
         children = parent.children()
 
-        parent_pgid = os.getpgid(parent.pid)
-        for child in children:
-            self.assertEqual(parent_pgid, os.getpgid(child.pid))
-
         p0.kill_job()
+
         p0.wait()
         self.assertFalse(parent.is_running())
         self.assertEqual([c.is_running() for c in children], [False])
