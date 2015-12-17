@@ -8,7 +8,7 @@ platform:
   - win-64
 
 install:
-  - conda install anaconda-client pip setuptools
+  - conda install anaconda-client pip setuptools pywin32
   - pip install coverage mock
 
 test:
