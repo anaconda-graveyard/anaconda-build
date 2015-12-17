@@ -105,9 +105,11 @@ setup_build(){
     if ["$CONDA_PY" == ""]; then
         export CONDA_PY=`python -c 'import sys; sys.stdout.write("{0}{1}".format(sys.version_info[0], sys.version_info[1]))'`
     fi
-
+    if [ "$CONDA_NPY" == "" ];then
+        export CONDA_NPY=$(python -c "import sys;import numpy;sys.stdout.write(''.join(numpy.__version__.split('.')[:2]))" || echo "")
+    fi
     echo "CONDA_PY=$CONDA_PY"
-
+    echo "CONDA_NPY=$CONDA_NPY"
 }
 
 fetch_build_source(){

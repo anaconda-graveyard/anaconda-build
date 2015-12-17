@@ -116,14 +116,19 @@ def create_exports(build_data):
     build = build_data['build_info']
 
     api_site = build['api_endpoint']
-
+    engine = build_item.get('engine')
+    if 'numpy' in engine:
+        npy_version = engine.split('numpy=')[1].split()[0]
+        CONDA_NPY = "".join(npy_version.split('.')[:2])
+    else:
+        CONDA_NPY = ''
     exports = {
             # The build number as MAJOR.MINOR
             'BINSTAR_BUILD': build_item['build_no'],
             'BINSTAR_BUILD_MAJOR': build['build_no'],
             'BINSTAR_BUILD_MINOR': build_item['sub_build_no'],
             # the engine from the engine tag
-            'BINSTAR_ENGINE': build_item.get('engine'),
+            'BINSTAR_ENGINE': engine,
             # the platform from the platform tag
             'BINSTAR_PLATFORM': build_item.get('platform', 'linux-64'),
             'BINSTAR_API_SITE': api_site,
@@ -133,6 +138,7 @@ def create_exports(build_data):
             'CONDA_BUILD_DIR': os.path.join(conda_root_prefix, 'conda-bld', build_item.get('platform', 'linux-64')),
             'BUILD_BASE': 'builds',
             'BUILD_ENV_DIR': 'build_envs',
+            'CONDA_NPY': CONDA_NPY,
            }
 
 

@@ -52,7 +52,7 @@ goto:eof
 
         echo "Unknown option %1"
         exit {{EXIT_CODE_ERROR}}
-        
+
     )
 
 
@@ -61,7 +61,7 @@ goto:eof
 :main
 
     set BINSTAR_BUILD_RESULT=
-    
+
 
     {% if ignore_setup_build %}
     echo [ignore setup_build]
@@ -104,7 +104,7 @@ goto:eof
     if "%BINSTAR_BUILD_RESULT%" == "failure" (
         exit {{EXIT_CODE_FAILED}}
     )
-    
+
     exit {{EXIT_CODE_ERROR}}
 
 
@@ -113,7 +113,7 @@ goto:eof
 :: #######################################################
 
 :fetch_build_source
-    
+
     set "SOURCE_DIR=%CD%\source"
 
     @echo off
@@ -124,7 +124,7 @@ goto:eof
     Rmdir /s /q "%SOURCE_DIR%"
 
     {% if git_info %}
-        
+
         set "GIT_REPO={{git_info['full_name']}}"
         set "GIT_BRANCH={{git_info['branch']}}"
         set "GIT_COMMIT={{git_info['commit']}}"
@@ -137,7 +137,7 @@ goto:eof
         if NOT  "%GIT_OAUTH_TOKEN%" == "" (
             git clone --recursive --depth=50 --branch="%GIT_BRANCH%" "https://%GIT_OAUTH_TOKEN%:x-oauth-basic@github.com/%GIT_REPO%.git" "%SOURCE_DIR%"  || ( {{set_error()}} )
         )
-        
+
         cd "%SOURCE_DIR%"
 
         echo "git checkout --quiet %GIT_COMMIT%"
@@ -164,7 +164,7 @@ goto:eof
     echo Chaning into sub directory of git repository
     echo cd {{sub_dir}}
     cd "{{sub_dir}}" || ( {{set_error()}} )
-    
+
     {% endif %}
 
 
@@ -178,7 +178,7 @@ goto:eof
     echo [Setup Build]
     echo|set /p "noNewline=Host: "
     hostname
-    
+
 
     :: Make BUILD_ENV_PATH an absolute path
     set "BUILD_ENV_PATH=%CD%\env"
@@ -190,7 +190,7 @@ goto:eof
 
     echo conda-clean-build-dir
     conda-clean-build-dir
-    
+
     echo conda clean --lock
     conda clean --lock
 
@@ -210,7 +210,7 @@ goto:eof
     Rmdir /s /q "%BUILD_ENV_PATH%"
     echo conda create -p "%BUILD_ENV_PATH%" --quiet --yes %BINSTAR_ENGINE%
     call conda create -p "%BUILD_ENV_PATH%" --quiet --yes %BINSTAR_ENGINE% || ( {{set_error()}} )
-    
+
     echo activate %BUILD_ENV_PATH%
 
     :: activate does not work with paths
@@ -221,24 +221,30 @@ goto:eof
     set "CONDA_DEFAULT_ENV=%BUILD_ENV_PATH%"
     set "PATH=%BUILD_ENV_PATH%;%BUILD_ENV_PATH%\Scripts;%PATH%"
 
-    echo where conda 
+    echo where conda
     where conda
 
     if "%CONDA_PY%" == "" (
         :: Hack to build with the python set in BINSTAR_ENGINE
-        python -c "import sys; sys.stdout.write('{0}{1}'.format(sys.version_info[0], sys.version_info[1]))" > %TEMP%\CONDA_PY 
-        set /p CONDA_PY=<%TEMP%\CONDA_PY        
+        python -c "import sys; sys.stdout.write('{0}{1}'.format(sys.version_info[0], sys.version_info[1]))" > %TEMP%\CONDA_PY
+        set /p CONDA_PY=<%TEMP%\CONDA_PY
+    )
+    if "%CONDA_NPY%" == "" (
+
+        python -c "import sys;import numpy;sys.stdout.write(''.join(numpy.__version__.split('.')[:2]))" || echo "" > %TEMP%\CONDA_NPY
+        set /p CONDA_NPY=<%TEMP%\CONDA_NPY
     )
 
     echo CONDARC %CONDARC%
     echo CONDA_PY %CONDA_PY%
+    echo CONDA_NPY %CONDA_NPY%
 
 
 goto:eof
 
-:: #### #### #### #### #### #### #### #### #### #### #### #### #### #### 
+:: #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 :: User defined build commands
-:: #### #### #### #### #### #### #### #### #### #### #### #### #### #### 
+:: #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 {% macro format_instructions(key, fail_type='error') -%}
 
 :bb_{{key}}
@@ -250,7 +256,7 @@ goto:eof
 
     echo.
     echo [{{key.title().replace('_',' ')}}]
-    
+
     {%   for instruction_lines in all_instruction_lines -%}
 
     {%      for instruction_line in instruction_lines.split('\n') %}
@@ -300,7 +306,7 @@ goto:eof
 
 
 :binstar_post_build
-    
+
     if "%BINSTAR_BUILD_RESULT%" == "success" (
         call:bb_after_success
     )
@@ -318,7 +324,7 @@ goto:eof
 
 :upload_build_targets
 
-    :: call deactivate    
+    :: call deactivate
     set "CONDA_DEFAULT_ENV=%DEACTIVATE_ENV%"
     set "PATH=%DEACTIVATE_PATH%"
     set "CONDARC="
@@ -329,10 +335,10 @@ goto:eof
     {% endif %}
 
     {%for test_result, filename in instructions.get('test_results', {}).items() %}
-    
+
     echo binstar-build -q -t %%TOKEN%% results {{test_result}} "%BINSTAR_OWNER%/%BINSTAR_PACKAGE%" "%BINSTAR_BUILD%" {{filename}}
     binstar-build -q -t "%BINSTAR_API_TOKEN%" results {{test_result}} "%BINSTAR_OWNER%/%BINSTAR_PACKAGE%" "%BINSTAR_BUILD%" {{filename}}
-        
+
     {% endfor %}
 
     if not "%BINSTAR_BUILD_RESULT%" == "success" (
@@ -349,7 +355,7 @@ goto:eof
 
     echo .
     echo [Build Targets]
-    
+
     {% for tgt in files %}
     echo binstar -q -t %%TOKEN%% upload --force --user %BINSTAR_OWNER% --package %BINSTAR_PACKAGE% {{channels}} {{tgt}} --build-id %BINSTAR_BUILD_MAJOR%
     binstar -q -t "%BINSTAR_API_TOKEN%" upload --force --user "%BINSTAR_OWNER%" --package "%BINSTAR_PACKAGE%" {{channels}} {{tgt}} --build-id "%BINSTAR_BUILD%" || ( {{ set_error() }} )
