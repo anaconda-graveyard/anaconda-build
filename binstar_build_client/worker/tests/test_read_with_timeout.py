@@ -2,9 +2,11 @@ import io
 import time
 import unittest
 
+
 import mock
 from binstar_build_client.worker.utils.timeout import read_with_timeout
 from threading import Event
+from binstar_build_client.worker.utils.process_wrappers import BuildProcess
 
 class MockProcess(object):
     def __init__(self, *args, **kwargs):
@@ -77,6 +79,14 @@ class TestReadWithTimeout(unittest.TestCase):
         read_with_timeout(p0, output, build_was_stopped_by_user=terminate)
         out = output.getvalue()
         self.assertIn(b'User requested', out)
+
+    def test_quiet(self):
+        cmd = ['echo', 'ncurses-5.9-1.   9% |##   | ETA:  0:00:00  76.02 MB/s']
+        p0 = BuildProcess(cmd, '.')
+        output = io.BytesIO()
+        read_with_timeout(p0, output, timeout=20, quiet=True)
+        out = output.getvalue()
+        self.assertEqual(b'', out)
 
 if __name__ == '__main__':
     unittest.main()
