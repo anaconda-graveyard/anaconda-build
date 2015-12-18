@@ -233,7 +233,7 @@ goto:eof
     )
     if "%CONDA_NPY%" == "" (
 
-        python -c "import sys;import numpy;sys.stdout.write(''.join(numpy.__version__.split('.')[:2]))" || echo "" > %TEMP%\CONDA_NPY
+        conda list | findstr numpy & python -c "import sys;import numpy;sys.stdout.write(''.join(numpy.__version__.split('.')[:2]))"  > %TEMP%\CONDA_NPY || echo "" > %TEMP%\CONDA_NPY
         set /p CONDA_NPY=<%TEMP%\CONDA_NPY
 
     )

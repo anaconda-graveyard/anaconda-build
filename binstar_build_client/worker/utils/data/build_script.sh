@@ -107,7 +107,7 @@ setup_build(){
         export CONDA_PY=`python -c 'import sys; sys.stdout.write("{0}{1}".format(sys.version_info[0], sys.version_info[1]))'`
     fi
     if [ "$CONDA_NPY" == "" ];then
-        export CONDA_NPY=$(python -c "import sys;import numpy;sys.stdout.write(''.join(numpy.__version__.split('.')[:2]))" || echo "")
+        conda list | grep numpy && export CONDA_NPY=$(python -c "import sys;import numpy;sys.stdout.write(''.join(numpy.__version__.split('.')[:2]))") || export CONDA_NPY=""
     fi
     echo "CONDA_PY=$CONDA_PY"
     echo "CONDA_NPY=$CONDA_NPY"
