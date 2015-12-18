@@ -199,8 +199,9 @@ goto:eof
 
     :: Touch file
     touch "%CONDARC%"
-
-    conda config --file "%CONDARC%" --add channels defaults
+    {% for install_channel in install_channels -%}
+    conda config --file "%CONDARC%" --add channels {{install_channel}}
+    {% endfor %}
     conda config --file "%CONDARC%" --set binstar_upload no --set always_yes yes --set show_channel_urls yes
 
     call:bb_before_environment
