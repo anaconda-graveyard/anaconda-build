@@ -1,4 +1,5 @@
 import io
+import os
 import time
 import unittest
 
@@ -82,6 +83,8 @@ class TestReadWithTimeout(unittest.TestCase):
 
     def test_quiet(self):
         cmd = ['echo', 'ncurses-5.9-1.   9% |##   | ETA:  0:00:00  76.02 MB/s']
+        if os.name == 'nt':
+            cmd = ['cmd.exe', '/c'] + cmd
         p0 = BuildProcess(cmd, '.')
         output = io.BytesIO()
         read_with_timeout(p0, output, timeout=20, quiet=True)
