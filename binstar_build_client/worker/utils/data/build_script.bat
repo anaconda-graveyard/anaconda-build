@@ -52,6 +52,7 @@ goto:eof
 
         echo "Unknown option %1"
         exit {{EXIT_CODE_ERROR}}
+
     )
 
 
@@ -184,8 +185,8 @@ goto:eof
 
     echo [Setting engine]
 
-    echo conda clean -pt
-    conda clean -pt
+    echo conda clean -pt ^> NUL
+    conda clean -pt > NUL
 
     echo conda-clean-build-dir
     conda-clean-build-dir
