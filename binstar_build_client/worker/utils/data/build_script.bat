@@ -229,10 +229,18 @@ goto:eof
         :: Hack to build with the python set in BINSTAR_ENGINE
         python -c "import sys; sys.stdout.write('{0}{1}'.format(sys.version_info[0], sys.version_info[1]))" > %TEMP%\CONDA_PY
         set /p CONDA_PY=<%TEMP%\CONDA_PY
+
+    )
+    if "%CONDA_NPY%" == "" (
+
+        conda list | findstr numpy & python -c "import sys;import numpy;sys.stdout.write(''.join(numpy.__version__.split('.')[:2]))"  > %TEMP%\CONDA_NPY || echo "" > %TEMP%\CONDA_NPY
+        set /p CONDA_NPY=<%TEMP%\CONDA_NPY
+
     )
 
     echo CONDARC %CONDARC%
     echo CONDA_PY %CONDA_PY%
+    echo CONDA_NPY %CONDA_NPY%
 
 
 goto:eof

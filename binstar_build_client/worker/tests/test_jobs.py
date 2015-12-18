@@ -1,8 +1,10 @@
 from __future__ import print_function, unicode_literals, absolute_import
 
+import copy
 import unittest
 from mock import Mock, patch
 import os
+import shutil
 import stat
 import requests
 
@@ -274,6 +276,14 @@ class Test(unittest.TestCase):
             output = fd.read()
             self.assertMultiLineEqual(output, self.expected_output_iotimeout)
 
+
+    def test_auto_env_variables(self):
+
+        build_data = copy.deepcopy(default_build_data())
+        build_data['build_item_info']['engine'] = 'python=2.7 numpy=1.9 other_req=10'
+        exports = script_generator.create_exports(build_data)
+        self.assertEqual("19", exports['CONDA_NPY'])
+
     def test_install_channels(self):
         working_dir = tempfile.mkdtemp()
         try:
@@ -302,6 +312,7 @@ class Test(unittest.TestCase):
 
         finally:
             shutil.rmtree(working_dir)
+
 
 
 def have_docker():
