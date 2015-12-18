@@ -20,3 +20,17 @@ script:
   - conda build conda.recipe
 
 build_targets: conda
+
+---
+#Modify the windows builds to add  pywin32
+
+engine:
+  - python=2.7
+  - python=3.4
+
+platform:
+  - win-64
+
+install: # Overwrite the common install section above
+  - conda install anaconda-client pip setuptools pywin32
+  - pip install coverage mock
