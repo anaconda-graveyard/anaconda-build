@@ -117,11 +117,13 @@ def create_exports(build_data):
 
     api_site = build['api_endpoint']
     engine = build_item.get('engine')
+    CONDA_NPY = ''
     if 'numpy' in engine:
-        npy_version = engine.split('numpy=')[1].split()[0]
-        CONDA_NPY = "".join(npy_version.split('.')[:2])
-    else:
-        CONDA_NPY = ''
+        npy_version = engine.split('numpy')[1].split()
+        if npy_version:
+            CONDA_NPY = "".join(npy_version[0].split('.')[:2])
+            CONDA_NPY = CONDA_NPY.replace('=', '')
+
     exports = {
             # The build number as MAJOR.MINOR
             'BINSTAR_BUILD': build_item['build_no'],
