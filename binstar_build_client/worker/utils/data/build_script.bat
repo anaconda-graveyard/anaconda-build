@@ -185,8 +185,8 @@ goto:eof
 
     echo [Setting engine]
 
-    echo conda clean -pt
-    conda clean -pt
+    echo conda clean -pt ^> NUL
+    conda clean -pt > NUL
 
     echo conda-clean-build-dir
     conda-clean-build-dir
@@ -199,8 +199,9 @@ goto:eof
 
     :: Touch file
     touch "%CONDARC%"
-
-    conda config --file "%CONDARC%" --add channels defaults
+    {% for install_channel in install_channels -%}
+    conda config --file "%CONDARC%" --add channels {{install_channel}}
+    {% endfor %}
     conda config --file "%CONDARC%" --set binstar_upload no --set always_yes yes --set show_channel_urls yes
 
     call:bb_before_environment
@@ -228,11 +229,13 @@ goto:eof
         :: Hack to build with the python set in BINSTAR_ENGINE
         python -c "import sys; sys.stdout.write('{0}{1}'.format(sys.version_info[0], sys.version_info[1]))" > %TEMP%\CONDA_PY
         set /p CONDA_PY=<%TEMP%\CONDA_PY
+
     )
     if "%CONDA_NPY%" == "" (
 
         python -c "import sys;import numpy;sys.stdout.write(''.join(numpy.__version__.split('.')[:2]))" || echo "" > %TEMP%\CONDA_NPY
         set /p CONDA_NPY=<%TEMP%\CONDA_NPY
+
     )
 
     echo CONDARC %CONDARC%

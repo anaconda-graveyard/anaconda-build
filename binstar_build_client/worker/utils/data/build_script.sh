@@ -72,8 +72,8 @@ setup_build(){
     echo "Host:" `hostname`
     echo 'Setting engine'
 
-    echo "conda clean -pt"
-    conda clean -pt
+    echo "conda clean -pt > /dev/null"
+    conda clean -pt > /dev/null
 
     echo "conda-clean-build-dir"
     conda-clean-build-dir
@@ -85,8 +85,9 @@ setup_build(){
 
     echo "export CONDARC=$CONDARC"
     touch "$CONDARC"
-
-    conda config --file "$CONDARC" --add channels defaults
+    {% for install_channel in install_channels -%}
+    conda config --file "$CONDARC" --add channels {{install_channel}}
+    {% endfor %}
     conda config --file "$CONDARC" \
                  --set binstar_upload no \
                  --set always_yes yes \
