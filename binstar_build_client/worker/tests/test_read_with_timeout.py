@@ -82,14 +82,18 @@ class TestReadWithTimeout(unittest.TestCase):
         self.assertIn(b'User requested', out)
 
     def test_quiet(self):
-        cmd = ['echo', 'ncurses-5.9-1.   9% |##   | ETA:  0:00:00  76.02 MB/s']
-        if os.name == 'nt':
-            cmd = ['cmd.exe', '/c'] + cmd
-        p0 = BuildProcess(cmd, '.')
-        output = io.BytesIO()
-        read_with_timeout(p0, output, timeout=20, quiet=True)
-        out = output.getvalue()
-        self.assertEqual(b'', out)
+        for quiet in (True, False):
+            cmd = ['echo', 'ncurses-5.9-1.   9% |##   | ETA:  0:00:00  76.02 MB/s']
+            if os.name == 'nt':
+                cmd = ['cmd.exe', '/c'] + cmd
+            p0 = BuildProcess(cmd, '.')
+            output = io.BytesIO()
+            read_with_timeout(p0, output, timeout=20, quiet=quiet)
+            out = output.getvalue()
+            if quiet:
+                self.assertEqual(b'', out)
+            else:
+                self.assertIn(b'ncurses', out)
 
 if __name__ == '__main__':
     unittest.main()
