@@ -95,7 +95,11 @@ class SuWorker(Worker):
 
     def destroy_user_procs(self):
         log.info("Destroy {}'s processes".format(self.build_user))
-        out = sp.check_output(['pkill', '-U', self.build_user])
+        try:
+            out = sp.check_output(['pkill', '-U', self.build_user])
+        except sp.CalledProcessError as e:
+            # the user has no processes running and pkill returns non-zero
+            out = None
         if out:
             log.info(out)
 
