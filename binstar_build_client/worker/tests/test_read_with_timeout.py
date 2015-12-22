@@ -4,6 +4,7 @@ import unittest
 
 import mock
 from binstar_build_client.worker.utils.timeout import read_with_timeout
+from threading import Event
 
 class MockProcess(object):
     def __init__(self, *args, **kwargs):
@@ -11,19 +12,26 @@ class MockProcess(object):
         self.ct = 0
         self.sleep_time = kwargs.get('sleep_time', 0.1)
         self.limit_lines = kwargs.get('limit_lines', 10)
+        self.event = Event()
+        self.timed_out = False
 
     def readline(self, n=0):
         if self.ct >= self.limit_lines:
             return b''
-        time.sleep(self.sleep_time)
+        self.timed_out = self.event.wait(self.sleep_time)
         self.ct += 1
         return b'ping'
 
     def kill(self):
+        self.event.set()
         return
 
     def wait(self):
+        self.event.set()
         return
+
+    def poll(self):
+        return True
 
 class TestReadWithTimeout(unittest.TestCase):
     def test_good_build(self):
@@ -34,6 +42,7 @@ class TestReadWithTimeout(unittest.TestCase):
         p0 = MockProcess(limit_lines=pings)
         output = io.BytesIO()
         read_with_timeout(p0, output)
+        self.assertFalse(p0.timed_out)
         self.assertEqual(pings, output.getvalue().count(b'ping'))
 
     def test_iotimeout_build_1(self):
@@ -44,6 +53,7 @@ class TestReadWithTimeout(unittest.TestCase):
         p0 = MockProcess(limit_lines=pings, sleep_time=3)
         output = io.BytesIO()
         read_with_timeout(p0, output, iotimeout=0.5)
+        self.assertTrue(p0.timed_out)
         out = output.getvalue()
         self.assertIn(b'iotimeout', out)
 
@@ -62,7 +72,7 @@ class TestReadWithTimeout(unittest.TestCase):
             count.append(None)
             return len(count) >= 3
         pings = 30
-        p0 = MockProcess(limit_lines=pings, sleep_time=1)
+        p0 = MockProcess(limit_lines=pings, sleep_time=0.1)
         output = io.BytesIO()
         read_with_timeout(p0, output, build_was_stopped_by_user=terminate)
         out = output.getvalue()

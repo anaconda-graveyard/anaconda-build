@@ -25,12 +25,12 @@ def show_queue(queue):
         try:
             last_seen = parse_date(worker['last_seen'])
             last_seen = '%s ago' % format_timedelta(last_seen, False)
-        except TypeError:
+        except (TypeError, ValueError):
             last_seen = worker['last_seen']
 
         print('   - Id {0[id]}'.format(worker))
         print('   - Last seen {0}'.format(last_seen))
-        print('   - binstar-build v{0[binstar_build_version]} (binstar v{0[binstar_version]})'.format(worker))
+        print('   - anaconda build v{0[binstar_build_version]} (anaconda v{0[binstar_version]})'.format(worker))
     if not queue.get('workers', []):
         print(" + No build workers attached to this queue")
     print()

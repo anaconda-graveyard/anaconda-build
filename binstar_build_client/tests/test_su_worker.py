@@ -46,13 +46,13 @@ class TestSuWorker(CLITestCase):
 
     @classmethod
     def setUpClass(cls):
-        WorkerConfiguration.REGISTERED_WORKERS_DIR = test_workers
         super(TestSuWorker, cls).setUpClass()
 
     def tearDown(self):
 
-        for fn in glob(os.path.join(test_workers, '*')):
-            os.unlink(fn)
+        for fn in glob(os.path.join(os.path.expanduser('~root'),'.workers', '*')):
+            if 'worker_id' == os.path.basename(fn):
+                os.unlink(fn)
 
         unittest.TestCase.tearDown(self)
 
@@ -192,12 +192,13 @@ class TestSuWorker(CLITestCase):
         args.build_user = TEST_BUILD_WORKER
         args.push_back = True
         args.python_install_dir = SU_WORKER_DEFAULT_PATH
+        args.cwd = '.'
         bs = get_binstar(args, cls=BinstarBuildAPI)
         worker_config = self.new_worker_config()
         return su_worker.SuWorker(bs, worker_config, args)
 
     def new_worker_config(self):
-        worker_config = WorkerConfiguration('worker_id', 'username', 'queue',
+        worker_config = WorkerConfiguration('worker_id', 'worker_id', 'username', 'queue',
                                             'platform', 'hostname', 'dist')
         worker_config.save()
         return worker_config

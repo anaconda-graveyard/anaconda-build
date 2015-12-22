@@ -59,20 +59,28 @@ def split_queue_arg(queue):
     elif queue.count('-') == 2:
         _, username, queue = queue.split('-', 2)
     else:
-        msg = "Build queue must be of the form " +\
-              "build-USERNAME-QUEUENAME or USERNAME/QUEUENAME"
-        raise errors.UserError(msg)
+        raise errors.UserError(
+            "Build queue must be of the form "
+            "build-USERNAME-QUEUENAME or USERNAME/QUEUENAME"
+        )
+
     return username, queue
 
 def main(args):
 
     args.username, args.queue = split_queue_arg(args.queue)
     bs = get_binstar(args, cls=BinstarBuildAPI)
-    worker_config = WorkerConfiguration.register(bs, args.username, args.queue, args.platform, args.hostname, args.dist)
+
+    worker_config = WorkerConfiguration.register(
+        bs, args.username, args.queue,
+        args.platform, args.hostname, args.dist,
+        name=args.name,
+    )
+
     worker_config.save()
 
     log.info('Worker config saved at {}.'.format(worker_config.filename))
-    log.info('Now run:\n\tanaconda worker run {}'.format(worker_config.worker_id))
+    log.info('Now run:\n\tanaconda worker run {}'.format(worker_config.name))
 
 
 
@@ -89,6 +97,10 @@ def add_parser(subparsers, name='register',
     conda_platform = get_platform()
     parser.add_argument('queue', metavar='OWNER/QUEUE',
                         help='The queue to pull builds from')
+
+    parser.add_argument('-n', '--name', metavar='WORKER_NAME',
+                        help='Unique name of the worker')
+
     parser.add_argument('-p', '--platform',
                         default=conda_platform,
                         help='The platform this worker is running on (default: %(default)s)')

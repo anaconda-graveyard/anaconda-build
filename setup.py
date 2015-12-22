@@ -3,7 +3,7 @@ import versioneer
 
 
 setup(
-    name='binstar-build',
+    name='anaconda-build',
 
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
@@ -15,7 +15,7 @@ setup(
     install_requires=['anaconda-client',
                       'jinja2', 'psutil'],
 
-    package_data = {'binstar_build_client': ['worker/utils/data/*'],},
+    package_data={'binstar_build_client': ['worker/utils/data/*'], },
     include_package_data=True,
     zip_safe=False,
 

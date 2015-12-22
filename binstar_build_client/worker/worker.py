@@ -51,16 +51,6 @@ def get_my_procs():
     return {proc.pid for proc in psutil.process_iter() if ismyproc(proc)}
 
 
-@contextmanager
-def remove_files_after(files):
-    try:
-        yield
-    finally:
-        for filename in files:
-            if os.path.isfile(filename):
-                os.unlink(filename)
-
-
 class Worker(object):
     """
 
@@ -199,7 +189,8 @@ class Worker(object):
         owner = build_data['owner']['login']
         package = build_data['package']['name']
 
-        working_dir = os.path.abspath(os.path.join('builds', owner, package))
+        working_dir = os.path.join(self.args.cwd, 'builds', owner, package)
+        working_dir = os.path.abspath(working_dir)
 
         return working_dir
 
@@ -219,8 +210,9 @@ class Worker(object):
 
         working_dir = self.working_dir(job_data)
 
-        log.info("Creating working dir: {0}".format(working_dir))
+        log.info("Removing previous build dir: {0}".format(working_dir))
         rm_rf(working_dir)
+        log.info("Creating working dir: {0}".format(working_dir))
         os.makedirs(working_dir)
 
         raw_build_log = BuildLog(
@@ -245,10 +237,7 @@ class Worker(object):
 
             build_log.flush()
 
-            if not os.path.exists('build_scripts'):
-                os.mkdir('build_scripts')
-
-            script_filename = script_generator.gen_build_script(
+            script_filename = script_generator.gen_build_script(working_dir,
                 job_data, conda_build_dir=self.args.conda_build_dir)
 
             iotimeout = instructions.get('iotimeout', DEFAULT_IO_TIMEOUT)
@@ -256,20 +245,16 @@ class Worker(object):
 
             api_token = job_data['upload_token']
 
-            files = [script_filename]
-
             git_oauth_token = job_data.get('git_oauth_token')
             if not job_data.get('build_info', {}).get('github_info'):
-                build_filename = self.download_build_source(job_id)
-                files.append(build_filename)
+                build_filename = self.download_build_source(working_dir, job_id)
             else:
                 build_filename = None
 
-            with remove_files_after(files):
-                exit_code = self.run(
-                    job_data, script_filename, build_log, timeout, iotimeout, api_token,
-                    git_oauth_token, build_filename, instructions=instructions,
-                    build_was_stopped_by_user=raw_build_log.terminated)
+            exit_code = self.run(
+                job_data, script_filename, build_log, timeout, iotimeout, api_token,
+                git_oauth_token, build_filename, instructions=instructions,
+                build_was_stopped_by_user=raw_build_log.terminated)
 
             log.info("Build script exited with code {0}".format(exit_code))
             if exit_code == script_generator.EXIT_CODE_OK:
@@ -319,6 +304,8 @@ class Worker(object):
             cwd=working_dir
         )
 
+        log.info("Started build script with pid: {}".format(p0.pid))
+
         try:
             read_with_timeout(
                 p0,
@@ -354,16 +341,14 @@ class Worker(object):
                             build_log.write("    + {0}\n".format(cmdline))
         return p0.poll()
 
-    def download_build_source(self, job_id):
+    def download_build_source(self, working_dir, job_id):
         """
         If the source files for this job were tarred and uploaded to bisntar.
         Download them.
         """
         log.info("Fetching build data")
-        if not os.path.exists('build_data'):
-            os.mkdir('build_data')
 
-        build_filename = os.path.join('build_data', '{0}.tar.bz2'.format(job_id))
+        build_filename = os.path.join(working_dir, 'source.tar.bz2')
 
         fp = self.bs.fetch_build_source(
             self.config.username,

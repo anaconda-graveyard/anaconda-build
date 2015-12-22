@@ -3,7 +3,7 @@ Trigger a build that has been saved
 
 See also: 
 
-  * [Save and Trigger Your Builds](http://docs.anaconda.org/examples.html#SaveAndTriggerYourBuilds)
+  * [Save and Trigger Your Builds](http://docs.anaconda.org/build.html#SaveAndTriggerYourBuilds)
 '''
 
 from __future__ import (print_function, unicode_literals, division,
@@ -30,7 +30,7 @@ def main(args):
     log.info('')
     log.info('To view this build go to http://anaconda.org/%s/%s/builds/matrix/%s' % (args.package.user, args.package.name, build_no))
     log.info('')
-    log.info('You may also run\n\n    binstar-build tail -f %s/%s %s\n' % (args.package.user, args.package.name, build_no))
+    log.info('You may also run\n\n    anaconda build tail -f %s/%s %s\n' % (args.package.user, args.package.name, build_no))
     log.info('')
     log.info('Build %s submitted' % build_no)
 
@@ -69,4 +69,3 @@ def add_parser(subparsers):
 
 
     parser.set_defaults(main=main)
-

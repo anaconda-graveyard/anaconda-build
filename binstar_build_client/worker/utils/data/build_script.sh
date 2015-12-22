@@ -4,9 +4,9 @@ set +e
 export BINSTAR_BUILD_RESULT=""
 export PYTHONUNBUFFERED="TRUE"
 
-#### #### #### #### #### #### #### #### #### #### #### #### #### #### 
+#### #### #### #### #### #### #### #### #### #### #### #### #### ####
 # Binstar defined build helper functions
-#### #### #### #### #### #### #### #### #### #### #### #### #### #### 
+#### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
 parse_options(){
 
@@ -31,7 +31,7 @@ parse_options(){
         BINSTAR_API_TOKEN="$1"
         shift
         ;;
-                
+
         *)
 
         echo "Unknown option $key"
@@ -39,41 +39,41 @@ parse_options(){
     esac
     done
 }
-#### #### #### #### #### #### #### #### #### #### #### #### #### #### 
+#### #### #### #### #### #### #### #### #### #### #### #### #### ####
 # Binstar defined build helper functions
-#### #### #### #### #### #### #### #### #### #### #### #### #### #### 
+#### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
-# Check the exit status of the last command and return if it was an error 
+# Check the exit status of the last command and return if it was an error
 bb_check_command_error='exit_status=$?; if [ "$exit_status" != "0" ]; then echo "command exited with status $exit_status"; export BINSTAR_BUILD_RESULT="error"; return 1; fi'
-# Check the exit status of the last command and return if it was an error 
+# Check the exit status of the last command and return if it was an error
 bb_check_command_failure='exit_status=$?; if [ "$exit_status" != "0" ]; then echo "command exited with status $exit_status"; export BINSTAR_BUILD_RESULT="failure"; return 1; fi'
 # Check the state of "BINSTAR_BUILD_RESULT" and return if it is set
 bb_check_result='if [ "$BINSTAR_BUILD_RESULT" != "" ]; then return 1; fi'
 
 
-#### #### #### #### #### #### #### #### #### #### #### #### #### #### 
+#### #### #### #### #### #### #### #### #### #### #### #### #### ####
 # Binstar build variables
-#### #### #### #### #### #### #### #### #### #### #### #### #### #### 
+#### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
 {% for key, value in exports %}
 export {{key}}={{quote(value)}}
 {% endfor %}
 
-#### #### #### #### #### #### #### #### #### #### #### #### #### #### 
+#### #### #### #### #### #### #### #### #### #### #### #### #### ####
 # User defined build commands
-#### #### #### #### #### #### #### #### #### #### #### #### #### #### 
+#### #### #### #### #### #### #### #### #### #### #### #### #### ####
 setup_build(){
 
 
     export BUILD_ENV_PATH=`pwd`"/env"
-    
+
     echo -e "\n[Setup Build]"
 
     echo "Host:" `hostname`
     echo 'Setting engine'
-    
-    echo "conda clean -pt"
-    conda clean -pt
+
+    echo "conda clean -pt > /dev/null"
+    conda clean -pt > /dev/null
 
     echo "conda-clean-build-dir"
     conda-clean-build-dir
@@ -85,8 +85,9 @@ setup_build(){
 
     echo "export CONDARC=$CONDARC"
     touch "$CONDARC"
-
-    conda config --file "$CONDARC" --add channels defaults
+    {% for install_channel in install_channels -%}
+    conda config --file "$CONDARC" --add channels {{install_channel}}
+    {% endfor %}
     conda config --file "$CONDARC" \
                  --set binstar_upload no \
                  --set always_yes yes \
@@ -94,7 +95,7 @@ setup_build(){
 
 
     bb_before_environment;
-    
+
     echo "conda create -p $BUILD_ENV_PATH --quiet --yes $BINSTAR_ENGINE"
     conda create -p $BUILD_ENV_PATH --quiet --yes $BINSTAR_ENGINE
         eval $bb_check_command_error
@@ -105,9 +106,11 @@ setup_build(){
     if ["$CONDA_PY" == ""]; then
         export CONDA_PY=`python -c 'import sys; sys.stdout.write("{0}{1}".format(sys.version_info[0], sys.version_info[1]))'`
     fi
-    
+    if [ "$CONDA_NPY" == "" ];then
+        conda list | grep numpy && export CONDA_NPY=$(python -c "import sys;import numpy;sys.stdout.write(''.join(numpy.__version__.split('.')[:2]))") || export CONDA_NPY=""
+    fi
     echo "CONDA_PY=$CONDA_PY"
-
+    echo "CONDA_NPY=$CONDA_NPY"
 }
 
 fetch_build_source(){
@@ -119,7 +122,7 @@ fetch_build_source(){
     echo "SOURCE_DIR=$SOURCE_DIR"
 
     rm -rf "$SOURCE_DIR"
-    
+
 
     {% if git_info %}
         export GIT_REPO="{{git_info['full_name']}}"
@@ -135,7 +138,7 @@ fetch_build_source(){
             git clone --recursive --depth=50 --branch="$GIT_BRANCH" "https://${GIT_OAUTH_TOKEN}:x-oauth-basic@github.com/${GIT_REPO}.git" "$SOURCE_DIR"
                 eval $bb_check_command_error
         fi
-        
+
         cd "$SOURCE_DIR"
 
         echo "git checkout --quiet $GIT_COMMIT"
@@ -170,9 +173,9 @@ fetch_build_source(){
 
 }
 
-#### #### #### #### #### #### #### #### #### #### #### #### #### #### 
+#### #### #### #### #### #### #### #### #### #### #### #### #### ####
 # User defined build commands
-#### #### #### #### #### #### #### #### #### #### #### #### #### #### 
+#### #### #### #### #### #### #### #### #### #### #### #### #### ####
 {% macro format_instructions(key, fail_type='error') -%}
     {%- set all_instruction_lines = get_list(instructions, key) -%}
     {%- if not all_instruction_lines -%}
@@ -226,12 +229,12 @@ bb_after_success() {
 
 bb_after_script() {
     {{format_instructions('after_script')}}
-    
+
 }
 
-#### #### #### #### #### #### #### #### #### #### #### #### #### #### 
+#### #### #### #### #### #### #### #### #### #### #### #### #### ####
 # Assemble build commands
-#### #### #### #### #### #### #### #### #### #### #### #### #### #### 
+#### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
 binstar_build(){
 
@@ -245,12 +248,12 @@ binstar_build(){
 }
 
 binstar_post_build(){
-    
-    if [ "$BINSTAR_BUILD_RESULT" == "success" ]; then 
+
+    if [ "$BINSTAR_BUILD_RESULT" == "success" ]; then
         bb_after_success;
-    elif [ "$BINSTAR_BUILD_RESULT" == "error" ]; then 
+    elif [ "$BINSTAR_BUILD_RESULT" == "error" ]; then
         bb_after_error;
-    elif [ "$BINSTAR_BUILD_RESULT" == "failure" ]; then 
+    elif [ "$BINSTAR_BUILD_RESULT" == "failure" ]; then
         bb_after_failure;
     fi
 
@@ -269,27 +272,27 @@ upload_build_targets(){
     {% endif %}
 
     {%for test_result, filename in instructions.get('test_results', {}).items() %}
-    
-    echo binstar-build -q -t \$TOKEN results {{test_result}} "$BINSTAR_OWNER/$BINSTAR_PACKAGE" "$BINSTAR_BUILD" {{filename}}
-    binstar-build -q -t "$BINSTAR_API_TOKEN" results {{test_result}} "$BINSTAR_OWNER/$BINSTAR_PACKAGE" "$BINSTAR_BUILD" {{filename}}
-        
+
+    echo anaconda build -q -t \$TOKEN results {{test_result}} "$BINSTAR_OWNER/$BINSTAR_PACKAGE" "$BINSTAR_BUILD" {{filename}}
+    anaconda build -q -t "$BINSTAR_API_TOKEN" results {{test_result}} "$BINSTAR_OWNER/$BINSTAR_PACKAGE" "$BINSTAR_BUILD" {{filename}}
+
     {% endfor %}
 
 
 
-    if [ "$BINSTAR_BUILD_RESULT" != "success" ]; then    
+    if [ "$BINSTAR_BUILD_RESULT" != "success" ]; then
         return 1;
     fi
     {% if test_only %}
     echo -e '\nRunning Build in "Test Only" mode, not uploading build targets'
     {% else %}
-    
+
     echo -e '\n[Build Targets]'
     eval $bb_check_command_error
     {% for tgt in files %}
-    echo "binstar -q -t \$TOKEN upload --force --user $BINSTAR_OWNER --package $BINSTAR_PACKAGE {{channels}} {{tgt}} --build-id $BINSTAR_BUILD"
-    
-    binstar -q -t "$BINSTAR_API_TOKEN" upload --force --user "$BINSTAR_OWNER" --package "$BINSTAR_PACKAGE" {{channels}} {{tgt}} --build-id "$BINSTAR_BUILD"
+    echo "anaconda  -q -t \$TOKEN upload --force --user $BINSTAR_OWNER --package $BINSTAR_PACKAGE {{channels}} {{tgt}} --build-id $BINSTAR_BUILD"
+
+    anaconda  -q -t "$BINSTAR_API_TOKEN" upload --force --user "$BINSTAR_OWNER" --package "$BINSTAR_PACKAGE" {{channels}} {{tgt}} --build-id "$BINSTAR_BUILD"
     eval $bb_check_command_error
     {% else %}
     echo "No build targets specified"
@@ -299,7 +302,7 @@ upload_build_targets(){
 }
 
 main(){
-        
+
     {% if ignore_setup_build %}
     echo "[Ignore Setup Build]"
     {% else %}
@@ -307,8 +310,8 @@ main(){
     {% endif %}
 
 
-    if [ "$BINSTAR_BUILD_RESULT" != "" ]; then 
-        echo "Internal binstar build error: Could not set up initial build state"
+    if [ "$BINSTAR_BUILD_RESULT" != "" ]; then
+        echo "Internal anaconda build error: Could not set up initial build state"
         exit {{EXIT_CODE_ERROR}}
     fi
 
@@ -318,8 +321,8 @@ main(){
     fetch_build_source;
     {% endif %}
 
-    if [ "$BINSTAR_BUILD_RESULT" != "" ]; then 
-        echo "Binstar build error: Could not fetch build sources"
+    if [ "$BINSTAR_BUILD_RESULT" != "" ]; then
+        echo "Anaconda build error: Could not fetch build sources"
         exit {{EXIT_CODE_ERROR}}
     fi
 
@@ -330,20 +333,20 @@ main(){
 
     echo "Exit BINSTAR_BUILD_RESULT=$BINSTAR_BUILD_RESULT"
 
-    if [ "$BINSTAR_BUILD_RESULT" == "success" ]; then 
+    if [ "$BINSTAR_BUILD_RESULT" == "success" ]; then
         exit {{EXIT_CODE_OK}}
-    elif [ "$BINSTAR_BUILD_RESULT" == "error" ]; then 
+    elif [ "$BINSTAR_BUILD_RESULT" == "error" ]; then
         exit {{EXIT_CODE_ERROR}}
-    elif [ "$BINSTAR_BUILD_RESULT" == "failure" ]; then 
+    elif [ "$BINSTAR_BUILD_RESULT" == "failure" ]; then
         exit {{EXIT_CODE_FAILED}}
     else
         exit {{EXIT_CODE_ERROR}}
-    fi    
+    fi
 }
 
-#### #### #### #### #### #### #### #### #### #### #### #### #### #### 
+#### #### #### #### #### #### #### #### #### #### #### #### #### ####
 # Execute main funtions
-#### #### #### #### #### #### #### #### #### #### #### #### #### #### 
+#### #### #### #### #### #### #### #### #### #### #### #### #### ####
 parse_options $*;
 main;
 

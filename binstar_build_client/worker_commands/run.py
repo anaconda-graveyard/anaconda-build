@@ -44,8 +44,13 @@ def add_worker_dev_options(parser):
 
     dgroup = parser.add_argument_group('development options')
 
+    conda_prefix = get_conda_root_prefix()
+    if conda_prefix:
+        default_build_dir = os.path.join(conda_prefix, 'conda-bld', '{platform}')
+    else:
+        default_build_dir = None
     dgroup.add_argument("--conda-build-dir",
-                        default=os.path.join('{build_user_home}', 'conda-bld', '{platform}'),
+                        default=default_build_dir,
                         help="[Advanced] The conda build directory (default: %(default)s)",
                         )
 
