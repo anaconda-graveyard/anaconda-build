@@ -20,3 +20,5 @@ script:
   - conda build conda.recipe
 
 build_targets: conda
+
+quiet: True
