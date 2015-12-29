@@ -72,8 +72,8 @@ setup_build(){
     echo "Host:" `hostname`
     echo 'Setting engine'
 
-    echo "conda clean -pt"
-    conda clean -pt
+    echo "conda clean -pt > /dev/null"
+    conda clean -pt > /dev/null
 
     echo "conda-clean-build-dir"
     conda-clean-build-dir
@@ -85,8 +85,9 @@ setup_build(){
 
     echo "export CONDARC=$CONDARC"
     touch "$CONDARC"
-
-    conda config --file "$CONDARC" --add channels defaults
+    {% for install_channel in install_channels -%}
+    conda config --file "$CONDARC" --add channels {{install_channel}}
+    {% endfor %}
     conda config --file "$CONDARC" \
                  --set binstar_upload no \
                  --set always_yes yes \
@@ -105,9 +106,11 @@ setup_build(){
     if ["$CONDA_PY" == ""]; then
         export CONDA_PY=`python -c 'import sys; sys.stdout.write("{0}{1}".format(sys.version_info[0], sys.version_info[1]))'`
     fi
-
+    if [ "$CONDA_NPY" == "" ];then
+        conda list | grep numpy && export CONDA_NPY=$(python -c "import sys;import numpy;sys.stdout.write(''.join(numpy.__version__.split('.')[:2]))") || export CONDA_NPY=""
+    fi
     echo "CONDA_PY=$CONDA_PY"
-
+    echo "CONDA_NPY=$CONDA_NPY"
 }
 
 fetch_build_source(){

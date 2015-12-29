@@ -1,8 +1,10 @@
 from __future__ import print_function, unicode_literals, absolute_import
 
+import copy
 import unittest
 from mock import Mock, patch
 import os
+import shutil
 import stat
 import requests
 
@@ -13,6 +15,7 @@ from binstar_build_client.worker.utils import script_generator
 from binstar_build_client.worker.docker_worker import DockerWorker
 import warnings
 import tempfile
+import shutil
 
 try_unlink = lambda path: os.unlink(path) if os.path.isfile(path) else None
 
@@ -32,7 +35,8 @@ def default_build_data():
                 "test": "echo UNIQUE TEST MARKER",
                 "after_script": "echo UNIQUE AFTER SCRIPT MARKER",
                 "after_success": "echo UNIQUE AFTER SUCCESS MARKER",
-                "after_error": "echo UNIQUE AFTER ERROR MARKER"
+                "after_error": "echo UNIQUE AFTER ERROR MARKER",
+                'install_channels': ['r', 'python', 'other_channel']
             }
         },
         "build_info": {
@@ -271,6 +275,45 @@ class Test(unittest.TestCase):
         with open(worker.build_logfile(job_data)) as fd:
             output = fd.read()
             self.assertMultiLineEqual(output, self.expected_output_iotimeout)
+
+
+    def test_auto_env_variables(self):
+
+        build_data = copy.deepcopy(default_build_data())
+        build_data['build_item_info']['engine'] = 'python=2.7 numpy=1.9 other_req=10'
+        exports = script_generator.create_exports(build_data)
+        self.assertEqual("19", exports['CONDA_NPY'])
+
+    def test_install_channels(self):
+        working_dir = tempfile.mkdtemp()
+        try:
+            script = script_generator.gen_build_script(working_dir,
+                                                       default_build_data())
+            with open(script, 'r') as f:
+                contents = f.read()
+            self.assertIn('--add channels r', contents)
+            self.assertIn('--add channels python', contents)
+            self.assertIn('--add channels other_channel', contents)
+
+        finally:
+            shutil.rmtree(working_dir)
+
+    def test_auto_install_channels(self):
+        working_dir = tempfile.mkdtemp()
+        try:
+            build_data = default_build_data()
+            build_data['build_item_info']['instructions']['install_channels'] = []
+            build_data['build_item_info']['engine'] = 'r'
+            script = script_generator.gen_build_script(working_dir,
+                                                       build_data)
+            with open(script, 'r') as f:
+                contents = f.read()
+            self.assertIn('--add channels r', contents)
+
+        finally:
+            shutil.rmtree(working_dir)
+
+
 
 def have_docker():
     if os.environ.get('NO_DOCKER_TESTS'):

@@ -116,6 +116,14 @@ def create_exports(build_data):
     build = build_data['build_info']
 
     api_site = build['api_endpoint']
+    engine = build_item.get('engine')
+
+    CONDA_NPY = ''
+    if 'numpy' in engine:
+        npy_version = engine.split('numpy')[1].split()
+        if npy_version:
+            CONDA_NPY = "".join(npy_version[0].split('.')[:2])
+            CONDA_NPY = CONDA_NPY.replace('=', '')
 
     exports = {
             # The build number as MAJOR.MINOR
@@ -123,7 +131,7 @@ def create_exports(build_data):
             'BINSTAR_BUILD_MAJOR': build['build_no'],
             'BINSTAR_BUILD_MINOR': build_item['sub_build_no'],
             # the engine from the engine tag
-            'BINSTAR_ENGINE': build_item.get('engine'),
+            'BINSTAR_ENGINE': engine,
             # the platform from the platform tag
             'BINSTAR_PLATFORM': build_item.get('platform', 'linux-64'),
             'BINSTAR_API_SITE': api_site,
@@ -133,6 +141,7 @@ def create_exports(build_data):
             'CONDA_BUILD_DIR': os.path.join(conda_root_prefix, 'conda-bld', build_item.get('platform', 'linux-64')),
             'BUILD_BASE': 'builds',
             'BUILD_ENV_DIR': 'build_envs',
+            'CONDA_NPY': CONDA_NPY,
            }
 
 
@@ -176,14 +185,20 @@ def gen_build_script(working_dir, build_data, **context):
 
 
     exports = create_exports(build_data)
-
+    instructions = build_data['build_item_info'].get('instructions', {})
+    install_channels = instructions.get('install_channels', None) or ['defaults']
+    if not 'defaults' in install_channels:
+        install_channels.append('defaults')
+    if 'r' == exports['BINSTAR_ENGINE'] and not 'r' in install_channels:
+        install_channels.append('r')
     context.update({'exports': sorted(exports.items()),
-                    'instructions': build_data['build_item_info'].get('instructions', {}),
+                    'instructions': instructions,
                     'git_info': create_git_context(build_data['build_info']),
                     'test_only': build_data['build_info'].get('test_only', False),
                     'sub_dir': build_data['build_info'].get('sub_dir'),
                     'channels': get_channels(build_data),
                     'files': get_files(context, build_data),
+                    'install_channels': install_channels,
                     'EXIT_CODE_OK': 0,
                     'EXIT_CODE_ERROR': 11,
                     'EXIT_CODE_FAILED': 12,
