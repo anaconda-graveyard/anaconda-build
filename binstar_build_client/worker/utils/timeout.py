@@ -7,7 +7,7 @@ log = logging.getLogger('binstar.build')
 
 
 QUIET_REGEXES = [
-    re.compile(b'(\|\s*#[#.\s]*\|\s*ETA)'),
+    re.compile(b'\r$'),
 ]
 
 class Timeout:
