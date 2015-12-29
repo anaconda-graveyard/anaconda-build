@@ -83,7 +83,7 @@ class TestReadWithTimeout(unittest.TestCase):
 
     def test_quiet(self):
         for quiet in (True, False):
-            cmd = ['echo', 'ncurses-5.9-1.   9% |##   | ETA:  0:00:00  76.02 MB/s']
+            cmd = ['echo', 'ncurses-5.9-1.   9% |##   | ETA:  0:00:00  76.02 MB/s\r']
             if os.name == 'nt':
                 cmd = ['cmd.exe', '/c'] + cmd
             p0 = BuildProcess(cmd, '.')
