@@ -92,8 +92,11 @@ class WorkerConfiguration(object):
     def registered_workers(cls, bs):
         "Iterate over the registered workers on this machine"
         username = bs.user()['login']
-        for queue_name, workers in ((_['_id'],_['workers'])
-                        for _ in bs.build_queues(username=username)):
+        build_query = bs.build_queues(username=username)
+        for build_info in build_query:
+            queue_name, workers = build_info['_id'], build_info.get('workers', None)
+            if not workers:
+                continue
             try:
                 user, queue = split_queue_arg(queue_name)
             except Exception as e:
@@ -102,7 +105,7 @@ class WorkerConfiguration(object):
                 if worker['hostname'] != cls.HOSTNAME:
                     continue
                 try:
-                    yield cls(name=worker['id'],
+                    yield cls(name=worker.get('name', worker['id']),
                               worker_id=worker['id'],
                               username=user,
                               queue=queue,
@@ -171,7 +174,7 @@ class WorkerConfiguration(object):
         'Load a worker config from a worker_id'
         username = bs.user()['login']
         for worker in cls.registered_workers(bs):
-            if worker_name == worker.worker_id:
+            if worker_name == worker.worker_id or worker_name == worker.name:
                 return worker
         raise errors.BinstarError('Worker with id '
                                   '{} not found'.format(worker_name))
@@ -200,7 +203,7 @@ class WorkerConfiguration(object):
         Register the worker with anaconda server
         '''
 
-        worker_id = bs.register_worker(username, queue, platform, hostname, dist)
+        worker_id = bs.register_worker(username, queue, platform, hostname, dist,name=name)
         log.info('Registered worker with worker_id:\t{}'.format(worker_id))
 
         if name is None:
