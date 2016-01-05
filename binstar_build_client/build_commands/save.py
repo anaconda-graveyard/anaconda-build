@@ -51,10 +51,10 @@ def main(args):
 
     log.info("Submitting the following repo for package creation: %s" % args.url)
 
-
+    # TODO: change channels= to labels=
     binstar.add_ci(args.package.user, args.package.name,
                    ghowner=ghowner, ghrepo=ghrepo,
-                   channels=args.channels, queue=args.queue, sub_dir=args.sub_dir,
+                   channels=args.labels, queue=args.queue, sub_dir=args.sub_dir,
                    email=args.email)
 
     log.info("CI Added to package %s", args.package)
@@ -80,8 +80,11 @@ def add_parser(subparsers):
     parser.add_argument('--sub-dir',
                        help="The sub directory within the git repository (github url submits only)")
 
-    parser.add_argument('--channel', action='append', dest='channels',
-                       help="Upload targets to this channel")
+    parser.add_argument('--channel', action='append', dest='labels',
+                       help="[DEPRECATED] Upload targets to this channel")
+
+    parser.add_argument('--label', action='append', dest='labels',
+                       help="Upload targets to this label")
 
     parser.add_argument('--queue',
                        help="Build on this queue")

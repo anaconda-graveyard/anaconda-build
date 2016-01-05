@@ -30,9 +30,9 @@ EXIT_CODE_FAILED = 12
 # Helper functions
 #===============================================================================
 
-def get_channels(job_data):
+def get_labels(job_data):
     """
-    Return channel string to pass to binstar upload
+    Return `--label` arguments to pass to `anaconda upload`
     """
 
     build_targets = job_data['build_item_info'].get('build_targets')
@@ -41,10 +41,12 @@ def get_channels(job_data):
     branch = 'dev'.replace('/', ':')
     ctx = dict(branch=branch)
 
-    if job_data['build_info'].get('channels'):
-        channels = job_data['build_info'].get('channels')
-    elif isinstance(build_targets, dict):
-        channels = build_targets.get('channels', [branch])
+    if job_data['build_info'].get('channels') or job_data['build_info'].get('labels'):
+        # TODO: this is pulled from the API (pushed from anaconda-build)
+        channels = job_data['build_info'].get('channels') or job_data['build_info'].get('labels')
+    elif isinstance(build_targets, dict) and \
+            (build_targets.get('channels') or build_targets.get('labels')):
+        channels = build_targets.get('channels') or build_targets.get('labels')
     else:
         channels = [branch]
 
@@ -56,7 +58,7 @@ def get_channels(job_data):
         except (KeyError, ValueError):
             log.info('Bad channel value %r' % ch)
 
-    channels = ' --channel ' + ' --channel '.join(_channels) if _channels else 'dev'
+    channels = ' --label ' + ' --label '.join(_channels) if _channels else 'dev'
     return channels
 
 
@@ -196,7 +198,7 @@ def gen_build_script(working_dir, build_data, **context):
                     'git_info': create_git_context(build_data['build_info']),
                     'test_only': build_data['build_info'].get('test_only', False),
                     'sub_dir': build_data['build_info'].get('sub_dir'),
-                    'channels': get_channels(build_data),
+                    'labels': get_labels(build_data),
                     'files': get_files(context, build_data),
                     'install_channels': install_channels,
                     'EXIT_CODE_OK': 0,

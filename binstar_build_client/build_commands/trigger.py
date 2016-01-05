@@ -22,8 +22,9 @@ def main(args):
 
     binstar = get_binstar(args, cls=BinstarBuildAPI)
 
+    # TODO: change channels= to labels=
     build_no = binstar.trigger_build(args.package.user, args.package.name,
-                               channels=args.channels, queue_name=args.queue,
+                               channels=args.labels, queue_name=args.queue,
                                branch=args.branch, test_only=args.test_only,
                                filter_platform=args.platform)
 
@@ -49,8 +50,11 @@ def add_parser(subparsers):
                        metavar='USER/PACKAGE',
                        type=package_specs)
 
-    parser.add_argument('--channel', action='append', dest='channels',
-                       help="Upload targets to this channel")
+    parser.add_argument('--channel', action='append', dest='labels',
+                       help="[DEPRECATED] Upload targets to this channel")
+
+    parser.add_argument('--label', action='append', dest='labels',
+                       help="Upload targets to this label")
 
     parser.add_argument('--queue',
                        help="Build on this queue")
