@@ -91,8 +91,9 @@ def submit_build(binstar, args):
 
                 with open(tmp, mode='rb') as fd:
 
+                    # TODO: change channels= to labels=
                     build = binstar.submit_for_build(args.package.user, args.package.name, fd, builds,
-                                                     channels=args.channels,
+                                                     channels=args.labels,
                                                      queue=args.queue, queue_tags=queue_tags,
                                                      test_only=args.test_only, callback=upload_print_callback(args))
 
@@ -135,8 +136,9 @@ def submit_git_build(binstar, args):
     if not args.dry_run:
         log.info("Submitting the following repo for package creation: %s" % args.git_url)
         builds = get_gitrepo(urlparse(args.path))
+        # TODO: change channels= to labels=
         build = binstar.submit_for_url_build(args.package.user, args.package.name, builds,
-                                             channels=args.channels, queue=args.queue, sub_dir=args.sub_dir,
+                                             channels=args.labels, queue=args.queue, sub_dir=args.sub_dir,
                                              test_only=args.test_only, callback=upload_print_callback(args),
                                              filter_platform=args.platform,
                                                 )
@@ -250,8 +252,10 @@ def add_parser(subparsers):
     parser.add_argument('--queue',
                        help="Build on this queue")
 
-    cgroup.add_argument('--channel', action='append', dest='channels',
-                       help="Upload targets to this channel")
+    cgroup.add_argument('--channel', action='append', dest='labels',
+                       help="[DEPRECATED] Upload targets to this channel")
+    cgroup.add_argument('--label', action='append', dest='labels',
+                       help="Upload targets to this label")
     cgroup.add_argument('--test-only', '--no-upload', action='store_true',
                         dest='test_only',
                         help="Don't upload the build targets to binstar, but run everything else")

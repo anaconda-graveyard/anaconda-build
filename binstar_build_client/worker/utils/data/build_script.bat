@@ -360,8 +360,8 @@ goto:eof
     echo [Build Targets]
 
     {% for tgt in files %}
-    echo binstar -q -t %%TOKEN%% upload --force --user %BINSTAR_OWNER% --package %BINSTAR_PACKAGE% {{channels}} {{tgt}} --build-id %BINSTAR_BUILD_MAJOR%
-    binstar -q -t "%BINSTAR_API_TOKEN%" upload --force --user "%BINSTAR_OWNER%" --package "%BINSTAR_PACKAGE%" {{channels}} {{tgt}} --build-id "%BINSTAR_BUILD%" || ( {{ set_error() }} )
+    echo binstar -q -t %%TOKEN%% upload --force --user %BINSTAR_OWNER% --package %BINSTAR_PACKAGE% {{labels}} {{tgt}} --build-id %BINSTAR_BUILD_MAJOR%
+    binstar -q -t "%BINSTAR_API_TOKEN%" upload --force --user "%BINSTAR_OWNER%" --package "%BINSTAR_PACKAGE%" {{labels}} {{tgt}} --build-id "%BINSTAR_BUILD%" || ( {{ set_error() }} )
     {% else %}
     echo No build targets specified
     {% endfor %}
