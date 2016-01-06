@@ -3,7 +3,7 @@ from __future__ import print_function, unicode_literals, division, absolute_impo
 import logging
 import os
 import platform
-import socket
+
 
 from binstar_client import errors
 import yaml
@@ -48,7 +48,7 @@ class InvalidWorkerConfigFile(errors.BinstarError):
 
 class WorkerConfiguration(object):
     REGISTERED_WORKERS_DIR = os.path.join(os.path.expanduser('~'), '.workers')
-    HOSTNAME = socket.gethostname()
+    HOSTNAME = platform.node()
     def __init__(self, name, worker_id, username, queue, platform, hostname, dist):
         self.name = name
         self.worker_id = worker_id
@@ -220,9 +220,8 @@ class WorkerConfiguration(object):
             removed_worker = bs.remove_worker(self.username, self.queue, self.worker_id)
 
             if not removed_worker:
-                info = (self.worker_id, self.queue,)
                 raise errors.BinstarError('Failed to remove_worker with argument of ' + \
-                                          'worker_id\t{}\tqueue\t{}'.format(*info))
+                                          'worker_id\t{}\tqueue\t{}'.format(self.worker_id, self.queue))
 
             log.info('Deregistered worker with worker-id {}'.format(self.worker_id))
         except Exception:
