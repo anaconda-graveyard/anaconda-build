@@ -99,7 +99,6 @@ def read_with_timeout(p0, output,
             log.debug("Wait for line ...")
             lines = []
             while not lines:
-                start = time.time()
                 t = Thread(target=readline_timeout, args=(lines,))
                 t.start()
                 repeats = 0
