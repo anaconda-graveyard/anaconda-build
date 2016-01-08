@@ -71,6 +71,9 @@ def read_with_timeout(p0, output,
         log.info("Kill build process || iotimeout")
         p0.kill()
 
+    def readline_timeout(lines):
+        lines.append(p0.readline())
+
     log.debug("Starting timers")
     with timer, iotimer:
         line = p0.readline()
@@ -94,7 +97,25 @@ def read_with_timeout(p0, output,
             # The user will not get any output for  iotimeout seconds
             # when the io timer kills the process
             log.debug("Wait for line ...")
-            line = p0.readline()
+            lines = []
+            while not lines:
+                start = time.time()
+                t = Thread(target=readline_timeout, args=(lines,))
+                t.start()
+                repeats = 0
+                while not lines:
+                    time.sleep(.1)
+                    repeats += 1
+                    if repeats > 50:
+                        log.debug('t.join(0)')
+                        t.join(0)
+                        break
+                if not lines:
+                    line = b''
+                else:
+                    line = lines[0]
+                if not line and p0.poll() is not None:
+                    log.debug("Exit read: p0.poll() is {}".format(p0.poll()))
             log.debug("Got line {}:{}".format(len(line), line))
 
     while p0.poll() is None:
