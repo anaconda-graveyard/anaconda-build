@@ -91,7 +91,7 @@ class TestSuWorker(CLITestCase):
                 with patch.object(os, 'getuid', return_value=1, clear=True) as getuid:
                     with self.assertRaises(errors.BinstarError):
                         su_worker.validate_su_worker(TEST_BUILD_WORKER, SU_WORKER_DEFAULT_PATH)
-        self.assertEqual(getuid.call_count, 1)
+
 
     @unittest.skipIf(not is_valid_su_worker, 'Skipping as not valid su_worker')
     @unittest.skipIf(not standard_root_install,
