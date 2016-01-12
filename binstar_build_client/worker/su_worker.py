@@ -55,6 +55,8 @@ def validate_su_worker(build_user, python_install_dir):
         raise errors.BinstarError('Expected /etc/worker-skel to exist and '
                                   'be a template for {}\'s'
                                   ' home directory'.format(build_user))
+    if not hasattr(os, 'getuid') or os.name == 'nt':
+        raise errors.BinstarError('SuWorker only runs as root and only on linux/unix')
     is_root = os.getuid() == 0
     if not is_root:
         raise errors.BinstarError('Expected su_worker to run as root.')

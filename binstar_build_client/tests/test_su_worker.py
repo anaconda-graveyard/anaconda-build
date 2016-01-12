@@ -68,17 +68,18 @@ class TestSuWorker(CLITestCase):
 
     def test_validate_su_worker(self):
         '''Test su_worker is only run as root, with root python install'''
-        with patch.object(os, 'getuid', return_value=0, clear=True) as getuid:
-            with patch.object(os.path, 'isdir', return_value=True, clear=True) as isdir:
-                with patch.object(su_worker, 'check_conda_path', return_value=True, clear=True) as check:
-                    with patch.object(su_worker, 'test_su_as_user', return_value=True, clear=True) as test_su:
-                        is_valid = su_worker.validate_su_worker(TEST_BUILD_WORKER,
-                                                                SU_WORKER_DEFAULT_PATH)
-                        self.assertTrue(is_valid)
-                    with patch.object(su_worker, 'test_su_as_user', return_value=False, clear=True) as test_su:
-                        is_valid = su_worker.validate_su_worker(TEST_BUILD_WORKER,
-                                                                SU_WORKER_DEFAULT_PATH)
-                        self.assertFalse(is_valid)
+        with patch.object(os, 'name', return_value='posix', clear=True):
+            with patch.object(os, 'getuid', return_value=0, clear=True) as getuid:
+                with patch.object(os.path, 'isdir', return_value=True, clear=True) as isdir:
+                    with patch.object(su_worker, 'check_conda_path', return_value=True, clear=True) as check:
+                        with patch.object(su_worker, 'test_su_as_user', return_value=True, clear=True) as test_su:
+                            is_valid = su_worker.validate_su_worker(TEST_BUILD_WORKER,
+                                                                    SU_WORKER_DEFAULT_PATH)
+                            self.assertTrue(is_valid)
+                        with patch.object(su_worker, 'test_su_as_user', return_value=False, clear=True) as test_su:
+                            is_valid = su_worker.validate_su_worker(TEST_BUILD_WORKER,
+                                                                    SU_WORKER_DEFAULT_PATH)
+                            self.assertFalse(is_valid)
         self.assertEqual(getuid.call_count, 2)
         self.assertEqual(isdir.call_count, 2)
         self.assertNotEqual(check.call_count, 0)
