@@ -58,7 +58,7 @@ def main(args):
         name=args.name,
     )
 
-    log.info('Worker config saved at {}.'.format(worker_config.filename))
+    log.info('When running, worker PID files will be at {}.<PID>.'.format(worker_config.filename))
     log.info('Now run:\n\tanaconda worker run {}'.format(worker_config.name))
 
 

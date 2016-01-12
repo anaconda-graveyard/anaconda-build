@@ -174,8 +174,10 @@ class WorkerConfiguration(object):
         'Load a worker config from a worker_id'
         username = bs.user()['login']
         for worker in cls.registered_workers(bs):
+            log.info('worker {}'.format(repr(worker)))
             if worker_name == worker.worker_id or worker_name == worker.name:
-                return worker
+                if worker.hostname == cls.HOSTNAME:
+                    return worker
         raise errors.BinstarError('Worker with id '
                                   '{} not found'.format(worker_name))
     @classmethod
