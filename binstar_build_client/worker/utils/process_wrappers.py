@@ -74,12 +74,10 @@ class BuildProcess(subprocess.Popen):
 
 
     def kill_job(self):
-        
         if self.job is None:
             return
-
         log.warning("Kill win32 JobObject handle: {0}".format(self.job))
-        
+
         try:
             win32job.TerminateJobObject(self.job, 1)
         except pywintypes.error as err:
@@ -90,7 +88,6 @@ class BuildProcess(subprocess.Popen):
 
         if WIN_32:
             return
-
         try:
             pgid = os.getpgid(self.pid)
         except OSError as err:
@@ -99,17 +96,16 @@ class BuildProcess(subprocess.Popen):
             return
 
         log.warning("Kill posix process group pgid: {0}".format(pgid))
-    
+
         try:
             os.killpg(pgid, signal.SIGTERM)
         except OSError as err:
             log.warning("Could not kill process group for pid {}".format(self.pid))
             log.warning(err)
 
-        
     def kill(self):
         '''Kill all processes and child processes'''
-        
+
         try:
             log.warning("Kill Tree parent pid: {0}".format(self.pid))
             parent = psutil.Process(self.pid)
@@ -132,7 +128,6 @@ class BuildProcess(subprocess.Popen):
                 log.info("BuildProcess.kill: child pid {} is being killed".format(child.pid))
                 child.kill()
 
-
     def readline(self):
         return self.stdout.readline()
 
@@ -145,7 +140,11 @@ class SuBuildProcess(BuildProcess):
         self.site = site
         args = " ".join(pipes.quote(arg) for arg in args)
         args = self.su_with_env(args)
+        self.cwd = cwd
         super(SuBuildProcess, self).__init__(args, cwd)
+
+    def kill(self):
+        super(SuBuildProcess, self).__init__(['pkill', '-U', self.build_user], args.cwd)
 
     def su_with_env(self, cmd):
         '''args for su as build_user with the anaconda settings'''
@@ -163,7 +162,6 @@ class SuBuildProcess(BuildProcess):
 
     @property
     def source_env(self):
-        return ("export PATH={0}/bin:${{PATH}} "
-                "&& source activate anaconda.org ").format(self.python_install_dir)
+        return ("export PATH={0}/bin:${{PATH}}").format(self.python_install_dir)
 
 

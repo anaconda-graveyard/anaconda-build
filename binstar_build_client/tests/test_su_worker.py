@@ -129,12 +129,14 @@ class TestSuWorker(CLITestCase):
                 except psutil.AccessDenied:
                     pass
         return found_pids
+
     @patch('binstar_build_client.worker.utils.process_wrappers.SuBuildProcess')
     @patch('binstar_build_client.worker.su_worker.SuWorker.destroy_user_procs')
     @patch('binstar_build_client.worker.su_worker.SuWorker.clean_home_dir')
     @patch('binstar_build_client.worker.su_worker.validate_su_worker')
     @patch('binstar_build_client.worker.worker.Worker._finish_job')
     @patch('subprocess.check_output')
+    @unittest.skipIf(not is_valid_su_worker, "Must be valid _su_worker")
     def test_run(self, check_output, finish, validate, clean, destroy, su_build):
         self.new_worker_config()
 
@@ -161,7 +163,7 @@ class TestSuWorker(CLITestCase):
                                   build_filename=None, instructions=None)
         worker._finish_job(build_data, False, 'ok')
         build_log = build_log.getvalue()
-        self.assertIn('su_worker_test_ok', build_log)
+        self.assertIn('su_worker_test_ok', build_log.decode())
         self.assertEqual(exit_code, 0)
         self.assertEqual(su_build.call_count, 1)
         self.assertEqual(destroy.call_count, 1)

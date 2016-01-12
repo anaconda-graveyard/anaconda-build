@@ -77,13 +77,19 @@ class Test(CLITestCase):
 
     def test_get_my_procs(self):
         pids = []
-        for repeat in range(5):
-            proc = sp.Popen(['sleep', '10000'])
-            pids.append(proc.pid)
-        pids.append(os.getpid())
-        my_pids = get_my_procs()
-        for pid in pids:
-            self.assertIn(pid, my_pids)
+        procs = []
+        try:
+            for repeat in range(5):
+                proc = sp.Popen(['sleep', '100'])
+                procs.append(proc)
+                pids.append(proc.pid)
+            pids.append(os.getpid())
+            my_pids = get_my_procs()
+            for pid in pids:
+                self.assertIn(pid, my_pids)
+        finally:
+            for proc in procs:
+                proc.kill()
 
 if __name__ == '__main__':
     unittest.main()
