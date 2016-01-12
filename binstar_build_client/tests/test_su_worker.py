@@ -68,6 +68,8 @@ class TestSuWorker(CLITestCase):
 
     def test_validate_su_worker(self):
         '''Test su_worker is only run as root, with root python install'''
+        if not hasattr(os, 'getuid'):
+            os.getuid = lambda: True
         with patch.object(os, 'name', return_value='posix', clear=True):
             with patch.object(os, 'getuid', return_value=0, clear=True) as getuid:
                 with patch.object(os.path, 'isdir', return_value=True, clear=True) as isdir:
