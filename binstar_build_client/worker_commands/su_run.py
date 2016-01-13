@@ -43,7 +43,7 @@ def main(args):
     worker.write_status(True, "Starting")
 
     try:
-        with worker_config.running():
+        with worker_config.running(build_user=args.build_user):
             worker.work_forever()
     finally:
         worker.write_status(False, "Exited")

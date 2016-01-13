@@ -171,7 +171,7 @@ class TestSuWorker(CLITestCase):
         self.assertEqual(su_build.call_count, 1)
         self.assertEqual(destroy.call_count, 1)
         self.assertEqual(validate.call_count, 1)
-        self.assertEqual(clean.call_count, 1)
+        self.assertEqual(clean.call_count, 2)
         self.assertEqual(finish.call_count, 1)
         self.assertEqual(check_output.call_count, 1)
 
@@ -188,6 +188,21 @@ class TestSuWorker(CLITestCase):
         sorted_home_dir = sorted(os.listdir(home_dir))
         sorted_etc_worker = sorted(os.listdir('/etc/worker-skel'))
         self.assertEqual(sorted_etc_worker, sorted_home_dir)
+
+    def test_start_when_already_running(self):
+        worker_id_pid = 'test_build_worker.1234'
+        if not os.path.exists(WorkerConfiguration.REGISTERED_WORKERS_DIR):
+            os.mkdir(WorkerConfiguration.REGISTERED_WORKERS_DIR)
+        worker_file = os.path.join(WorkerConfiguration.REGISTERED_WORKERS_DIR,
+                                   worker_id_pid)
+        try:
+            with open(worker_file, 'w') as f:
+                f.write('test_build_worker running')
+            with self.assertRaises(errors.BinstarError):
+                su_worker.is_build_user_running('test_build_worker')
+        finally:
+            if os.path.exists(worker_file):
+                os.unlink(worker_file)
 
     def new_su_worker(self):
         args = Namespace()

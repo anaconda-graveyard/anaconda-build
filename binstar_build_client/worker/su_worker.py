@@ -9,6 +9,7 @@ from __future__ import print_function, absolute_import, unicode_literals
 import io
 import logging
 import os
+import pwd
 import shutil
 import subprocess as sp
 
@@ -19,13 +20,43 @@ from binstar_build_client.worker.worker import Worker
 from binstar_build_client.worker.utils import process_wrappers
 from binstar_build_client.worker.utils.build_log import BuildLog
 from binstar_build_client.worker.utils.timeout import read_with_timeout
+from binstar_build_client.worker.register import WorkerConfiguration
+
 
 SU_WORKER_DEFAULT_PATH = '/opt/anaconda'
+
+OK_SU_WORKER_FILENAME = '.su_worker'
 
 log = logging.getLogger('binstar.build')
 
 
+
+def validate_su_worker_home(build_user):
+    home = os.path.expanduser('~{}'.format(build_user))
+    su_worker_file = os.path.join(home, OK_SU_WORKER_FILENAME)
+    is_ok = os.path.exists(su_worker_file)
+    template = 'Caution: Expecting a file {0} to exist in {1}' + \
+               '\n\tThe file {0} indicates approval for ' + \
+               'deleting a user\'s home directory ' + \
+               '\n\t(in this case {2}\'s home directory.)'
+    if not is_ok:
+        raise errors.BinstarError(template.format(
+                                    OK_SU_WORKER_FILENAME,
+                                    home,
+                                    build_user))
+    etc_su_worker_file = os.path.join('/etc/worker-skel', OK_SU_WORKER_FILENAME)
+    is_ok = os.path.exists(etc_su_worker_file)
+    if not is_ok:
+        raise errors.BinstarError(template.format(OK_SU_WORKER_FILENAME,
+                                                  '/etc/worker-skel',
+                                                  build_user))
+    return True
+
 def check_conda_path(build_user, python_install_dir):
+    if not os.access(python_install_dir, os.R_OK and os.W_OK and os.X_OK):
+        raise errors.BinstarError('User root must have read, write, '
+                                  'execute access to '
+                                  'python_install_dir {}'.format(python_install_dir))
     conda_exe = os.path.join(python_install_dir, 'bin', 'conda')
     check_conda = "{} && echo has_conda_installed".format(conda_exe)
     conda_output = sp.check_output(['su', '--login', '-c', check_conda, '-', build_user])
@@ -44,6 +75,27 @@ def test_su_as_user(build_user):
     return True
 
 
+def is_build_user_running(build_user):
+    workers_dir = WorkerConfiguration.REGISTERED_WORKERS_DIR
+    if not os.path.exists(workers_dir):
+        return False
+    for worker_file in os.listdir(workers_dir):
+        worker_file = os.path.join(workers_dir, worker_file)
+        with open(worker_file) as f:
+            contents = f.read()
+            if '{} running'.format(build_user) in contents:
+                raise errors.BinstarError('The file {0} indicates user'
+                                          ' {1} may already be running a'
+                                          ' build worker with su_run, '
+                                          'with possible collisions.'
+                                          '\n\tDelete {0} if '
+                                          'this is incorrect, or'
+                                          ' run with different lesser build user.'.format(
+                                            worker_file,
+                                            build_user))
+
+    return False
+
 def validate_su_worker(build_user, python_install_dir):
     '''Ensure su_worker is running as root, that there is a build worker, that
     /etc/worker-skel exists, and that conda is accessible to the build_user.'''
@@ -60,8 +112,19 @@ def validate_su_worker(build_user, python_install_dir):
     is_root = os.getuid() == 0
     if not is_root:
         raise errors.BinstarError('Expected su_worker to run as root.')
-    return test_su_as_user(build_user) and check_conda_path(build_user,
+    ok1 = test_su_as_user(build_user) and check_conda_path(build_user,
                                                             python_install_dir)
+    ok2 = validate_su_worker_home(build_user)
+
+    return ok1 and ok2 and not is_build_user_running(build_user)
+
+def create_build_worker(build_user):
+    existing_users = [item.pw_name for item in pwd.getpwall()]
+    if build_user in existing_users:
+        log.info('Not creating build user {} (already exists)'.format(build_user))
+    else:
+        log.info('useradd -M {}'.format(build_user))
+        sp.check_output(['useradd', '-M', build_user])
 
 
 class SuWorker(Worker):
@@ -73,7 +136,8 @@ class SuWorker(Worker):
         self.build_user = args.build_user
         self.python_install_dir = args.python_install_dir
         validate_su_worker(self.build_user, self.python_install_dir)
-
+        create_build_worker(args.build_user)
+        self.clean_home_dir()
 
     def _finish_job(self, job_data, failed, status):
         '''Count job as finished, destroy build user processes,
@@ -105,6 +169,10 @@ class SuWorker(Worker):
         if out:
             log.info(out)
 
+    def build(self, job_data):
+        self.clean_home_dir()
+        return super(SuWorker, self).build(job_data)
+
     def run(self, build_data, script_filename, build_log, timeout, iotimeout,
             api_token=None, git_oauth_token=None, build_filename=None, instructions=None,
             build_was_stopped_by_user=lambda:None):
@@ -112,7 +180,7 @@ class SuWorker(Worker):
         log.info("Running build script")
 
         working_dir = self.working_dir(build_data)
-        own_script = ['chown', '{}:{}'.format(self.build_user, self.build_user), os.path.abspath(script_filename)]
+        own_script = ['chown', '{}:{}'.format(self.build_user, self.build_user), os.path.abspath(working_dir)]
         log.info('Running: {}'.format(" ".join(own_script)))
         log.info(sp.check_output(own_script))
 

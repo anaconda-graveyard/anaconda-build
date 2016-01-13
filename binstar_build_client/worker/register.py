@@ -107,8 +107,8 @@ class WorkerConfiguration(object):
         return pid_is_running(self.pid)
 
     @contextmanager
-    def running(self):
-        'Flag this worker id as running'
+    def running(self, build_user=''):
+        'Flag this worker id as running. If build_user, then it goes to pid file'
 
         if self.is_running():
             msg = "This worker appears to already be running with pid {}".format(self.pid)
@@ -117,7 +117,7 @@ class WorkerConfiguration(object):
         dst = '{0}.{1}'.format(self.filename, os.getpid())
         try:
             with open(dst, 'w') as out:
-                out.write('')
+                out.write(build_user or '{} is_running'.format(build_user))
         except (OSError, AttributeError):
             log.warning("Could not link the pid to a pidfile")
         try:

@@ -144,7 +144,10 @@ class SuBuildProcess(BuildProcess):
         super(SuBuildProcess, self).__init__(args, cwd)
 
     def kill(self):
-        super(SuBuildProcess, self).__init__(['pkill', '-U', self.build_user], args.cwd)
+        super(SuBuildProcess, self).__init__(['pkill',
+                                              '-U',
+                                              self.build_user],
+                                                self.cwd).wait()
 
     def su_with_env(self, cmd):
         '''args for su as build_user with the anaconda settings'''
