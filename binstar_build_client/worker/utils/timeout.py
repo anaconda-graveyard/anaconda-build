@@ -1,9 +1,14 @@
 from threading import Event, Thread
-import time
 import logging
+import re
+import time
 
 log = logging.getLogger('binstar.build')
 
+
+QUIET_REGEXES = [
+    re.compile(b'\r$'),
+]
 
 class Timeout:
     """
@@ -55,7 +60,8 @@ def read_with_timeout(p0, output,
                       timeout=60 * 60,
                       iotimeout=60,
                       flush_iterval=10,
-                      build_was_stopped_by_user=lambda:None):
+                      build_was_stopped_by_user=lambda:None,
+                      quiet=False):
     """
     Read the stdout from a Popen object and wait for it to
     """
@@ -77,6 +83,11 @@ def read_with_timeout(p0, output,
         last_flush = time.time()
 
         while line:
+            if quiet:
+                while any(re.search(q, line) for q in QUIET_REGEXES):
+                    line = p0.readline()
+                    iotimer.tick()
+
             iotimer.tick()
 
             output.write(line)
