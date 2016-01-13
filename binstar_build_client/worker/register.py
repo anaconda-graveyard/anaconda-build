@@ -204,7 +204,10 @@ class WorkerConfiguration(object):
         '''
         Register the worker with anaconda server
         '''
-
+        for worker in cls.registered_workers(bs):
+            if worker.name == name:
+                raise errors.BinstarError('Cannot have duplicate worker '
+                                          '--name from same host: {}'.format(name))
         worker_id = bs.register_worker(username, queue, platform, hostname, dist,name=name)
         log.info('Registered worker with worker_id:\t{}'.format(worker_id))
 
