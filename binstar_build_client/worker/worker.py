@@ -292,6 +292,7 @@ class Worker(object):
 
         elif build_filename:
             args.extend(['--build-tarball', build_filename])
+        quiet = build_data['build_item_info'].get('instructions',{}).get('quiet', False)
 
         log.info("Running command: (iotimeout={0})".format(iotimeout))
         log.info(" ".join(args))
@@ -313,7 +314,8 @@ class Worker(object):
                 timeout,
                 iotimeout,
                 BuildLog.INTERVAL,
-                build_was_stopped_by_user
+                build_was_stopped_by_user,
+                quiet
             )
         except BaseException:
             log.error(
