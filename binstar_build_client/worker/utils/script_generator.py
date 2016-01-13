@@ -146,8 +146,7 @@ def create_exports(build_data):
             'CONDA_NPY': CONDA_NPY,
            }
 
-
-    build_env = build_item.get('env')
+    build_env = build_item.get('envvars', build_item.get('env', {}))
     if isinstance(build_env, (str, unicode)):
         _build_env = {}
         for item in shlex.split(build_env):
@@ -159,7 +158,6 @@ def create_exports(build_data):
 
     if isinstance(build_env, dict):
         exports.update(build_env)
-
     return exports
 
 #===============================================================================

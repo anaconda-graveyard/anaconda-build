@@ -62,12 +62,12 @@ def list_builds(args):
 
     log.info('Getting builds:')
 
-    fmt = '%(build_no)15s | %(status)15s | %(platform)15s | %(engine)15s | %(env)15s'
+    fmt = '%(build_no)15s | %(status)15s | %(platform)15s | %(engine)15s | %(envvars)15s'
 
     header = {'build_no':'Build #', 'status':'Status',
               'platform':'Platform',
               'engine':'Engine',
-              'env':'Env',
+              'envvars':'Env',
               }
 
     log.info(fmt % header)

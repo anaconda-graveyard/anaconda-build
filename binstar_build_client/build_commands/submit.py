@@ -3,7 +3,7 @@ Build command
 
 Submit a build from your local path or  via a git url:
 
-See also: 
+See also:
 
   * [Submit A Build](http://docs.anaconda.org/build.html#SubmitABuild)
   * [Submit A Build From Github](http://docs.anaconda.org/build.html#GithubBuilds)
@@ -68,7 +68,7 @@ def submit_build(binstar, args):
 
     log.info('Submitting %i sub builds' % len(builds))
     for i, build in enumerate(builds):
-        log.info(' %i)' % i + ' %(platform)-10s  %(engine)-15s  %(env)-15s' % build)
+        log.info(' %i)' % i + ' %(platform)-10s  %(engine)-15s  %(envvars)-15s' % build)
 
     if not args.dry_run:
         if args.git_url:

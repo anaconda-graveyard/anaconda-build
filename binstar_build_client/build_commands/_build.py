@@ -80,12 +80,12 @@ def list_builds(binstar, args):
 
     log.info('Getting builds:')
 
-    fmt = '%(build_no)15s | %(status)15s | %(platform)15s | %(engine)15s | %(env)15s'
+    fmt = '%(build_no)15s | %(status)15s | %(platform)15s | %(engine)15s | %(envvars)15s'
 
     header = {'build_no':'Build #', 'status':'Status',
               'platform':'Platform',
               'engine':'Engine',
-              'env':'Env',
+              'envvars':'Env',
               }
 
     log.info(fmt % header)
@@ -114,21 +114,22 @@ def expand_build_matrix(instruction_set):
 
     platforms = instruction_set.pop('platform', ['linux-64']) or [None]
     if not isinstance(platforms, list): platforms = [platforms]
-    envs = instruction_set.pop('env', [None]) or [None]
+    envs = instruction_set.pop('envvars',
+             instruction_set.pop('env', [None])) or [None]
     if not isinstance(envs, list): envs = [envs]
     engines = instruction_set.pop('engine', ['python=2']) or [None]
     if not isinstance(engines, list): engines = [engines]
 
     for platform, env, engine in product(platforms, envs, engines):
         build = instruction_set.copy()
-        build.update(platform=platform, env=env, engine=engine)
+        build.update(platform=platform, envvars=env, engine=engine)
         yield build
 
 def serialize_builds(instruction_sets):
     builds = {}
     for instruction_set in instruction_sets:
         for build in expand_build_matrix(instruction_set):
-            k = '%s::%s::%s' % (build['platform'], build['engine'], build['env'])
+            k = '%s::%s::%s' % (build['platform'], build['engine'], build.get('envvars', build.get('env')))
             bld = builds.setdefault(k, build)
             bld.update(build)
 
@@ -150,7 +151,7 @@ def submit_build(args):
     builds = list(serialize_builds(build_matrix))
     log.info('Submitting %i sub builds' % len(builds))
     for i, build in enumerate(builds):
-        log.info(' %i)' % i + ' %(platform)-10s  %(engine)-15s  %(env)-15s' % build)
+        log.info(' %i)' % i + ' %(platform)-10s  %(engine)-15s  %(envvars)-15s' % build)
 
     if not args.dry_run:
         with mktemp() as tmp:
