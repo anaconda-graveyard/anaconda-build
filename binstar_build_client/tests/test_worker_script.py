@@ -67,5 +67,22 @@ class Test(CLITestCase):
 
         self.assertEqual(loop.call_count, 1)
 
+    def test_register_backwards_compat(self):
+
+        worker_file = os.path.join(WorkerConfiguration.REGISTERED_WORKERS_DIR,
+                                   'worker_name_1')
+        worker_id = '123456789'
+        try:
+            with open(worker_file, 'w') as f:
+                f.write(yaml.safe_dump({'worker_id': worker_id}))
+            worker_id_to_name = WorkerConfiguration.backwards_compat_lookup()
+            self.assertIn(worker_id, worker_id_to_name)
+            self.assertEqual(worker_id_to_name[worker_id], 'worker_name_1')
+        finally:
+            if os.path.exists(worker_file):
+                os.unlink(worker_file)
+        worker_id_to_name = WorkerConfiguration.backwards_compat_lookup()
+        self.assertEqual(worker_id_to_name.get(worker_id, None), None)
+
 if __name__ == '__main__':
     unittest.main()
