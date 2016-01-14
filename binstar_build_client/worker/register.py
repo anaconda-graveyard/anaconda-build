@@ -49,8 +49,10 @@ class InvalidWorkerConfigFile(errors.BinstarError):
 class WorkerConfiguration(object):
     REGISTERED_WORKERS_DIR = os.path.join(os.path.expanduser('~'), '.workers')
     HOSTNAME = platform.node()
+
     def __init__(self, name, worker_id, username, queue, platform, hostname, dist):
-        self.name = name
+        worker_id_to_name = WorkerConfiguration.backwards_compat_lookup()
+        self.name = worker_id_to_name.get(worker_id, None) or name
         self.worker_id = worker_id
         self.username = username
         self.queue = queue
@@ -105,15 +107,18 @@ class WorkerConfiguration(object):
                 if worker['hostname'] != cls.HOSTNAME:
                     continue
                 try:
-                    yield cls(name=worker.get('name', worker['id']),
+                    worker = cls(name=worker.get('name', worker['id']),
                               worker_id=worker['id'],
                               username=user,
                               queue=queue,
                               platform=worker['platform'],
                               hostname=worker['hostname'],
                               dist=worker['dist'])
+                    yield worker
+
                 except Exception as e:
-                    print('Failed on', kwargs, 'with', repr(e))
+                    print('Failed with', repr(e))
+                    raise
 
     @property
     def filename(self):
@@ -174,7 +179,6 @@ class WorkerConfiguration(object):
         'Load a worker config from a worker_id'
         username = bs.user()['login']
         for worker in cls.registered_workers(bs):
-            log.info('worker {}'.format(repr(worker)))
             if worker_name == worker.worker_id or worker_name == worker.name:
                 if worker.hostname == cls.HOSTNAME:
                     return worker
@@ -241,3 +245,47 @@ class WorkerConfiguration(object):
 
         for worker in cls.registered_workers(bs):
             worker.deregister(bs)
+
+    @classmethod
+    def backwards_compat_lookup(cls):
+        '''Also recognize worker --name's from older
+        worker configuration files in ~/.workers that
+        look like:
+
+        $ cat  ~/.workers/ps_abc1
+        dist: darwin10.10
+        hostname: 0178-psteinberg.local
+        platform: osx-64
+        queue: abc
+        username: psteinberg
+        worker_id: 5697f3320eafa954fc21a3a5
+
+        where ps_abc1 is a --name for a worker registration.
+
+        Returns a dictionary of worker name to worker id from
+        these files, if any.
+
+        '''
+
+        worker_id_to_name = {}
+        if os.path.exists(cls.REGISTERED_WORKERS_DIR):
+            possible_names = os.listdir(cls.REGISTERED_WORKERS_DIR)
+            for name in possible_names:
+                worker_file = os.path.join(cls.REGISTERED_WORKERS_DIR, name)
+                with open(worker_file, 'r') as f:
+                    try:
+                        config = yaml.safe_load(f.read())
+                    except:
+                        log.info('Removing non-yaml file {}'
+                                 'from worker pid dir: '
+                                 '{}'.format(worker_file,
+                                             cls.REGISTERED_WORKERS_DIR))
+                        os.unlink(worker_file)
+                        config = {}
+                if config.get('worker_id', None):
+                    if name != config['worker_id']:
+                        worker_id_to_name[config['worker_id']] = name
+
+        return worker_id_to_name
+
+
