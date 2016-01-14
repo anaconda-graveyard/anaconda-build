@@ -165,7 +165,19 @@ class SuWorker(Worker):
             out = sp.check_output(['pkill', '-U', self.build_user])
         except sp.CalledProcessError as e:
             # the user has no processes running and pkill returns non-zero
-            out = None
+            proc = subprocess.Popen(['ps', 'aux'], stdout=subprocess.PIPE)
+            proc.wait()
+            lines = []
+            for line in proc.stdout.read().decode().splitlines():
+                if line.startswith(self.build_user):
+                    lines.append(line)
+            if lines:
+                log.warn('pkill was unable to kill all {} processes.'
+                         '{} are still running'.format(self.build_user,
+                                                       len(lines)))
+                log.warn('Processes that should have been killed (ps aux output):')
+                for line in lines:
+                    log.warn(line)
         if out:
             log.info(out)
 
