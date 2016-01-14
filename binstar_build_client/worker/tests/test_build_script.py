@@ -163,6 +163,40 @@ class Test(unittest.TestCase):
                               ], output)
         p0.stdout.close()
 
+    def test_build_target_channels(self):
+        build_data = default_build_data()
+        build_data['build_item_info']['instructions']['build_targets'] = {
+            'files': 'output_file',
+            'channels': ['foo'],
+        }
+        script_filename = gen_build_script(tempfile.mkdtemp(),
+                                           build_data,
+                                           ignore_setup_build=True,
+                                           ignore_fetch_build_source=True)
+        self.addCleanup(os.unlink, script_filename)
+
+        with open(script_filename, 'r') as script_file:
+            script_content = script_file.read()
+
+        self.assertIn("--channel foo", script_content)
+
+    def test_build_channels(self):
+        build_data = default_build_data()
+        build_data['build_info']['channels'] = ['foo']
+        build_data['build_item_info']['instructions']['build_targets'] = {
+            'files': 'output_file',
+        }
+        script_filename = gen_build_script(tempfile.mkdtemp(),
+                                           build_data,
+                                           ignore_setup_build=True,
+                                           ignore_fetch_build_source=True)
+        self.addCleanup(os.unlink, script_filename)
+
+        with open(script_filename, 'r') as script_file:
+            script_content = script_file.read()
+
+        self.assertIn("--channel foo", script_content)
+
 
 if __name__ == "__main__":
     # import sys;sys.argv = ['', 'Test.test_timeout']
