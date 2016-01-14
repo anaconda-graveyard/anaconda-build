@@ -178,7 +178,7 @@ class Test(unittest.TestCase):
         with open(script_filename, 'r') as script_file:
             script_content = script_file.read()
 
-        self.assertIn("--channel foo", script_content)
+        self.assertIn("--label foo", script_content)
 
     def test_build_channels(self):
         build_data = default_build_data()
@@ -195,7 +195,7 @@ class Test(unittest.TestCase):
         with open(script_filename, 'r') as script_file:
             script_content = script_file.read()
 
-        self.assertIn("--channel foo", script_content)
+        self.assertIn("--label foo", script_content)
 
 
 if __name__ == "__main__":
