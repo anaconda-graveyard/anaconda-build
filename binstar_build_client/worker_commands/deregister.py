@@ -26,7 +26,7 @@ def main(args, context="worker"):
     if args.all:
         WorkerConfiguration.deregister_all(bs)
     elif args.worker_id:
-        wconfig = WorkerConfiguration.load(args.worker_id)
+        wconfig = WorkerConfiguration.load(args.worker_id, bs)
         wconfig.deregister(bs)
     else:
         log.info(context_info)

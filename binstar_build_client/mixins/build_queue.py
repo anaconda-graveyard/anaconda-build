@@ -5,18 +5,19 @@ import binstar_build_client
 
 class BuildQueueMixin(object):
 
-    def register_worker(self, username, queue_name, platform, hostname, dist):
+    def register_worker(self, username, queue_name, platform, hostname, dist, name):
         url = '%s/build-worker/%s/%s' % (self.domain, username, queue_name)
         data, headers = jencode(platform=platform, hostname=hostname, dist=dist,
                                 binstar_version=binstar_client.__version__,
-                                binstar_build_version=binstar_build_client.__version__)
+                                binstar_build_version=binstar_build_client.__version__,
+                                name=name)
         res = self.session.post(url, data=data, headers=headers)
         self._check_response(res, [200])
         return res.json()['worker_id']
 
     def remove_worker(self, username, queue_name, worker_id):
         '''Un-register a worker
-        
+
         returns true if worker existed and was removed
         '''
 
@@ -27,7 +28,7 @@ class BuildQueueMixin(object):
 
     def pop_build_job(self, username, queue_name, worker_id):
         '''Un-register a worker
-        
+
         returns true if worker existed and was removed
         '''
 

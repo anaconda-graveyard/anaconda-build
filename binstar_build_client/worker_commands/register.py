@@ -13,7 +13,8 @@ from binstar_client import errors
 from binstar_client.utils import get_binstar
 
 from binstar_build_client import BinstarBuildAPI
-from binstar_build_client.worker.register import WorkerConfiguration
+from binstar_build_client.worker.register import (WorkerConfiguration,
+                                                  split_queue_arg)
 
 OS_MAP = {'darwin': 'osx', 'windows':'win'}
 ARCH_MAP = {'x86': '32',
@@ -45,22 +46,6 @@ def get_dist():
         return platform.win32_ver()[0].lower()
     return 'unknown'
 
-def split_queue_arg(queue):
-    '''
-    Support old and new style queue
-    '''
-
-    if queue.count('/') == 1:
-        username, queue = queue.split('/', 1)
-    elif queue.count('-') == 2:
-        _, username, queue = queue.split('-', 2)
-    else:
-        raise errors.UserError(
-            "Build queue must be of the form "
-            "build-USERNAME-QUEUENAME or USERNAME/QUEUENAME"
-        )
-
-    return username, queue
 
 def main(args):
 
@@ -73,9 +58,7 @@ def main(args):
         name=args.name,
     )
 
-    worker_config.save()
-
-    log.info('Worker config saved at {}.'.format(worker_config.filename))
+    log.info('When running, worker PID files will be at {}.<PID>.'.format(worker_config.filename))
     log.info('Now run:\n\tanaconda worker run {}'.format(worker_config.name))
 
 

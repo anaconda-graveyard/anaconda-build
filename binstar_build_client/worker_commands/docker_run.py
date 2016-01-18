@@ -29,9 +29,9 @@ def main(args):
                                "Run:\n\tpip install docker-py")
 
 
-    worker_config = WorkerConfiguration.load(args.worker_id)
-
     bs = get_binstar(args, cls=BinstarBuildAPI)
+    username = bs.user()['login']
+    worker_config = WorkerConfiguration.load(args.worker_id, bs, username)
 
     worker = DockerWorker(bs, worker_config, args)
     worker.work_forever()
