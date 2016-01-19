@@ -3,7 +3,7 @@ from __future__ import print_function, unicode_literals, division, absolute_impo
 import logging
 import os
 import platform
-
+import re
 
 from binstar_client import errors
 import yaml
@@ -272,7 +272,12 @@ class WorkerConfiguration(object):
             possible_names = os.listdir(cls.REGISTERED_WORKERS_DIR)
             for name in possible_names:
                 worker_file = os.path.join(cls.REGISTERED_WORKERS_DIR, name)
+                if '.' in worker_file:
+                    pid = worker_file.split('.')[-1]
+                    if re.search('^\d+$', pid):
+                        continue
                 with open(worker_file, 'r') as f:
+
                     try:
                         config = yaml.safe_load(f.read())
                     except:
@@ -282,9 +287,9 @@ class WorkerConfiguration(object):
                                              cls.REGISTERED_WORKERS_DIR))
                         os.unlink(worker_file)
                         config = {}
-                if config.get('worker_id', None):
-                    if name != config['worker_id']:
-                        worker_id_to_name[config['worker_id']] = name
+                    if config.get('worker_id', None):
+                        if name != config['worker_id']:
+                            worker_id_to_name[config['worker_id']] = name
 
         return worker_id_to_name
 

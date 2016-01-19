@@ -27,7 +27,8 @@ log = logging.getLogger('binstar.build')
 
 
 def main(args):
-    worker_config = WorkerConfiguration.load(args.worker_id)
+    bs = get_binstar(args, cls=BinstarBuildAPI)
+    worker_config = WorkerConfiguration.load(args.worker_id, bs)
 
 
     log.info(str(worker_config))
@@ -36,7 +37,6 @@ def main(args):
     args.conda_build_dir = os.path.join(worker_home, 'conda-bld', worker_config.platform)
     log.info("Using conda build directory: {}".format(args.conda_build_dir))
 
-    bs = get_binstar(args, cls=BinstarBuildAPI)
 
     worker = SuWorker(bs, worker_config, args)
 

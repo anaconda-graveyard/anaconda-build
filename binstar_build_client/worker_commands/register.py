@@ -14,7 +14,8 @@ from binstar_client.utils import get_binstar
 
 from binstar_build_client import BinstarBuildAPI
 
-from binstar_build_client.worker.register import WorkerConfiguration
+from binstar_build_client.worker.register import (WorkerConfiguration,
+                                                  split_queue_arg)
 
 OS_MAP = {'darwin': 'osx', 'windows': 'win'}
 ARCH_MAP = {'x86': '32',
@@ -47,24 +48,6 @@ def get_dist():
     elif platform.win32_ver()[0]:
         return platform.win32_ver()[0].lower()
     return 'unknown'
-
-
-def split_queue_arg(queue):
-    '''
-    Support old and new style queue
-    '''
-
-    if queue.count('/') == 1:
-        username, queue = queue.split('/', 1)
-    elif queue.count('-') == 2:
-        _, username, queue = queue.split('-', 2)
-    else:
-        raise errors.UserError(
-            "Build queue must be of the form "
-            "build-USERNAME-QUEUENAME or USERNAME/QUEUENAME"
-        )
-
-    return username, queue
 
 
 def main(args):

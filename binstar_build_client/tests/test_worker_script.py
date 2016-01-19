@@ -14,6 +14,7 @@ import os
 import subprocess as sp
 import unittest
 
+import binstar_client.utils
 from binstar_client.tests.fixture import CLITestCase
 from binstar_client.tests.urlmock import urlpatch
 from binstar_build_client.worker.worker import get_my_procs
@@ -54,22 +55,22 @@ class Test(CLITestCase):
     def test_register(self, load, deregister, urls, register):
 
         main(['register', 'username/queue-1'], False)
+
         self.assertEqual(register.call_count, 1)
 
         main(['deregister', 'worker_id'], False)
-        self.assertEqual(register.called, 1)
-        self.assertEqual(deregister.called, 1)
-
+        self.assertEqual(deregister.call_count, 1)
 
     @urlpatch
     @patch('binstar_build_client.worker.worker.Worker.work_forever')
     @patch('binstar_build_client.worker.register.WorkerConfiguration.load')
     @patch('binstar_build_client.worker.worker.Worker.run')
     def test_worker_simple(self, run, load, loop, urls):
+        load.return_value = worker_data
 
         main(['--show-traceback', 'worker', 'run', worker_data['worker_id']], False)
 
-        self.assertEqual(loop.call_count, 1)
+        self.assertTrue(loop.called)
 
     def test_register_backwards_compat(self):
 

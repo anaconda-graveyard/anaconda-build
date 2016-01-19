@@ -59,9 +59,11 @@ class TestSuWorker(CLITestCase):
     @unittest.skipIf(not is_valid_su_worker, 'Skipping as not valid su_worker')
     @urlpatch
     @patch('binstar_build_client.worker.su_worker.SuWorker')
-    def test_su_worker(self, urls, SuWorker):
+    @patch('binstar_build_client.worker.register.WorkerConfiguration.load')
+    def test_su_worker(self, urls, load, SuWorker):
         '''Test su_worker CLI '''
-        self.new_worker_config()
+
+        load.return_value = self.new_worker_config()
         main(['--show-traceback', 'su_run',
               'worker_id', TEST_BUILD_WORKER], False)
         self.assertEqual(SuWorker().work_forever.call_count, 1)
@@ -220,7 +222,6 @@ class TestSuWorker(CLITestCase):
     def new_worker_config(self):
         worker_config = WorkerConfiguration('worker_id', 'worker_id', 'username', 'queue',
                                             'platform', 'hostname', 'dist')
-        worker_config.save()
         return worker_config
 
 if __name__ == '__main__':
