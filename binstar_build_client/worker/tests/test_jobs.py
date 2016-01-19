@@ -281,8 +281,13 @@ class Test(unittest.TestCase):
 
         build_data = copy.deepcopy(default_build_data())
         build_data['build_item_info']['engine'] = 'python=2.7 numpy=1.9 other_req=10'
-        exports = script_generator.create_exports(build_data)
+        exports = script_generator.create_exports(build_data, '.')
         self.assertEqual("19", exports['CONDA_NPY'])
+
+    def test_working_dir(self):
+        build_data = copy.deepcopy(default_build_data())
+        exports = script_generator.create_exports(build_data, '/some/dir')
+        self.assertEqual(exports['WORKING_DIR'], '/some/dir')
 
     def test_install_channels(self):
         working_dir = tempfile.mkdtemp()

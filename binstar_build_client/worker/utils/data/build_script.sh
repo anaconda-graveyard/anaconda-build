@@ -65,7 +65,7 @@ export {{key}}={{quote(value)}}
 setup_build(){
 
 
-    export BUILD_ENV_PATH=`pwd`"/env"
+    export BUILD_ENV_PATH="%{WORKING_DIR}/env"
 
     echo -e "\n[Setup Build]"
 
@@ -82,7 +82,7 @@ setup_build(){
     echo "conda clean --lock"
     conda clean --lock
 
-    export CONDARC=`pwd`/"condarc"
+    export CONDARC="${WORKING_DIR}/condarc"
 
     echo "export CONDARC=$CONDARC"
     touch "$CONDARC"
@@ -119,7 +119,7 @@ fetch_build_source(){
 
     echo -e '\n[Fetching Build Source]'
 
-    SOURCE_DIR=`pwd`"/source"
+    SOURCE_DIR="${WORKING_DIR}/source"
     echo "SOURCE_DIR=$SOURCE_DIR"
 
     rm -rf "$SOURCE_DIR"

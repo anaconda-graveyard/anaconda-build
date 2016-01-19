@@ -109,7 +109,7 @@ def create_git_context(build):
         git_info['commit'] = github_info['after']
     return git_info
 
-def create_exports(build_data):
+def create_exports(build_data, working_dir):
     """
     Create a dict of environment variables for the build script
     """
@@ -141,8 +141,7 @@ def create_exports(build_data):
             'BINSTAR_PACKAGE': build_data['package']['name'],
             'BINSTAR_BUILD_ID': build['_id'],
             'CONDA_BUILD_DIR': os.path.join(conda_root_prefix, 'conda-bld', build_item.get('platform', 'linux-64')),
-            'BUILD_BASE': 'builds',
-            'BUILD_ENV_DIR': 'build_envs',
+            'WORKING_DIR': working_dir,
             'CONDA_NPY': CONDA_NPY,
            }
 
@@ -186,7 +185,7 @@ def gen_build_script(working_dir, build_data, **context):
         script_filename = os.path.join(working_dir, 'build_script.sh')
 
 
-    exports = create_exports(build_data)
+    exports = create_exports(build_data, working_dir)
     instructions = build_data['build_item_info'].get('instructions', {})
     install_channels = instructions.get('install_channels', None) or ['defaults']
     if not 'defaults' in install_channels:
