@@ -32,8 +32,8 @@ def main(args):
 
     log.info(str(worker_config))
     worker_home = os.path.expanduser('~{0}'.format(args.build_user))
-    args.conda_build_dir = args.conda_build_dir.format(platform=worker_config.platform,
-                                                       build_user_home=worker_home)
+
+    args.conda_build_dir = os.path.join(worker_home, 'conda-bld', worker_config.platform)
     log.info("Using conda build directory: {}".format(args.conda_build_dir))
 
     bs = get_binstar(args, cls=BinstarBuildAPI)

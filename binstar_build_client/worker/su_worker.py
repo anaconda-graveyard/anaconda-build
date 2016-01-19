@@ -165,7 +165,7 @@ class SuWorker(Worker):
             out = sp.check_output(['pkill', '-U', self.build_user])
         except sp.CalledProcessError as e:
             # the user has no processes running and pkill returns non-zero
-            proc = subprocess.Popen(['ps', 'aux'], stdout=subprocess.PIPE)
+            proc = sp.Popen(['ps', 'aux'], stdout=sp.PIPE)
             proc.wait()
             lines = []
             for line in proc.stdout.read().decode().splitlines():
@@ -178,8 +178,6 @@ class SuWorker(Worker):
                 log.warn('Processes that should have been killed (ps aux output):')
                 for line in lines:
                     log.warn(line)
-        if out:
-            log.info(out)
 
     def build(self, job_data):
         self.clean_home_dir()
@@ -192,10 +190,12 @@ class SuWorker(Worker):
         log.info("Running build script")
 
         working_dir = self.working_dir(build_data)
-        own_script = ['chown', '{}:{}'.format(self.build_user, self.build_user), os.path.abspath(working_dir)]
+        own_script = ['chown', '-R','{}:{}'.format(self.build_user, self.build_user), os.path.abspath(working_dir)]
         log.info('Running: {}'.format(" ".join(own_script)))
         log.info(sp.check_output(own_script))
-
+        #   permissions = ['chmod', '-R', '0775', working_dir]
+        #log.info('Running: {}'.format(permissions))
+        #log.info(sp.check_output(permissions))
         args = [os.path.abspath(script_filename), '--api-token', api_token]
 
         if git_oauth_token:

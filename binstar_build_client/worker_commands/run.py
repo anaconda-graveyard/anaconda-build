@@ -44,16 +44,6 @@ def add_worker_dev_options(parser):
 
     dgroup = parser.add_argument_group('development options')
 
-    conda_prefix = get_conda_root_prefix()
-    if conda_prefix:
-        default_build_dir = os.path.join(conda_prefix, 'conda-bld', '{platform}')
-    else:
-        default_build_dir = None
-    dgroup.add_argument("--conda-build-dir",
-                        default=default_build_dir,
-                        help="[Advanced] The conda build directory (default: %(default)s)",
-                        )
-
     dgroup.add_argument('--show-new-procs', action='store_true', dest='show_new_procs',
                         help='Print any process that started during the build '
                              'and is still running after the build finished')
@@ -90,5 +80,15 @@ def add_parser(subparsers, name='run',
                              'onto the build queue')
 
     parser = add_worker_dev_options(parser)
+    conda_prefix = get_conda_root_prefix()
+    if conda_prefix:
+        default_build_dir = os.path.join(conda_prefix, 'conda-bld', '{platform}')
+    else:
+        default_build_dir = None
+    parser.add_argument("--conda-build-dir",
+                        default=default_build_dir,
+                        help="[Advanced] The conda build directory (default: %(default)s)",
+                        )
+
     parser.set_defaults(main=default_func)
     return parser
