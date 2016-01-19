@@ -72,7 +72,11 @@ class Test(CLITestCase):
         worker_file = os.path.join(WorkerConfiguration.REGISTERED_WORKERS_DIR,
                                    'worker_name_1')
         worker_id = '123456789'
+        worker_id_pid = '{}.123'.format(worker_id)
         try:
+            with open(worker_id_pid, 'w') as f:
+                f.write('') # make sure a PID file's presence
+                            # is non-breaking
             with open(worker_file, 'w') as f:
                 f.write(yaml.safe_dump({'worker_id': worker_id}))
             worker_id_to_name = WorkerConfiguration.backwards_compat_lookup()
