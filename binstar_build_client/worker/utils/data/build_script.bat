@@ -114,7 +114,7 @@ goto:eof
 
 :fetch_build_source
 
-    set "SOURCE_DIR=%CD%\source"
+    set "SOURCE_DIR=%WORKING_DIR%\source"
 
     @echo off
 
@@ -181,7 +181,7 @@ goto:eof
 
 
     :: Make BUILD_ENV_PATH an absolute path
-    set "BUILD_ENV_PATH=%CD%\env"
+    set "BUILD_ENV_PATH=%WORKING_DIR%\env"
 
     echo [Setting engine]
 
@@ -195,7 +195,7 @@ goto:eof
     conda clean --lock
 
 
-    set "CONDARC=%CD%\condarc"
+    set "CONDARC=%WORKING_DIR%\condarc"
 
     :: Touch file
     touch "%CONDARC%"
