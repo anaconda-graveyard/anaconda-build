@@ -70,6 +70,7 @@ setup_build(){
     echo -e "\n[Setup Build]"
 
     echo "Host:" `hostname`
+    echo "ID:" `id`
     echo 'Setting engine'
 
     echo "conda clean -pt > /dev/null"
@@ -164,8 +165,8 @@ fetch_build_source(){
         echo "ls  -al $BUILD_TARBALL"
         ls  -al "$BUILD_TARBALL"
         echo "Extracting Package"
-        echo "tar jxf $BUILD_TARBALL"
-        tar jxf "$BUILD_TARBALL"
+        echo "tar jxfv $BUILD_TARBALL"
+        tar jxfv "$BUILD_TARBALL"
         eval $bb_check_command_error
 
     {% endif %}
