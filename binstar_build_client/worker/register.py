@@ -3,7 +3,7 @@ from __future__ import print_function, unicode_literals, division, absolute_impo
 import logging
 import os
 import platform
-
+import re
 
 from binstar_client import errors
 import yaml
