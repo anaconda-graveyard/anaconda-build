@@ -105,9 +105,9 @@ class TestSuWorker(CLITestCase):
         worker = self.new_su_worker()
         procs = []
         for new_proc in range(5):
-            procs.append(sp.Popen(['su', '-c',
-                                   'sleep 10000',
-                                   '-', TEST_BUILD_WORKER]))
+            procs.append(sp.Popen(['su', '-', TEST_BUILD_WORKER, '--login',
+                                   '-c', 'sleep 10000',
+                                  ]))
         build_user_pids = {proc.pid for proc in procs}
         found_pids = self.find_worker_pids_parents()
         for pid in build_user_pids:
