@@ -147,15 +147,14 @@ class SuBuildProcess(BuildProcess):
         super(SuBuildProcess, self).__init__(['pkill',
                                               '-U',
                                               self.build_user],
-                                                self.cwd).wait()
+                                                self.cwd)
 
     def su_with_env(self, cmd):
         '''args for su as build_user with the anaconda settings'''
-        cmds = ['su', '--login', '-c', self.source_env]
+        cmds = ['su', '-', self.build_user, '--login', '-c', self.source_env]
         cmds[-1] += " && anaconda config --set url {} && ".format(self.anaconda_url)
         cmds[-1] += " conda config --set always_yes true && "
         cmds[-1] += cmd
-        cmds += ['-', self.build_user]
         return cmds
 
     @property

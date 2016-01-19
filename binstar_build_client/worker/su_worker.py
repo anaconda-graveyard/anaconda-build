@@ -59,14 +59,14 @@ def check_conda_path(build_user, python_install_dir):
                                   'python_install_dir {}'.format(python_install_dir))
     conda_exe = os.path.join(python_install_dir, 'bin', 'conda')
     check_conda = "{} && echo has_conda_installed".format(conda_exe)
-    conda_output = sp.check_output(['su', '--login', '-c', check_conda, '-', build_user])
+    conda_output = sp.check_output(['su', '-', build_user, '--login', '-c', check_conda])
     if 'has_conda_installed' not in conda_output.decode().strip():
         raise errors.BinstarError('Did not find conda at {}'.format(conda_exe))
     return True
 
 
 def test_su_as_user(build_user):
-    whoami_as_user = sp.check_output(['su', '--login', '-c', 'whoami', '-', build_user])
+    whoami_as_user = sp.check_output(['su', '-', build_user, '--login', '-c', 'whoami'])
     has_build_user = build_user in whoami_as_user.decode().strip()
     if not has_build_user:
         info = (build_user, whoami_as_user)
@@ -138,14 +138,25 @@ class SuWorker(Worker):
         validate_su_worker(self.build_user, self.python_install_dir)
         create_build_worker(args.build_user)
         self.clean_home_dir()
+        self.rm_conda_lock()
 
     def _finish_job(self, job_data, failed, status):
         '''Count job as finished, destroy build user processes,
         and replace build user's home directory'''
         self.destroy_user_procs()
         self.clean_home_dir()
+        self.rm_conda_lock()
         super(SuWorker, self)._finish_job(job_data, failed, status)
 
+    def rm_conda_lock(self):
+        dot_conda = os.path.join(os.path.expanduser("~" + self.build_user), '.conda')
+        envs = os.path.join(dot_conda, 'envs')
+        dot_pkgs = os.path.join(envs, '.pkgs')
+        if os.path.exists(dot_pkgs):
+            existing = os.listdir(dot_pkgs)
+            to_delete = [os.path.join(dot_pkgs, f) for f in existing if '.conda_lock' in f]
+            for f in to_delete:
+                os.unlink(f)
 
     def clean_home_dir(self):
         '''Delete lesser build_user's home dir and
@@ -154,7 +165,7 @@ class SuWorker(Worker):
         log.info('Remove build worker home directory: {}'.format(home_dir))
         rm_rf(home_dir)
         shutil.copytree('/etc/worker-skel', home_dir, symlinks=False)
-        out = sp.check_output(['chown', '-R', "{}:{}".format(self.build_user, self.build_user), home_dir])
+        out = sp.check_output(['chown', '-R', self.build_user, home_dir])
         if out:
             log.info(out)
         log.info('Copied /etc/worker-skel to {}.  Changed permissions.'.format(home_dir))
@@ -165,7 +176,7 @@ class SuWorker(Worker):
             out = sp.check_output(['pkill', '-U', self.build_user])
         except sp.CalledProcessError as e:
             # the user has no processes running and pkill returns non-zero
-            proc = subprocess.Popen(['ps', 'aux'], stdout=subprocess.PIPE)
+            proc = sp.Popen(['ps', 'aux'], stdout=sp.PIPE)
             proc.wait()
             lines = []
             for line in proc.stdout.read().decode().splitlines():
@@ -178,11 +189,10 @@ class SuWorker(Worker):
                 log.warn('Processes that should have been killed (ps aux output):')
                 for line in lines:
                     log.warn(line)
-        if out:
-            log.info(out)
 
     def build(self, job_data):
         self.clean_home_dir()
+        self.rm_conda_lock()
         return super(SuWorker, self).build(job_data)
 
     def run(self, build_data, script_filename, build_log, timeout, iotimeout,
@@ -192,7 +202,7 @@ class SuWorker(Worker):
         log.info("Running build script")
 
         working_dir = self.working_dir(build_data)
-        own_script = ['chown', '{}:{}'.format(self.build_user, self.build_user), os.path.abspath(working_dir)]
+        own_script = ['chown', '-R', self.build_user, os.path.abspath(working_dir)]
         log.info('Running: {}'.format(" ".join(own_script)))
         log.info(sp.check_output(own_script))
 
