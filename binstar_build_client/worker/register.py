@@ -286,7 +286,7 @@ class WorkerConfiguration(object):
                                              cls.REGISTERED_WORKERS_DIR))
                         os.unlink(worker_file)
                         config = {}
-                if config and config.get('worker_id', None):
+                if hasattr(config, 'get') and config.get('worker_id', None):
                     if name != config['worker_id']:
                         worker_id_to_name[config['worker_id']] = name
 
