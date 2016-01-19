@@ -35,7 +35,7 @@ def get_labels(job_data):
     Return `--label` arguments to pass to `anaconda upload`
     """
 
-    build_targets = job_data['build_item_info'].get('build_targets')
+    build_targets = job_data['build_item_info'].get('instructions', {}).get('build_targets')
 
     # TODO use git branch
     branch = 'dev'.replace('/', ':')

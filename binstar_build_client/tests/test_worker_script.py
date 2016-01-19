@@ -36,6 +36,8 @@ class Test(CLITestCase):
     @classmethod
     def setUpClass(cls):
         WorkerConfiguration.REGISTERED_WORKERS_DIR = test_workers
+        if not os.path.exists(WorkerConfiguration.REGISTERED_WORKERS_DIR):
+            os.mkdir(WorkerConfiguration.REGISTERED_WORKERS_DIR)
         super(Test, cls).setUpClass()
 
     def tearDown(self):
@@ -46,34 +48,45 @@ class Test(CLITestCase):
         unittest.TestCase.tearDown(self)
 
     @urlpatch
-    def test_register(self, urls):
-
-        register = urls.register(method='POST', path='/build-worker/username/queue-1', content='{"worker_id": "worker_id"}')
+    @patch('binstar_build_client.worker.register.WorkerConfiguration.register')
+    @patch('binstar_build_client.worker.register.WorkerConfiguration.deregister')
+    @patch('binstar_build_client.worker.register.WorkerConfiguration.load')
+    def test_register(self, load, deregister, urls, register):
 
         main(['register', 'username/queue-1'], False)
-        self.assertEqual(register.called, 1)
-
-        deregister = urls.register(method='DELETE', path='/build-worker/username/queue-1/worker_id')
-
+        self.assertEqual(register.call_count, 1)
 
         main(['deregister', 'worker_id'], False)
         self.assertEqual(register.called, 1)
         self.assertEqual(deregister.called, 1)
 
+
     @urlpatch
     @patch('binstar_build_client.worker.worker.Worker.work_forever')
-    def test_worker_simple(self, urls, loop):
+    @patch('binstar_build_client.worker.register.WorkerConfiguration.load')
+    @patch('binstar_build_client.worker.worker.Worker.run')
+    def test_worker_simple(self, run, load, loop, urls):
 
-        with self.assertRaises(errors.BinstarError):
-            main(['--show-traceback', 'worker', 'run', worker_data['worker_id']], False)
+        main(['--show-traceback', 'worker', 'run', worker_data['worker_id']], False)
 
-        self.assertEqual(loop.call_count, 0)
-
-        worker_config = WorkerConfiguration('worker_name', 'worker_id', 'username', 'queue', 'platform', 'hostname', 'dist')
-        worker_config.save()
-        main(['--show-traceback', 'worker', 'run', 'worker_name'], False)
         self.assertEqual(loop.call_count, 1)
 
+    def test_register_backwards_compat(self):
+
+        worker_file = os.path.join(WorkerConfiguration.REGISTERED_WORKERS_DIR,
+                                   'worker_name_1')
+        worker_id = '123456789'
+        try:
+            with open(worker_file, 'w') as f:
+                f.write(yaml.safe_dump({'worker_id': worker_id}))
+            worker_id_to_name = WorkerConfiguration.backwards_compat_lookup()
+            self.assertIn(worker_id, worker_id_to_name)
+            self.assertEqual(worker_id_to_name[worker_id], 'worker_name_1')
+        finally:
+            if os.path.exists(worker_file):
+                os.unlink(worker_file)
+        worker_id_to_name = WorkerConfiguration.backwards_compat_lookup()
+        self.assertEqual(worker_id_to_name.get(worker_id, None), None)
 
     def test_get_my_procs(self):
         pids = []

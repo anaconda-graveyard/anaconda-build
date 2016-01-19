@@ -4,6 +4,7 @@ import logging
 import os
 import platform
 
+
 from binstar_client import errors
 import yaml
 from glob import glob
@@ -12,6 +13,25 @@ from contextlib import contextmanager
 import psutil
 
 log = logging.getLogger("binstar.build")
+
+def split_queue_arg(queue):
+    '''
+    Support old and new style queue
+    '''
+
+    if queue.count('/') == 1:
+        username, queue = queue.split('/', 1)
+    elif queue.count('-') == 2:
+        _, username, queue = queue.split('-', 2)
+    elif queue.count('/') == 2:
+        _, username, queue = queue.split('/', 2)
+    else:
+        raise errors.UserError(
+            "Build queue must be of the form "
+            "build-USERNAME-QUEUENAME or USERNAME/QUEUENAME"
+        )
+
+    return username, queue
 
 
 def pid_is_running(pid):
@@ -28,9 +48,11 @@ class InvalidWorkerConfigFile(errors.BinstarError):
 
 class WorkerConfiguration(object):
     REGISTERED_WORKERS_DIR = os.path.join(os.path.expanduser('~'), '.workers')
+    HOSTNAME = platform.node()
 
     def __init__(self, name, worker_id, username, queue, platform, hostname, dist):
-        self.name = name
+        worker_id_to_name = WorkerConfiguration.backwards_compat_lookup()
+        self.name = worker_id_to_name.get(worker_id, None) or name
         self.worker_id = worker_id
         self.username = username
         self.queue = queue
@@ -69,17 +91,40 @@ class WorkerConfiguration(object):
         return self.to_dict() == other.to_dict()
 
     @classmethod
-    def registered_workers(cls):
+    def registered_workers(cls, bs):
         "Iterate over the registered workers on this machine"
+        username = bs.user()['login']
+        build_query = bs.build_queues(username=username)
+        for build_info in build_query:
+            queue_name, workers = build_info['_id'], build_info.get('workers', None)
+            if not workers:
+                continue
+            try:
+                user, queue = split_queue_arg(queue_name)
+            except Exception as e:
+                raise ValueError(repr(queue_name))
+            for worker in workers:
+                if worker['hostname'] != cls.HOSTNAME:
+                    continue
+                try:
+                    worker = cls(name=worker.get('name', worker['id']),
+                              worker_id=worker['id'],
+                              username=user,
+                              queue=queue,
+                              platform=worker['platform'],
+                              hostname=worker['hostname'],
+                              dist=worker['dist'])
+                    yield worker
 
-        for worker_name in os.listdir(cls.REGISTERED_WORKERS_DIR):
-            if '.' not in worker_name:
-                yield cls.load(worker_name)
+                except Exception as e:
+                    print('Failed with', repr(e))
+                    raise
 
     @property
     def filename(self):
         'Filename for to load/save worker config'
         return os.path.join(self.REGISTERED_WORKERS_DIR, self.name)
+
 
     @property
     def pid(self):
@@ -127,52 +172,26 @@ class WorkerConfiguration(object):
                 os.unlink(dst)
 
 
-    @classmethod
-    def exists(cls, worker_name):
-        worker_file = os.path.join(cls.REGISTERED_WORKERS_DIR, worker_name)
-        return os.path.isfile(worker_file)
-
 
     @classmethod
-    def load(cls, worker_name):
+    def load(cls, worker_name, bs):
+
         'Load a worker config from a worker_id'
-
-        worker_file = os.path.join(cls.REGISTERED_WORKERS_DIR, worker_name)
-        if not os.path.isfile(worker_file):
-            raise errors.BinstarError("Worker with ID {} does not exist locally ({})".format(worker_name, worker_file))
-
-        with open(worker_file) as fd:
-            try:
-                attrs = yaml.safe_load(fd)
-            except yaml.error.YAMLError as err:
-                log.error(err)
-                raise InvalidWorkerConfigFile("The worker registration file can not be read")
-
-        if not attrs:
-            raise InvalidWorkerConfigFile("The worker registration file {} "
-                                          "appears to be empty".format(worker_file))
-
-        expected = {'worker_id', 'username', 'queue', 'platform', 'hostname', 'dist'}
-
-        if set(attrs) != expected:
-            log.error("Expected the worker registration file to contain the values\n\t"
-                      "{}\ngot:\n\t{}".format(', '.join(expected), ' ,'.join(attrs)))
-            raise InvalidWorkerConfigFile("The worker registration file {} "
-                                          "does not contain the correct values".format(worker_file))
-
-        worker_config = cls(worker_name, **attrs)
-
-
-        return worker_config
-
+        username = bs.user()['login']
+        for worker in cls.registered_workers(bs):
+            if worker_name == worker.worker_id or worker_name == worker.name:
+                if worker.hostname == cls.HOSTNAME:
+                    return worker
+        raise errors.BinstarError('Worker with id '
+                                  '{} not found'.format(worker_name))
     @classmethod
-    def print_registered_workers(cls):
+    def print_registered_workers(cls, bs):
 
         has_workers = False
 
         log.info('Registered workers:')
 
-        for wconfig in cls.registered_workers():
+        for wconfig in cls.registered_workers(bs):
             has_workers = True
 
             msg = '{name}, id:{worker_id}, hostname:{hostname}, queue:{username}/{queue}'.format(name=wconfig.name, **wconfig.to_dict())
@@ -189,27 +208,17 @@ class WorkerConfiguration(object):
         '''
         Register the worker with anaconda server
         '''
-        if name and cls.exists(name):
-            raise errors.Conflict("Worker with name {} already exists".format(name))
-
-
-
-        worker_id = bs.register_worker(username, queue, platform, hostname, dist)
+        for worker in cls.registered_workers(bs):
+            if worker.name == name:
+                raise errors.BinstarError('Cannot have duplicate worker '
+                                          '--name from same host: {}'.format(name))
+        worker_id = bs.register_worker(username, queue, platform, hostname, dist,name=name)
         log.info('Registered worker with worker_id:\t{}'.format(worker_id))
 
         if name is None:
             name = worker_id
 
         return WorkerConfiguration(name, worker_id, username, queue, platform, hostname, dist)
-
-    def save(self):
-        'Store worker config in yaml file'
-
-        if not os.path.exists(self.REGISTERED_WORKERS_DIR):
-            os.mkdir(self.REGISTERED_WORKERS_DIR)
-
-        with open(self.filename, 'w') as fd:
-            yaml.safe_dump(self.to_dict(), fd, default_flow_style=False)
 
 
     def deregister(self, bs, as_json=False):
@@ -220,23 +229,63 @@ class WorkerConfiguration(object):
             removed_worker = bs.remove_worker(self.username, self.queue, self.worker_id)
 
             if not removed_worker:
-                info = (self.worker_id, self.username, self.queue,)
                 raise errors.BinstarError('Failed to remove_worker with argument of ' + \
-                                          'worker_id\t{}\tqueue\t{}/{}'.format(*info))
+                                          'worker_id\t{}\tqueue\t{}'.format(self.worker_id, self.queue))
 
             log.info('Deregistered worker with worker-id {}'.format(self.worker_id))
-            os.unlink(self.filename)
-            msg = 'Removed worker config file {0}'
-            log.info(msg.format(self.filename))
         except Exception:
 
             log.info('Failed on anaconda build deregister.\n')
-            self.print_registered_workers()
+            self.print_registered_workers(bs)
             log.info('deregister failed with error:\n')
             raise
 
     @classmethod
     def deregister_all(cls, bs):
 
-        for worker in cls.registered_workers():
+        for worker in cls.registered_workers(bs):
             worker.deregister(bs)
+
+    @classmethod
+    def backwards_compat_lookup(cls):
+        '''Also recognize worker --name's from older
+        worker configuration files in ~/.workers that
+        look like:
+
+        $ cat  ~/.workers/ps_abc1
+        dist: darwin10.10
+        hostname: 0178-psteinberg.local
+        platform: osx-64
+        queue: abc
+        username: psteinberg
+        worker_id: 5697f3320eafa954fc21a3a5
+
+        where ps_abc1 is a --name for a worker registration.
+
+        Returns a dictionary of worker name to worker id from
+        these files, if any.
+
+        '''
+
+        worker_id_to_name = {}
+        if os.path.exists(cls.REGISTERED_WORKERS_DIR):
+            possible_names = os.listdir(cls.REGISTERED_WORKERS_DIR)
+            for name in possible_names:
+                worker_file = os.path.join(cls.REGISTERED_WORKERS_DIR, name)
+                with open(worker_file, 'r') as f:
+                    try:
+                        config = yaml.safe_load(f.read())
+                    except:
+                        log.info('Removing non-yaml file {}'
+                                 'from worker pid dir: '
+                                 '{}'.format(worker_file,
+                                             cls.REGISTERED_WORKERS_DIR))
+                        os.unlink(worker_file)
+                        config = {}
+                if config.get('worker_id', None):
+                    if name != config['worker_id']:
+                        worker_id_to_name[config['worker_id']] = name
+
+        return worker_id_to_name
+
+
