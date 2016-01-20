@@ -1,4 +1,4 @@
-2015-01-20: 0.14.0:
+Unreleased: 0.14.0:
 -------------------
 * Each build now launches with a new process group (Linux) or job object (Windows) to improve cleanup of resources
 * Add additional channels to `conda config` with the new `install_channels` configuration option
