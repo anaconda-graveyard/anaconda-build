@@ -9,7 +9,10 @@ from __future__ import print_function, absolute_import, unicode_literals
 import io
 import logging
 import os
-import pwd
+try:
+    import pwd
+except ImportError:
+    import winpwd as pwd
 import shutil
 import subprocess as sp
 
