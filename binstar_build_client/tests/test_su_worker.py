@@ -68,8 +68,10 @@ class TestSuWorker(CLITestCase):
               'worker_id', TEST_BUILD_WORKER], False)
         self.assertEqual(SuWorker().work_forever.call_count, 1)
 
-    def test_validate_su_worker(self):
+    @patch('binstar_build_client.worker.su_worker.validate_su_worker_home')
+    def test_validate_su_worker(self, worker_home):
         '''Test su_worker is only run as root, with root python install'''
+        worker_home.return_value = True
         if not hasattr(os, 'getuid'):
             os.getuid = lambda: True
         with patch.object(os, 'name', return_value='posix', clear=True):

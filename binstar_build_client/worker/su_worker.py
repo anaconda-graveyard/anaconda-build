@@ -124,8 +124,16 @@ def create_build_worker(build_user):
         log.info('Not creating build user {} (already exists)'.format(build_user))
     else:
         log.info('useradd -M {}'.format(build_user))
-        sp.check_output(['useradd', '-M', build_user])
-
+        try:
+            sp.check_output(['which', 'useradd'])
+        except Exception as e:
+            log.info("Cannot useradd.  `which useradd` returns nothing.")
+            raise
+        try:
+            sp.check_output(['useradd', '-M', build_user])
+        except Exception as e:
+            log.info('Failed on useradd -M {}.'.format(build_user))
+            raise
 
 class SuWorker(Worker):
     '''Overrides the run method of Worker to run builds
