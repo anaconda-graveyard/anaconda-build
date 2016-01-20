@@ -43,21 +43,6 @@ class Test(unittest.TestCase):
         self.assertEqual(str(wc), expected)
 
 
-    def test_save_load(self):
-
-        wc = WorkerConfiguration(
-             'worker_name',
-             'worker_id', 'username', 'queue',
-             'platform', 'hostname', 'dist'
-        )
-        wc.save()
-
-        self.assertTrue(os.path.isfile(wc.filename))
-
-        wc2 = WorkerConfiguration.load('worker_name')
-
-        self.assertEqual(wc.to_dict(), wc2.to_dict())
-
     def test_running(self):
 
         wc = WorkerConfiguration(
@@ -65,8 +50,6 @@ class Test(unittest.TestCase):
              'worker_id', 'username', 'queue',
              'platform', 'hostname', 'dist'
         )
-
-        wc.save()
 
         self.assertFalse(wc.is_running())
 
@@ -83,8 +66,6 @@ class Test(unittest.TestCase):
             'worker_id', 'username', 'queue',
             'platform', 'hostname', 'dist'
         )
-
-        wc.save()
 
         self.assertFalse(wc.is_running())
 
