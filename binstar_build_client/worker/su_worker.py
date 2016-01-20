@@ -9,10 +9,8 @@ from __future__ import print_function, absolute_import, unicode_literals
 import io
 import logging
 import os
-try:
+if os.name != 'nt':
     import pwd
-except ImportError:
-    import winpwd as pwd
 import shutil
 import subprocess as sp
 
@@ -102,6 +100,9 @@ def is_build_user_running(build_user):
 def validate_su_worker(build_user, python_install_dir):
     '''Ensure su_worker is running as root, that there is a build worker, that
     /etc/worker-skel exists, and that conda is accessible to the build_user.'''
+
+    if not hasattr(os, 'getuid') or os.name == 'nt':
+        raise errors.BinstarError('SuWorker only runs as root and only on linux/unix')
     if build_user == 'root':
         raise errors.BinstarError('Do NOT make root the build_user.  '
                                   'The home directory of build_user is DELETED.')
@@ -110,8 +111,6 @@ def validate_su_worker(build_user, python_install_dir):
         raise errors.BinstarError('Expected /etc/worker-skel to exist and '
                                   'be a template for {}\'s'
                                   ' home directory'.format(build_user))
-    if not hasattr(os, 'getuid') or os.name == 'nt':
-        raise errors.BinstarError('SuWorker only runs as root and only on linux/unix')
     is_root = os.getuid() == 0
     if not is_root:
         raise errors.BinstarError('Expected su_worker to run as root.')
