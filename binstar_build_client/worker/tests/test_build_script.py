@@ -216,7 +216,7 @@ class Test(unittest.TestCase):
         line = [line for line in script_content.splitlines() if 'BUILD_ENV_PATH=' in line]
         build_env_path = line[0].split('=')[-1].strip()
         if os.name == 'nt':
-            self.assertEqual(build_env_path, '"%WORKING_DIR%\env"')
+            self.assertEqual(build_env_path, '%WORKING_DIR%\env"')
         else:
             self.assertEqual(build_env_path, '"${WORKING_DIR}/env"')
 
