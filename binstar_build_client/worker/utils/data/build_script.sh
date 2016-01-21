@@ -65,7 +65,7 @@ export {{key}}={{quote(value)}}
 setup_build(){
 
 
-    export BUILD_ENV_PATH="%{WORKING_DIR}/env"
+    export BUILD_ENV_PATH="${WORKING_DIR}/env"
 
     echo -e "\n[Setup Build]"
 
