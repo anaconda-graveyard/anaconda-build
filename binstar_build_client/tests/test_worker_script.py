@@ -74,9 +74,6 @@ class Test(CLITestCase):
         worker_id = '123456789'
         worker_id_pid = '{}.123'.format(worker_id)
         try:
-            with open(worker_id_pid, 'w') as f:
-                f.write('') # make sure a PID file's presence
-                            # is non-breaking
             with open(worker_file, 'w') as f:
                 f.write(yaml.safe_dump({'worker_id': worker_id}))
             worker_id_to_name = WorkerConfiguration.backwards_compat_lookup()
@@ -87,6 +84,34 @@ class Test(CLITestCase):
                 os.unlink(worker_file)
         worker_id_to_name = WorkerConfiguration.backwards_compat_lookup()
         self.assertEqual(worker_id_to_name.get(worker_id, None), None)
+
+    def test_register_backwards_compat_pid(self):
+        '''Test .workers files that when yaml loaded
+         will error out or not return a dict.'''
+        folder = WorkerConfiguration.REGISTERED_WORKERS_DIR
+        def cleanup():
+            for f in os.listdir(folder):
+                os.unlink(os.path.join(folder,f))
+        cleanup()
+        try:
+            for idx, pid_file in enumerate(('worker1.123', 'worker2.234', 'asdfjkl.456')):
+                worker_id_pid = os.path.join(folder, pid_file)
+                if idx == 0:
+                    content = ''
+                elif idx == 1:
+                    # su worker uses usernames in pid files
+                    content = 'user99'
+                elif idx == 2:
+                    # this shouldn't happen but just in case
+                    # a user made a file in .workers like a pid
+                    # file pattern
+                    content = '{bad_dict: [abc,'
+                with open(worker_id_pid, 'w') as f:
+                    f.write(content)
+                worker_id_to_name = WorkerConfiguration.backwards_compat_lookup()
+                self.assertEqual(len(worker_id_to_name), 0)
+        finally:
+            cleanup()
 
 if __name__ == '__main__':
     unittest.main()
