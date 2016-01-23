@@ -73,45 +73,39 @@ class Test(CLITestCase):
                                    'worker_name_1')
         worker_id = '123456789'
         worker_id_pid = '{}.123'.format(worker_id)
-        try:
-            with open(worker_file, 'w') as f:
-                f.write(yaml.safe_dump({'worker_id': worker_id}))
-            worker_id_to_name = WorkerConfiguration.backwards_compat_lookup()
-            self.assertIn(worker_id, worker_id_to_name)
-            self.assertEqual(worker_id_to_name[worker_id], 'worker_name_1')
-        finally:
-            if os.path.exists(worker_file):
-                os.unlink(worker_file)
+        with open(worker_file, 'w') as f:
+            f.write(yaml.safe_dump({'worker_id': worker_id}))
+        worker_id_to_name = WorkerConfiguration.backwards_compat_lookup()
+        self.assertIn(worker_id, worker_id_to_name)
+        if os.path.exists(worker_file):
+            os.unlink(worker_file)
+        self.assertEqual(worker_id_to_name[worker_id], 'worker_name_1')
         worker_id_to_name = WorkerConfiguration.backwards_compat_lookup()
         self.assertEqual(worker_id_to_name.get(worker_id, None), None)
 
     def test_register_backwards_compat_pid(self):
         '''Test .workers files that when yaml loaded
-         will error out or not return a dict.'''
+        will error out or not return a dict.'''
         folder = WorkerConfiguration.REGISTERED_WORKERS_DIR
-        def cleanup():
-            for f in os.listdir(folder):
-                os.unlink(os.path.join(folder,f))
-        cleanup()
-        try:
-            for idx, pid_file in enumerate(('worker1.123', 'worker2.234', 'asdfjkl.456')):
-                worker_id_pid = os.path.join(folder, pid_file)
-                if idx == 0:
-                    content = ''
-                elif idx == 1:
-                    # su worker uses usernames in pid files
-                    content = 'user99'
-                elif idx == 2:
-                    # this shouldn't happen but just in case
-                    # a user made a file in .workers like a pid
-                    # file pattern
-                    content = '{bad_dict: [abc,'
-                with open(worker_id_pid, 'w') as f:
-                    f.write(content)
-                worker_id_to_name = WorkerConfiguration.backwards_compat_lookup()
-                self.assertEqual(len(worker_id_to_name), 0)
-        finally:
-            cleanup()
+        for f in os.listdir(folder):
+            os.unlink(os.path.join(folder, f))
+        test_cases = [
+            ('worker1.123', ''),
+            ('worker2.234', 'user99'), # su worker uses usernames in pid files
+            ('worker3.1234', '{bad_dict: [abc,'), # this shouldn't happen but just in case
+        ]
+        for pid_file, content in test_cases:
+            worker_id_pid = os.path.join(folder, pid_file)
+            with open(worker_id_pid, 'w') as f:
+                f.write(content)
+        worker_id_to_name = WorkerConfiguration.backwards_compat_lookup()
+        # the above should be len zero because folder started
+        # empty and added only pid files.  No
+        # worker yaml's that have worker_id's
+        # in them were added. It should skip without error
+        # over bad or irrelevant files (non-yaml worker configs)
+        self.assertEqual(len(worker_id_to_name), 0)
+
 
 if __name__ == '__main__':
     unittest.main()
