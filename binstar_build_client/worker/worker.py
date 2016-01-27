@@ -12,12 +12,12 @@ import psutil
 import requests
 import time
 
-from binstar_build_client.utils import get_conda_root_prefix
 from binstar_build_client.utils.rm import rm_rf
 from binstar_build_client.worker.utils import process_wrappers
 from binstar_build_client.worker.utils import script_generator
 from binstar_build_client.worker.utils.build_log import BuildLog
 from binstar_build_client.worker.utils.timeout import read_with_timeout
+from binstar_build_client.worker.utils.validate_procs import validate_procs
 from binstar_client import errors
 
 
@@ -231,7 +231,7 @@ class Worker(object):
             build_log.write(msg.encode('utf-8', errors='replace'))
 
             build_log.flush()
-            Worker.check_conflicting_procs()
+            validate_procs()
             script_filename = script_generator.gen_build_script(working_dir,
                 job_data, conda_build_dir=self.args.conda_build_dir)
 
@@ -390,22 +390,3 @@ class Worker(object):
             duration = time.time() - start_time
             log.info('Build Duration {0} seconds'.format(duration))
 
-    @classmethod
-    def check_conflicting_procs(cls):
-        if os.name != 'nt':
-            return
-        procs_on_wrong_python = []
-        executable_dir = get_conda_root_prefix()
-        for proc in psutil.process_iter():
-            try:
-                cmd = proc.cmdline()
-            except psutil.AccessDenied:
-                continue
-            if cmd and cmd[0].strip().startswith(executable_dir):
-                procs_on_wrong_python.append("Pid {} is running {}".format(proc.pid, cmd))
-        if not procs_on_wrong_python:
-            return
-
-        raise errors.BinstarError("There were processes running on the "
-                                  "incorrect "
-                                  "Python prefix: {}".format(" ".join(procs_on_wrong_python)))

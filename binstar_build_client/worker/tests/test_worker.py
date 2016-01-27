@@ -12,6 +12,7 @@ import requests
 from binstar_build_client.utils import get_conda_root_prefix
 from binstar_build_client.worker.register import WorkerConfiguration
 from binstar_build_client.worker.worker import Worker
+from binstar_build_client.worker.utils.validate_procs import validate_procs
 from binstar_client import errors
 import tempfile
 
@@ -164,7 +165,7 @@ class Test(unittest.TestCase):
         with patch.object(psutil, 'process_iter', mock_proces_iter):
             with patch.object(os, 'name', new_callable=lambda: 'nt'):
                 with self.assertRaises(errors.BinstarError):
-                    Worker.check_conflicting_procs()
+                    validate_procs()
         def mock_no_conflict():
             n=Namespace()
             n.pid = 1234,
@@ -173,7 +174,7 @@ class Test(unittest.TestCase):
 
         with patch.object(psutil,'process_iter', mock_no_conflict):
             with patch.object(os, 'name', new_callable=lambda:'nt'):
-                Worker.check_conflicting_procs()
+                self.assertEqual(validate_procs(), None)
 
 if __name__ == '__main__':
     unittest.main()
