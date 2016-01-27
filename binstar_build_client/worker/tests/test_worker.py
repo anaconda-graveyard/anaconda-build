@@ -1,12 +1,15 @@
 from __future__ import print_function, unicode_literals, absolute_import
 
+from argparse import Namespace
 from mock import Mock, patch
 import io
 import os
+import psutil
 import unittest
 
 import requests
 
+from binstar_build_client.utils import get_conda_root_prefix
 from binstar_build_client.worker.register import WorkerConfiguration
 from binstar_build_client.worker.worker import Worker
 from binstar_client import errors
@@ -150,6 +153,27 @@ class Test(unittest.TestCase):
         value = journal.getvalue()
         expected = 'starting build, test_job_id, job_name\nbuild errored, test_job_id, job_name\n'
         self.assertEqual(value, expected)
+
+    def test_worker_conflicts_check(self):
+        def mock_proces_iter():
+            n = Namespace()
+            n.pid = 1234
+            n.cmdline = lambda: [get_conda_root_prefix()]
+            yield n
+
+        with patch.object(psutil, 'process_iter', mock_proces_iter):
+            with patch.object(os, 'name', new_callable=lambda: 'nt'):
+                with self.assertRaises(errors.BinstarError):
+                    Worker.check_conflicting_procs()
+        def mock_no_conflict():
+            n=Namespace()
+            n.pid = 1234,
+            n.cmdline = lambda: "C:\\Not-needed"
+            yield n
+
+        with patch.object(psutil,'process_iter', mock_no_conflict):
+            with patch.object(os, 'name', new_callable=lambda:'nt'):
+                Worker.check_conflicting_procs()
 
 if __name__ == '__main__':
     unittest.main()
