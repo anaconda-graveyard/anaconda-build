@@ -15,6 +15,7 @@ from binstar_build_client import BinstarBuildAPI
 from binstar_build_client.utils import get_conda_root_prefix
 from binstar_build_client.worker.worker import Worker
 from binstar_build_client.worker.register import WorkerConfiguration
+from binstar_build_client.worker.utils.validate_procs import validate_procs
 
 log = logging.getLogger('binstar.build')
 
@@ -25,7 +26,8 @@ def main(args):
     args.conda_build_dir = args.conda_build_dir.format(platform=worker_config.platform)
     log.info("Using conda build directory: {}".format(args.conda_build_dir))
     log.info(str(worker_config))
-
+    if not args.ignore_process_check:
+        validate_procs()
     worker = Worker(bs, worker_config, args)
 
     worker.write_status(True, "Starting")
@@ -82,6 +84,8 @@ def add_parser(subparsers, name='run',
     parser.add_argument('-t', '--max-job-duration', type=int, metavar='SECONDS',
                         dest='timeout',
                         help='Force jobs to stop after they exceed duration (default: %(default)s)', default=60 * 60)
-
+    parser.add_argument('--ignore-process-check',
+                        action="store_true",
+                        help="Ignore check that build is on separate python from worker run (always ignored if not windows)")
     parser.set_defaults(main=default_func)
     return parser

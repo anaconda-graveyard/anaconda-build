@@ -17,7 +17,6 @@ from binstar_build_client.worker.utils import process_wrappers
 from binstar_build_client.worker.utils import script_generator
 from binstar_build_client.worker.utils.build_log import BuildLog
 from binstar_build_client.worker.utils.timeout import read_with_timeout
-from binstar_build_client.worker.utils.validate_procs import validate_procs
 from binstar_client import errors
 
 
@@ -231,7 +230,6 @@ class Worker(object):
             build_log.write(msg.encode('utf-8', errors='replace'))
 
             build_log.flush()
-            validate_procs()
             script_filename = script_generator.gen_build_script(working_dir,
                 job_data, conda_build_dir=self.args.conda_build_dir)
 
