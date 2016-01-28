@@ -1,6 +1,7 @@
 import logging
 import os
 import psutil
+import sys
 
 from binstar_client import errors
 from binstar_build_client.utils import get_conda_root_prefix
@@ -13,7 +14,7 @@ def validate_procs():
     if os.name != 'nt':
         return
     procs_on_wrong_python = []
-    executable_dir = get_conda_root_prefix()
+    executable_dir = sys.prefix
     my_pid = os.getpid()
     for proc in psutil.process_iter():
         if proc.pid == my_pid:
