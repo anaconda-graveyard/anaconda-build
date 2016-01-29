@@ -272,10 +272,10 @@ class WorkerConfiguration(object):
             possible_names = os.listdir(cls.REGISTERED_WORKERS_DIR)
             for name in possible_names:
                 worker_file = os.path.join(cls.REGISTERED_WORKERS_DIR, name)
-                if '.' in worker_file:
-                    pid = worker_file.split('.')[-1]
-                    if re.search('^\d+$', pid):
-                        continue
+                parts = worker_file.split('.')
+                if len(parts) > 1:
+                    if re.search('^\d+$', parts[-1]):
+                        continue # it is a PID file not config
                 with open(worker_file, 'r') as f:
 
                     try:
@@ -287,9 +287,9 @@ class WorkerConfiguration(object):
                                              cls.REGISTERED_WORKERS_DIR))
                         os.unlink(worker_file)
                         config = {}
-                    if config.get('worker_id', None):
-                        if name != config['worker_id']:
-                            worker_id_to_name[config['worker_id']] = name
+                if hasattr(config, 'get') and config.get('worker_id', None):
+                    if name != config['worker_id']:
+                        worker_id_to_name[config['worker_id']] = name
 
         return worker_id_to_name
 

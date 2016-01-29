@@ -1,3 +1,11 @@
+Unreleased: 0.14.0:
+-------------------
+* Each build now launches with a new process group (Linux) or job object (Windows) to improve cleanup of resources
+* Add additional channels to `conda config` with the new `install_channels` configuration option
+* Redact lines ending with `\r` from the build log with the new `quiet` configuration option
+* Worker configuration is fetched from the server rather than stored locally (#154)
+* Additional bug fixes (Anaconda-Server/docs.anaconda.org#182)
+
 2013-09-05: 0.3.1:
 -----------------
 * fix attribute error on Windows

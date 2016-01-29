@@ -197,6 +197,29 @@ class Test(unittest.TestCase):
 
         self.assertIn("--label foo", script_content)
 
+    def test_working_dir(self):
+        build_data = default_build_data()
+        build_data['build_info']['channels'] = ['foo']
+        build_data['build_item_info']['instructions']['build_targets'] = {
+            'files': 'output_file',
+        }
+        script_filename = gen_build_script(tempfile.mkdtemp(),
+                                           build_data,
+                                           ignore_setup_build=True,
+                                           ignore_fetch_build_source=True)
+        self.addCleanup(os.unlink, script_filename)
+
+        with open(script_filename, 'r') as script_file:
+            script_content = script_file.read()
+
+        self.assertIn("BUILD_ENV_PATH=", script_content)
+        line = [line for line in script_content.splitlines() if 'BUILD_ENV_PATH=' in line]
+        build_env_path = line[0].split('=')[-1].strip()
+        if os.name == 'nt':
+            self.assertEqual(build_env_path, '%WORKING_DIR%\env"')
+        else:
+            self.assertEqual(build_env_path, '"${WORKING_DIR}/env"')
+
 
 if __name__ == "__main__":
     # import sys;sys.argv = ['', 'Test.test_timeout']
