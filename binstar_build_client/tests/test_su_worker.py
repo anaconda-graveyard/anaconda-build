@@ -187,7 +187,7 @@ class TestSuWorker(CLITestCase):
         self.assertEqual(clean.call_count, 2)
         self.assertEqual(finish.call_count, 1)
         self.assertEqual(check_output.call_count, 1)
-
+    @unittest.skipIf(os.name=='nt', 'Not a relevant test on windows.')
     @patch('subprocess.check_output')
     @patch('os.path.expanduser')
     def test_clean_home_dir(self, expanduser, check):
