@@ -168,13 +168,13 @@ class SuWorker(Worker):
             for f in to_delete:
                 os.unlink(f)
 
-    def clean_home_dir(self):
+    def clean_home_dir(self, template_dir="/etc/worker-skel"):
         '''Delete lesser build_user's home dir and
         replace it with /etc/worker-skel'''
         home_dir = os.path.expanduser('~{}'.format(self.build_user))
         log.info('Remove build worker home directory: {}'.format(home_dir))
         rm_rf(home_dir)
-        shutil.copytree('/etc/worker-skel', home_dir, symlinks=False)
+        shutil.copytree(template_dir, home_dir, symlinks=False)
         out = sp.check_output(['chown', '-R', self.build_user, home_dir])
         if out:
             log.info(out)

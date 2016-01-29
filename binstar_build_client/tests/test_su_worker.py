@@ -193,22 +193,27 @@ class TestSuWorker(CLITestCase):
     def test_clean_home_dir(self, expanduser, check):
         check.return_value = 'ok'
         home_dir = './test_folder'
+        template_dir = './etc-worker-skel'
         expanduser.return_value = home_dir
         worker = self.new_su_worker()
-
-        if not os.path.exists(home_dir):
-            os.mkdir(home_dir)
+        for dirr in (template_dir, home_dir):
+            if not os.path.exists(dirr):
+                os.mkdir(dirr)
+        for sample_file in ('.bashrc', '.bash_profile', 'abc.txt'):
+            with open(os.path.join(template_dir, sample_file), 'w') as f:
+                f.write(sample_file)
         try:
             to_be_removed = os.path.join(home_dir, 'to_be_removed')
             with open(to_be_removed, 'w') as f:
                 f.write('to_be_removed')
-            worker.clean_home_dir()
+            worker.clean_home_dir(template_dir=template_dir)
             sorted_home_dir = sorted(os.listdir(home_dir))
-            sorted_etc_worker = sorted(os.listdir('/etc/worker-skel'))
+            sorted_etc_worker = sorted(os.listdir(template_dir))
             self.assertEqual(sorted_etc_worker, sorted_home_dir)
             self.assertTrue(expanduser.called)
         finally:
-            shutil.rmtree(home_dir)
+            for dirr in (home_dir, template_dir):
+                shutil.rmtree(dirr)
 
     def test_start_when_already_running(self):
         worker_id_pid = 'test_build_worker.1234'
