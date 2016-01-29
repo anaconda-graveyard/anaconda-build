@@ -13,6 +13,7 @@ import io
 import os
 from glob import glob
 import psutil
+import shutil
 import subprocess as sp
 import unittest
 
@@ -30,6 +31,8 @@ from binstar_build_client.tests.test_worker_script import (worker_data,
                                                            test_workers)
 
 import binstar_build_client.worker.su_worker as su_worker
+
+
 
 TEST_BUILD_WORKER = 'test_build_worker'
 SU_WORKER_DEFAULT_PATH = su_worker.SU_WORKER_DEFAULT_PATH
@@ -56,17 +59,19 @@ class TestSuWorker(CLITestCase):
 
         unittest.TestCase.tearDown(self)
 
-    @unittest.skipIf(not is_valid_su_worker, 'Skipping as not valid su_worker')
-    @urlpatch
+    @patch('binstar_build_client.worker.su_worker.SuWorker.clean_home_dir')
     @patch('binstar_build_client.worker.su_worker.SuWorker')
     @patch('binstar_build_client.worker.register.WorkerConfiguration.load')
-    def test_su_worker(self, urls, load, SuWorker):
+    @patch('binstar_build_client.worker.su_worker.validate_su_worker')
+    @urlpatch
+    def test_su_worker(self, urls, validate, load, SuWorker, clean):
         '''Test su_worker CLI '''
 
         load.return_value = self.new_worker_config()
         main(['--show-traceback', 'su_run',
               'worker_id', TEST_BUILD_WORKER], False)
         self.assertEqual(SuWorker().work_forever.call_count, 1)
+
 
     @patch('binstar_build_client.worker.su_worker.validate_su_worker_home')
     def test_validate_su_worker(self, worker_home):
@@ -107,17 +112,25 @@ class TestSuWorker(CLITestCase):
         worker = self.new_su_worker()
         procs = []
         for new_proc in range(5):
-            procs.append(sp.Popen(['su', '-', TEST_BUILD_WORKER, '--login',
+            proc = sp.Popen(['su', '-', TEST_BUILD_WORKER, '--login',
                                    '-c', 'sleep 10000',
-                                  ]))
-        build_user_pids = {proc.pid for proc in procs}
-        found_pids = self.find_worker_pids_parents()
-        for pid in build_user_pids:
-            self.assertIn(pid, found_pids)
-        worker.destroy_user_procs()
-        found_pids = self.find_worker_pids_parents()
-        for pid in build_user_pids:
-            self.assertNotIn(pid, found_pids)
+                                  ])
+            procs.append(proc)
+        try:
+            build_user_pids = {proc.pid for proc in procs}
+            found_pids = self.find_worker_pids_parents()
+            for pid in build_user_pids:
+                self.assertIn(pid, found_pids)
+            worker.destroy_user_procs()
+            found_pids = self.find_worker_pids_parents()
+            for pid in build_user_pids:
+                self.assertNotIn(pid, found_pids)
+        finally:
+            for proc in procs:
+                try:
+                    proc.kill()
+                except psutil.NoSuchProcess:
+                    pass
 
     def find_worker_pids_parents(self):
         '''This finds the TEST_BUILD_WORKER's subprocesses,
@@ -140,11 +153,9 @@ class TestSuWorker(CLITestCase):
     @patch('binstar_build_client.worker.utils.process_wrappers.SuBuildProcess')
     @patch('binstar_build_client.worker.su_worker.SuWorker.destroy_user_procs')
     @patch('binstar_build_client.worker.su_worker.SuWorker.clean_home_dir')
-    @patch('binstar_build_client.worker.su_worker.validate_su_worker')
     @patch('binstar_build_client.worker.worker.Worker._finish_job')
     @patch('subprocess.check_output')
-    @unittest.skipIf(not is_valid_su_worker, "Must be valid _su_worker")
-    def test_run(self, check_output, finish, validate, clean, destroy, su_build):
+    def test_run(self, check_output, finish, clean, destroy, su_build):
         self.new_worker_config()
 
         ok = ['echo','su_worker_test_ok']
@@ -152,7 +163,6 @@ class TestSuWorker(CLITestCase):
         su_build.return_value = process_wrappers.BuildProcess(ok, '.')
         destroy.return_value = True
         clean.return_value = True
-        validate.return_value = True
         finish.return_value = True
         worker = self.new_su_worker()
         build_data = {
@@ -174,24 +184,31 @@ class TestSuWorker(CLITestCase):
         self.assertEqual(exit_code, 0)
         self.assertEqual(su_build.call_count, 1)
         self.assertEqual(destroy.call_count, 1)
-        self.assertEqual(validate.call_count, 1)
         self.assertEqual(clean.call_count, 2)
         self.assertEqual(finish.call_count, 1)
         self.assertEqual(check_output.call_count, 1)
 
-    @unittest.skipIf(not is_valid_su_worker, 'Skipping as not valid su_worker')
-    @unittest.skipIf(not standard_root_install,
-                        'Skipping: python not at {}'.format(SU_WORKER_DEFAULT_PATH))
-    def test_clean_home_dir(self):
+    @patch('subprocess.check_output')
+    @patch('os.path.expanduser')
+    def test_clean_home_dir(self, expanduser, check):
+        check.return_value = 'ok'
+        home_dir = './test_folder'
+        expanduser.return_value = home_dir
         worker = self.new_su_worker()
-        home_dir = os.path.expanduser('~{}'.format(TEST_BUILD_WORKER))
-        to_be_removed = os.path.join(home_dir, 'to_be_removed')
-        with open(to_be_removed, 'w') as f:
-            f.write('to_be_removed')
-        worker.clean_home_dir()
-        sorted_home_dir = sorted(os.listdir(home_dir))
-        sorted_etc_worker = sorted(os.listdir('/etc/worker-skel'))
-        self.assertEqual(sorted_etc_worker, sorted_home_dir)
+
+        if not os.path.exists(home_dir):
+            os.mkdir(home_dir)
+        try:
+            to_be_removed = os.path.join(home_dir, 'to_be_removed')
+            with open(to_be_removed, 'w') as f:
+                f.write('to_be_removed')
+            worker.clean_home_dir()
+            sorted_home_dir = sorted(os.listdir(home_dir))
+            sorted_etc_worker = sorted(os.listdir('/etc/worker-skel'))
+            self.assertEqual(sorted_etc_worker, sorted_home_dir)
+            self.assertTrue(expanduser.called)
+        finally:
+            shutil.rmtree(home_dir)
 
     def test_start_when_already_running(self):
         worker_id_pid = 'test_build_worker.1234'
@@ -208,7 +225,9 @@ class TestSuWorker(CLITestCase):
             if os.path.exists(worker_file):
                 os.unlink(worker_file)
 
-    def new_su_worker(self):
+    @patch('binstar_build_client.worker.su_worker.validate_su_worker')
+    def new_su_worker(self, validate):
+        validate.return_value = True
         args = Namespace()
         args.site = 'http://api.anaconda.org'
         args.token = None
@@ -219,7 +238,9 @@ class TestSuWorker(CLITestCase):
         args.cwd = '.'
         bs = get_binstar(args, cls=BinstarBuildAPI)
         worker_config = self.new_worker_config()
-        return su_worker.SuWorker(bs, worker_config, args)
+        worker = su_worker.SuWorker(bs, worker_config, args)
+        self.assertEqual(validate.call_count, 1)
+        return worker
 
     def new_worker_config(self):
         worker_config = WorkerConfiguration('worker_id', 'worker_id', 'username', 'queue',
