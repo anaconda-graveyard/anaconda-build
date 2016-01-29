@@ -12,7 +12,7 @@ def validate_procs():
     '''Prevent windows workers from modifying their executable_dir,
     such as conda.exe'''
     if os.name != 'nt':
-        return
+        return []
     procs_on_wrong_python = []
     executable_dir = sys.prefix
     my_pid = os.getpid()
@@ -28,10 +28,5 @@ def validate_procs():
             log.info('ZombieProcess: {} {}'.format(proc.pid, cmd))
         if cmd and cmd[0].strip().startswith(executable_dir):
             procs_on_wrong_python.append("Pid {} is running {}".format(proc.pid, cmd))
-    if not procs_on_wrong_python:
-        return
-    raise errors.BinstarError("There were processes running on the "
-                              "incorrect "
-                              "Python prefix: {}".format(" ".join(procs_on_wrong_python)))
-
+    return procs_on_wrong_python
 

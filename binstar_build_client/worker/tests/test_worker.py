@@ -164,8 +164,8 @@ class Test(unittest.TestCase):
 
         with patch.object(psutil, 'process_iter', mock_proces_iter):
             with patch.object(os, 'name', new_callable=lambda: 'nt'):
-                with self.assertRaises(errors.BinstarError):
-                    validate_procs()
+                procs_on_wrong_python = validate_procs()
+                self.assertEqual(len(procs_on_wrong_python), 1)
         def mock_no_conflict():
             n=Namespace()
             n.pid = 1234,
@@ -174,7 +174,7 @@ class Test(unittest.TestCase):
 
         with patch.object(psutil,'process_iter', mock_no_conflict):
             with patch.object(os, 'name', new_callable=lambda:'nt'):
-                self.assertEqual(validate_procs(), None)
+                self.assertEqual(validate_procs(), [])
 
 if __name__ == '__main__':
     unittest.main()
