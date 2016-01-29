@@ -233,9 +233,11 @@ class TestSuWorker(CLITestCase):
             if os.path.exists(worker_file):
                 os.unlink(worker_file)
 
+    @patch('binstar_build_client.worker.su_worker.create_build_worker')
     @patch('binstar_build_client.worker.su_worker.validate_su_worker')
-    def new_su_worker(self, validate):
+    def new_su_worker(self, validate, create):
         validate.return_value = True
+        create.return_value = True
         args = Namespace()
         args.site = 'http://api.anaconda.org'
         args.token = None
@@ -249,6 +251,7 @@ class TestSuWorker(CLITestCase):
         worker = su_worker.SuWorker(bs, worker_config, args,
                                     clean_at_start=False)
         self.assertEqual(validate.call_count, 1)
+        self.assertEqual(create.call_count, 1)
         return worker
 
     def new_worker_config(self):
