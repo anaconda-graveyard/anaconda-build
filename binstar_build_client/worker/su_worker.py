@@ -141,14 +141,18 @@ class SuWorker(Worker):
     '''Overrides the run method of Worker to run builds
     as a lesser user. '''
 
-    def __init__(self, bs, worker_config, args):
+    def __init__(self, bs, worker_config, args,
+                template_dir='/etc/worker-skel',
+                clean_at_start=True):
         super(SuWorker, self).__init__(bs, worker_config, args)
         self.build_user = args.build_user
         self.python_install_dir = args.python_install_dir
         validate_su_worker(self.build_user, self.python_install_dir)
         create_build_worker(args.build_user)
-        self.clean_home_dir()
-        self.rm_conda_lock()
+        self.template_dir=template_dir
+        if clean_at_start:
+            self.clean_home_dir()
+            self.rm_conda_lock()
 
     def _finish_job(self, job_data, failed, status):
         '''Count job as finished, destroy build user processes,
@@ -168,9 +172,10 @@ class SuWorker(Worker):
             for f in to_delete:
                 os.unlink(f)
 
-    def clean_home_dir(self, template_dir="/etc/worker-skel"):
+    def clean_home_dir(self, template_dir=None):
         '''Delete lesser build_user's home dir and
         replace it with /etc/worker-skel'''
+        template_dir = template_dir or self.template_dir
         home_dir = os.path.expanduser('~{}'.format(self.build_user))
         log.info('Remove build worker home directory: {}'.format(home_dir))
         rm_rf(home_dir)

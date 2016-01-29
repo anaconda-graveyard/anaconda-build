@@ -184,9 +184,10 @@ class TestSuWorker(CLITestCase):
         self.assertEqual(exit_code, 0)
         self.assertEqual(su_build.call_count, 1)
         self.assertEqual(destroy.call_count, 1)
-        self.assertEqual(clean.call_count, 2)
+        self.assertEqual(clean.call_count, 1)
         self.assertEqual(finish.call_count, 1)
-        self.assertEqual(check_output.call_count, 1)
+        self.assertTrue(check_output.called)
+
     @unittest.skipIf(os.name=='nt', 'Not a relevant test on windows.')
     @patch('subprocess.check_output')
     @patch('os.path.expanduser')
@@ -243,7 +244,8 @@ class TestSuWorker(CLITestCase):
         args.cwd = '.'
         bs = get_binstar(args, cls=BinstarBuildAPI)
         worker_config = self.new_worker_config()
-        worker = su_worker.SuWorker(bs, worker_config, args)
+        worker = su_worker.SuWorker(bs, worker_config, args,
+                                    clean_at_start=False)
         self.assertEqual(validate.call_count, 1)
         return worker
 
