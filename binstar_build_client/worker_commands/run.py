@@ -27,15 +27,7 @@ def main(args):
     args.conda_build_dir = args.conda_build_dir.format(platform=worker_config.platform)
     log.info("Using conda build directory: {}".format(args.conda_build_dir))
     log.info(str(worker_config))
-    procs_on_wrong_python = validate_procs()
-    if not args.ignore_process_check and procs_on_wrong_python:
-        raise errors.BinstarError("There were processes running on the "
-                          "incorrect "
-                          "Python prefix: {}".format(" ".join(procs_on_wrong_python)))
-    elif procs_on_wrong_python:
-        log.info('There were processes '
-                 'running on the wrong '
-                 'Python prefix: {}'.format(procs_on_wrong_python))
+    validate_procs(args.ignore_process_check)
 
     worker = Worker(bs, worker_config, args)
 

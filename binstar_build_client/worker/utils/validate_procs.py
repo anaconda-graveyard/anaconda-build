@@ -8,7 +8,7 @@ from binstar_build_client.utils import get_conda_root_prefix
 
 log = logging.getLogger('binstar.build')
 
-def validate_procs():
+def validate_procs(ignore_process_check=False):
     '''Prevent windows workers from modifying their executable_dir,
     such as conda.exe'''
     if os.name != 'nt':
@@ -19,28 +19,38 @@ def validate_procs():
     for proc in psutil.process_iter():
         if proc.pid == my_pid:
             continue
-        cmd = None
+        exe = None
         try:
-            cmd = proc.cmdline()
+            exe = proc.exe()
+
         except psutil.AccessDenied:
+            log.info('AccessDenied to proc with pid {}'.format(proc.pid))
             continue
         except psutil.ZombieProcess:
-            log.info('ZombieProcess: {} {}'.format(proc.pid, cmd))
-        open_files = ['Function_Not_Available']
+            log.info('ZombieProcess: {}'.format(proc.pid))
+            continue
+        open_files = ['Cannot check open_files()']
         try:
             if hasattr(proc, 'open_files'):
                 open_files = proc.open_files()
         except psutil.AccessDenied:
+            log.info('AccessDenied to open_files()'
+                     ' from pid {}'.format(proc.pid))
             open_files = ['AccessDenied']
-        msg = "Pid {} is running {} with open files {}"
-        if cmd and cmd[0].strip().startswith(executable_dir):
-            procs_on_wrong_python.append(msg.format(proc.pid, cmd, open_files))
+        msg = "Pid {} is running {} with open_files() :  {}"
+        if exe and exe.strip().startswith(executable_dir):
+            procs_on_wrong_python.append(msg.format(proc.pid, exe, open_files))
         else:
             for f in open_files:
                 if f.startswith(executable_dir):
-                    procs_on_wrong_python.append(msg.format(proc.pid, cmd, open_files))
-    return procs_on_wrong_python
+                    procs_on_wrong_python.append(msg.format(proc.pid, exe, open_files))
+    if not ignore_process_check and procs_on_wrong_python:
+        raise errors.BinstarError("There were processes running on the "
+                          "incorrect "
+                          "Python prefix: {}".format(" ".join(procs_on_wrong_python)))
+    elif procs_on_wrong_python:
+        log.info('There were processes '
+                 'running on the incorrect '
+                 'Python prefix: {}'.format(" ".join(procs_on_wrong_python)))
 
-def validate_procs_main():
-    for msg in validate_procs():
-        log.info(msg)
+    return procs_on_wrong_python

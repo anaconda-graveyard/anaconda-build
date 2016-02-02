@@ -160,22 +160,24 @@ class Test(unittest.TestCase):
         def mock_proces_iter():
             n = Namespace()
             n.pid = 1234
-            n.cmdline = lambda: [sys.prefix]
+            n.exe = lambda: os.path.join(sys.prefix, 'python.exe')
+            n.open_files = lambda: []
             yield n
 
         with patch.object(psutil, 'process_iter', mock_proces_iter):
             with patch.object(os, 'name', new_callable=lambda: 'nt'):
-                procs_on_wrong_python = validate_procs()
+                procs_on_wrong_python = validate_procs(True)
                 self.assertEqual(len(procs_on_wrong_python), 1)
         def mock_no_conflict():
             n=Namespace()
             n.pid = 1234,
-            n.cmdline = lambda: "C:\\Not-needed"
+            n.exe = lambda: "C:\\Not-needed"
+            n.open_files = lambda: []
             yield n
 
         with patch.object(psutil,'process_iter', mock_no_conflict):
             with patch.object(os, 'name', new_callable=lambda:'nt'):
-                self.assertEqual(validate_procs(), [])
+                self.assertEqual(validate_procs(True), [])
 
 if __name__ == '__main__':
     unittest.main()
