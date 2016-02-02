@@ -209,6 +209,8 @@ goto:eof
 
     echo Rmdir /s /q "%BUILD_ENV_PATH%"
     Rmdir /s /q "%BUILD_ENV_PATH%"
+    echo "Check binstar-build-validate-procs before build script"
+    binstar-build-validate-procs
     echo conda create -p "%BUILD_ENV_PATH%" --quiet --yes %BINSTAR_ENGINE%
     call conda create -p "%BUILD_ENV_PATH%" --quiet --yes %BINSTAR_ENGINE% || ( {{set_error()}} )
 

@@ -26,7 +26,16 @@ def validate_procs():
             continue
         except psutil.ZombieProcess:
             log.info('ZombieProcess: {} {}'.format(proc.pid, cmd))
+        open_files = proc.open_files()
+        msg = "Pid {} is running {} with open files {}"
         if cmd and cmd[0].strip().startswith(executable_dir):
-            procs_on_wrong_python.append("Pid {} is running {}".format(proc.pid, cmd))
+            procs_on_wrong_python.append(msg.format(proc.pid, cmd, open_files))
+        else:
+            for f in open_files:
+                if f.startswith(executable_dir):
+                    procs_on_wrong_python.append(msg.format(proc.pid, cmd, open_files))
     return procs_on_wrong_python
 
+def validate_procs_main():
+    for msg in validate_procs():
+        log.info(msg)
