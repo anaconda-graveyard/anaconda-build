@@ -6,6 +6,7 @@ import io
 import os
 import psutil
 import unittest
+import sys
 
 import requests
 
@@ -159,7 +160,7 @@ class Test(unittest.TestCase):
         def mock_proces_iter():
             n = Namespace()
             n.pid = 1234
-            n.cmdline = lambda: [get_conda_root_prefix()]
+            n.cmdline = lambda: [sys.prefix]
             yield n
 
         with patch.object(psutil, 'process_iter', mock_proces_iter):
