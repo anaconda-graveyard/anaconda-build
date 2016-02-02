@@ -26,8 +26,10 @@ def validate_procs():
             continue
         except psutil.ZombieProcess:
             log.info('ZombieProcess: {} {}'.format(proc.pid, cmd))
+        open_files = ['Function_Not_Available']
         try:
-            open_files = proc.open_files()
+            if hasattr(proc, 'open_files'):
+                open_files = proc.open_files()
         except psutil.AccessDenied:
             open_files = ['AccessDenied']
         msg = "Pid {} is running {} with open files {}"

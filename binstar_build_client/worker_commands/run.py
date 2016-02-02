@@ -11,6 +11,7 @@ import yaml
 
 from binstar_client.utils import get_binstar
 
+from binstar_client import errors
 from binstar_build_client import BinstarBuildAPI
 from binstar_build_client.utils import get_conda_root_prefix
 from binstar_build_client.worker.worker import Worker
