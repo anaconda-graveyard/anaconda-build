@@ -26,7 +26,10 @@ def validate_procs():
             continue
         except psutil.ZombieProcess:
             log.info('ZombieProcess: {} {}'.format(proc.pid, cmd))
-        open_files = proc.open_files()
+        try:
+            open_files = proc.open_files()
+        except psutil.AccessDenied:
+            open_files = ['AccessDenied']
         msg = "Pid {} is running {} with open files {}"
         if cmd and cmd[0].strip().startswith(executable_dir):
             procs_on_wrong_python.append(msg.format(proc.pid, cmd, open_files))
