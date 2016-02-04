@@ -64,10 +64,11 @@ class TestSuWorker(CLITestCase):
 
     @patch('binstar_build_client.worker.su_worker.SuWorker.clean_home_dir')
     @patch('binstar_build_client.worker.su_worker.SuWorker')
+    @patch('binstar_build_client.worker.worker.Worker')
     @patch('binstar_build_client.worker.register.WorkerConfiguration.load')
     @patch('binstar_build_client.worker.su_worker.validate_su_worker')
     @urlpatch
-    def test_su_worker(self, urls, validate, load, SuWorker, clean):
+    def test_su_worker(self, urls, validate, load, Worker, SuWorker, clean):
         '''Test su_worker CLI '''
 
         load.return_value = self.new_worker_config()
