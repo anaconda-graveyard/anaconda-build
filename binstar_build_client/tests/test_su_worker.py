@@ -160,7 +160,7 @@ class TestSuWorker(CLITestCase):
 
         ok = ['echo','su_worker_test_ok']
         if os.name == 'nt':
-            ok = ['cmd', '/', " ".join(ok)]
+            ok = ['cmd', '/c', " ".join(ok)]
         check_output.return_value = 'su_worker_test_ok'
         su_build.return_value = process_wrappers.BuildProcess(ok, '.')
         destroy.return_value = True
