@@ -93,8 +93,8 @@ class WorkerConfiguration(object):
     @classmethod
     def registered_workers(cls, bs):
         "Iterate over the registered workers on this machine"
-        username = bs.user()['login']
-        build_query = bs.build_queues(username=username)
+
+        build_query = bs.build_queues(username=None)
         for build_info in build_query:
             queue_name, workers = build_info['_id'], build_info.get('workers', None)
             if not workers:
@@ -177,7 +177,6 @@ class WorkerConfiguration(object):
     def load(cls, worker_name, bs):
 
         'Load a worker config from a worker_id'
-        username = bs.user()['login']
         for worker in cls.registered_workers(bs):
             if worker_name == worker.worker_id or worker_name == worker.name:
                 if worker.hostname == cls.HOSTNAME:
