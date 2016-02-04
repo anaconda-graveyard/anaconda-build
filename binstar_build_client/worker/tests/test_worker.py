@@ -43,7 +43,8 @@ class Test(unittest.TestCase):
         worker._handle_job({'job':{'_id':'test_job_id'}})
         self.assertEqual(worker.build.call_count, 1)
         self.assertEqual(worker.bs.fininsh_build.call_count, 1)
-        self.assertEqual(worker.bs.fininsh_build.call_args[1], {'status': 'success', 'failed': False})
+        self.assertEqual(worker.bs.fininsh_build.call_args[1],
+                        {'status': 'success', 'failed': False})
 
     def test_failed_job(self):
 
@@ -54,12 +55,12 @@ class Test(unittest.TestCase):
         worker = MyWorker()
         worker.args.push_back = False
 
-        worker._handle_job({'job':{'_id':'test_job_id'}})
+        worker._handle_job({'job': {'_id': 'test_job_id'}})
 
         self.assertEqual(worker.build.call_count, 1)
         self.assertEqual(worker.bs.fininsh_build.call_count, 1)
-        self.assertEqual(worker.bs.fininsh_build.call_args[1], {'status': 'error', 'failed': True})
-
+        self.assertEqual(worker.bs.fininsh_build.call_args[1],
+                         {'status': 'error', 'failed': True})
 
     def test_download_build_source(self):
 
@@ -76,11 +77,11 @@ class Test(unittest.TestCase):
             data = fd.read()
         self.assertEqual(data, expected)
 
-
     def test_job_loop(self):
         worker = MockWorker()
         worker.args.one = True
-        worker.bs.pop_build_job.return_value = {'job':{'_id':'test_job_id'}, 'job_name':'job_name'}
+        worker.bs.pop_build_job.return_value = {'job': {'_id': 'test_job_id'},
+                                                'job_name': 'job_name'}
         jobs = list(worker.job_loop())
         self.assertEqual(len(jobs), 1)
 
@@ -88,7 +89,8 @@ class Test(unittest.TestCase):
 
         worker = MockWorker()
         worker.args.one = False
-        worker.bs.pop_build_job.return_value = {'job':{'_id':'test_job_id'}, 'job_name':'job_name'}
+        worker.bs.pop_build_job.return_value = {'job': {'_id': 'test_job_id'},
+                                                'job_name': 'job_name'}
 
         with self.assertRaises(TypeError):
             for job in worker.job_loop():
@@ -127,29 +129,32 @@ class Test(unittest.TestCase):
 
         worker = MockWorker()
         worker.args.one = False
-        job_data = {'job':{'_id':'test_job_id'}, 'job_name':'job_name'}
+        job_data = {'job': {'_id': 'test_job_id'}, 'job_name': 'job_name'}
         journal = io.StringIO()
 
         with worker.job_context(journal, job_data):
             pass
 
         value = journal.getvalue()
-        expected = 'starting build, test_job_id, job_name\nfinished build, test_job_id, job_name\n'
+        expected = 'starting build, test_job_id, job_name\n' +\
+                   'finished build, test_job_id, job_name\n'
         self.assertEqual(value, expected)
 
     def test_job_context_error(self):
 
         worker = MockWorker()
         worker.args.one = False
-        job_data = {'job':{'_id':'test_job_id'}, 'job_name':'job_name'}
+        job_data = {'job': {'_id': 'test_job_id'}, 'job_name': 'job_name'}
         journal = io.StringIO()
 
         with worker.job_context(journal, job_data):
             raise TypeError("hai -- Expected Error")
 
         value = journal.getvalue()
-        expected = 'starting build, test_job_id, job_name\nbuild errored, test_job_id, job_name\n'
+        expected = 'starting build, test_job_id, job_name\n' +\
+                   'build errored, test_job_id, job_name\n'
         self.assertEqual(value, expected)
+
 
 if __name__ == '__main__':
     unittest.main()

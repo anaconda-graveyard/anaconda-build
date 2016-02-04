@@ -12,6 +12,12 @@ import psutil
 import requests
 import time
 
+import psutil
+import requests
+from binstar_client import errors
+
+
+from binstar_build_client.worker.utils.build_log import BuildLog
 
 from binstar_build_client.utils.rm import rm_rf
 from binstar_build_client.worker.utils import process_wrappers
@@ -64,7 +70,8 @@ class Worker(object):
     def write_status(self, ok=True, msg='ok'):
         if self.args.status_file:
             with open(self.args.status_file, 'w') as fd:
-                fd.write("{0} {1} '{2}'\n".format(int(not ok), int(time.time()), msg))
+                msg = (int(not ok), int(time.time()), msg)
+                fd.write("{0} {1} '{2}'\n".format(*msg))
 
     def job_loop(self):
         """
@@ -99,7 +106,7 @@ class Worker(object):
 
             except errors.ServerError as err:
                 log.exception(err)
-                log.error("There server '{0}' returned an error response ".format(bs.domain))
+                log.error("The server '{0}' returned an error response ".format(bs.domain))
                 log.error("Could not retrieve work items")
                 self.write_status(False, "Server error")
                 job_data = {}
@@ -120,7 +127,6 @@ class Worker(object):
 
             if self.args.one:
                 break
-
 
     def _handle_job(self, job_data):
         """
@@ -222,7 +228,6 @@ class Worker(object):
 
         with build_log:
             instructions = job_data['build_item_info'].get('instructions')
-
             msg = "Building on worker {0} (platform {1})\n".format(
                     self.config.hostname, self.config.platform)
             build_log.write(msg.encode('utf-8', errors='replace'))
@@ -353,7 +358,6 @@ class Worker(object):
             self.worker_id,
             job_id
         )
-
         with open(build_filename, 'wb') as bp:
             data = fp.read(2 ** 13)
             while data:
@@ -389,4 +393,3 @@ class Worker(object):
         finally:
             duration = time.time() - start_time
             log.info('Build Duration {0} seconds'.format(duration))
-

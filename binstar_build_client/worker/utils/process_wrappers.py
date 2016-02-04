@@ -1,4 +1,5 @@
 import logging
+import pipes
 import psutil
 import requests
 import subprocess
@@ -10,6 +11,8 @@ WIN_32 = os.name == 'nt'
 if WIN_32:
     import win32job
     import pywintypes
+
+from binstar_client.utils import get_config
 
 log = logging.getLogger('binstar.build')
 
@@ -71,12 +74,10 @@ class BuildProcess(subprocess.Popen):
 
 
     def kill_job(self):
-        
         if self.job is None:
             return
-
         log.warning("Kill win32 JobObject handle: {0}".format(self.job))
-        
+
         try:
             win32job.TerminateJobObject(self.job, 1)
         except pywintypes.error as err:
@@ -87,7 +88,6 @@ class BuildProcess(subprocess.Popen):
 
         if WIN_32:
             return
-
         try:
             pgid = os.getpgid(self.pid)
         except OSError as err:
@@ -96,17 +96,16 @@ class BuildProcess(subprocess.Popen):
             return
 
         log.warning("Kill posix process group pgid: {0}".format(pgid))
-    
+
         try:
             os.killpg(pgid, signal.SIGTERM)
         except OSError as err:
             log.warning("Could not kill process group for pid {}".format(self.pid))
             log.warning(err)
 
-        
     def kill(self):
         '''Kill all processes and child processes'''
-        
+
         try:
             log.warning("Kill Tree parent pid: {0}".format(self.pid))
             parent = psutil.Process(self.pid)
@@ -129,6 +128,42 @@ class BuildProcess(subprocess.Popen):
                 log.info("BuildProcess.kill: child pid {} is being killed".format(child.pid))
                 child.kill()
 
-
     def readline(self):
         return self.stdout.readline()
+
+
+class SuBuildProcess(BuildProcess):
+
+    def __init__(self, args, cwd, build_user, site, python_install_dir):
+        self.python_install_dir = python_install_dir
+        self.build_user = build_user
+        self.site = site
+        args = " ".join(pipes.quote(arg) for arg in args)
+        args = self.su_with_env(args)
+        self.cwd = cwd
+        super(SuBuildProcess, self).__init__(args, cwd)
+
+    def kill(self):
+        super(SuBuildProcess, self).__init__(['pkill',
+                                              '-U',
+                                              self.build_user],
+                                                self.cwd)
+
+    def su_with_env(self, cmd):
+        '''args for su as build_user with the anaconda settings'''
+        cmds = ['su', '-', self.build_user, '--login', '-c', self.source_env]
+        cmds[-1] += " && anaconda config --set url {} && ".format(self.anaconda_url)
+        cmds[-1] += " conda config --set always_yes true && "
+        cmds[-1] += cmd
+        return cmds
+
+    @property
+    def anaconda_url(self):
+        config = get_config(remote_site=self.site)
+        return config.get('url', 'https://api.anaconda.org')
+
+    @property
+    def source_env(self):
+        return ("export PATH={0}/bin:${{PATH}}").format(self.python_install_dir)
+
+

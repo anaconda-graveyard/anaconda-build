@@ -64,10 +64,10 @@ class WorkerConfiguration(object):
         stream = io.StringIO()
         print("WorkerConfiguration", file=stream)
 
-        print("\tpid: {}".format(self.pid), file=stream)
+        print("\tpid: {0}".format(self.pid), file=stream)
 
         for key, value in sorted(self.to_dict().items()):
-            print("\t{}: {}".format(key, value), file=stream)
+            print("\t{0}: {1}".format(key, value), file=stream)
 
         return stream.getvalue()
 
@@ -152,17 +152,17 @@ class WorkerConfiguration(object):
         return pid_is_running(self.pid)
 
     @contextmanager
-    def running(self):
-        'Flag this worker id as running'
+    def running(self, build_user=''):
+        'Flag this worker id as running. If build_user, then it goes to pid file'
 
         if self.is_running():
             msg = "This worker appears to already be running with pid {}".format(self.pid)
             raise errors.BinstarError(msg)
 
-        dst = '{}.{}'.format(self.filename, os.getpid())
+        dst = '{0}.{1}'.format(self.filename, os.getpid())
         try:
             with open(dst, 'w') as out:
-                out.write('')
+                out.write(build_user or '{} is_running'.format(build_user))
         except (OSError, AttributeError):
             log.warning("Could not link the pid to a pidfile")
         try:
@@ -276,6 +276,7 @@ class WorkerConfiguration(object):
                     if re.search('^\d+$', parts[-1]):
                         continue # it is a PID file not config
                 with open(worker_file, 'r') as f:
+
                     try:
                         config = yaml.safe_load(f.read())
                     except:

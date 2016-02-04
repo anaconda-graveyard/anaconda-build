@@ -1,5 +1,5 @@
 from __future__ import (print_function, unicode_literals, division,
-    absolute_import)
+                        absolute_import)
 
 import os
 import logging
@@ -31,6 +31,7 @@ def main(args, context="worker"):
     else:
         log.info(context_info)
 
+
 def add_parser(subparsers, name='deregister',
                description='Deregister a build worker to build jobs off of a binstar build queue',
                epilog=__doc__,
@@ -43,7 +44,7 @@ def add_parser(subparsers, name='deregister',
                         help="Worker id to deregister",
                         nargs="?")
     parser.add_argument('-a','--all',
-                        help="Deregister all workers " +\
+                        help="Deregister all workers "
                              "registered by this hostname {}.".format(platform.node()),
                         action="store_true")
     parser.set_defaults(main=default_func)

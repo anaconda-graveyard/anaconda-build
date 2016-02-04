@@ -5,15 +5,19 @@ Created on Feb 18, 2014
 '''
 
 from __future__ import (print_function, unicode_literals, division,
-    absolute_import)
+                        absolute_import)
 
 import os
 import yaml
 from mock import patch
+import os
+import subprocess as sp
 import unittest
 
+import binstar_client.utils
 from binstar_client.tests.fixture import CLITestCase
 from binstar_client.tests.urlmock import urlpatch
+from binstar_build_client.worker.worker import get_my_procs
 from binstar_build_client.scripts.worker import main
 from binstar_build_client.worker.register import WorkerConfiguration
 from glob import glob
@@ -28,7 +32,6 @@ worker_data = {
                'hostname': 'localhost',
                'dist': 'dist',
             }
-
 class Test(CLITestCase):
 
     @classmethod
@@ -52,6 +55,7 @@ class Test(CLITestCase):
     def test_register(self, load, deregister, urls, register):
 
         main(['register', 'username/queue-1'], False)
+
         self.assertEqual(register.call_count, 1)
 
         main(['deregister', 'worker_id'], False)
@@ -62,10 +66,11 @@ class Test(CLITestCase):
     @patch('binstar_build_client.worker.register.WorkerConfiguration.load')
     @patch('binstar_build_client.worker.worker.Worker.run')
     def test_worker_simple(self, run, load, loop, urls):
+        load.return_value = worker_data
 
         main(['--show-traceback', 'worker', 'run', worker_data['worker_id']], False)
 
-        self.assertEqual(loop.call_count, 1)
+        self.assertTrue(loop.called)
 
     def test_register_backwards_compat(self):
 
@@ -82,6 +87,22 @@ class Test(CLITestCase):
         self.assertEqual(worker_id_to_name[worker_id], 'worker_name_1')
         worker_id_to_name = WorkerConfiguration.backwards_compat_lookup()
         self.assertEqual(worker_id_to_name.get(worker_id, None), None)
+
+    def test_get_my_procs(self):
+        pids = []
+        procs = []
+        try:
+            for repeat in range(5):
+                proc = sp.Popen(['sleep', '100'])
+                procs.append(proc)
+                pids.append(proc.pid)
+            pids.append(os.getpid())
+            my_pids = get_my_procs()
+            for pid in pids:
+                self.assertIn(pid, my_pids)
+        finally:
+            for proc in procs:
+                proc.kill()
 
     def test_register_backwards_compat_pid(self):
         '''Test .workers files that when yaml loaded

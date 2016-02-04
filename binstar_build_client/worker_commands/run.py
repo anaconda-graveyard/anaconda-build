@@ -16,11 +16,17 @@ from binstar_build_client.utils import get_conda_root_prefix
 from binstar_build_client.worker.worker import Worker
 from binstar_build_client.worker.register import WorkerConfiguration
 
+
 log = logging.getLogger('binstar.build')
+
 
 
 def main(args):
     bs = get_binstar(args, cls=BinstarBuildAPI)
+    worker_config = WorkerConfiguration.load(args.worker_id, bs)
+
+    log.info(str(worker_config))
+    
     worker_config = WorkerConfiguration.load(args.worker_id, bs)
     args.conda_build_dir = args.conda_build_dir.format(platform=worker_config.platform)
     log.info("Using conda build directory: {}".format(args.conda_build_dir))
@@ -36,6 +42,25 @@ def main(args):
     finally:
         worker.write_status(False, "Exited")
 
+def add_worker_dev_options(parser):
+
+    dgroup = parser.add_argument_group('development options')
+
+    dgroup.add_argument('--show-new-procs', action='store_true', dest='show_new_procs',
+                        help='Print any process that started during the build '
+                             'and is still running after the build finished')
+
+    dgroup.add_argument('--status-file',
+                        help='If given, binstar will update this file with the ' + \
+                             'time it last checked the anaconda server for updates')
+
+    parser.add_argument('--cwd', default=os.path.abspath('.'), type=os.path.abspath,
+                        help='The root directory this build should use (default: "%(default)s")')
+
+    parser.add_argument('-t', '--max-job-duration', type=int, metavar='SECONDS',
+                        dest='timeout',
+                        help='Force jobs to stop after they exceed duration (default: %(default)s)', default=60 * 60)
+    return parser
 
 def add_parser(subparsers, name='run',
                description='Run a build worker to build jobs off of a binstar build queue',
@@ -56,32 +81,16 @@ def add_parser(subparsers, name='run',
                         help='Developers only, always push the build *back* ' + \
                              'onto the build queue')
 
-    dgroup = parser.add_argument_group('development options')
-
+    parser = add_worker_dev_options(parser)
     conda_prefix = get_conda_root_prefix()
     if conda_prefix:
         default_build_dir = os.path.join(conda_prefix, 'conda-bld', '{platform}')
     else:
         default_build_dir = None
-    dgroup.add_argument("--conda-build-dir",
+    parser.add_argument("--conda-build-dir",
                         default=default_build_dir,
                         help="[Advanced] The conda build directory (default: %(default)s)",
                         )
-
-    dgroup.add_argument('--show-new-procs', action='store_true', dest='show_new_procs',
-                        help='Print any process that started during the build '
-                             'and is still running after the build finished')
-
-    dgroup.add_argument('--status-file',
-                        help='If given, binstar will update this file with the ' + \
-                             'time it last checked the anaconda server for updates')
-
-    parser.add_argument('--cwd', default=os.path.abspath('.'), type=os.path.abspath,
-                        help='The root directory this build should use (default: "%(default)s")')
-
-    parser.add_argument('-t', '--max-job-duration', type=int, metavar='SECONDS',
-                        dest='timeout',
-                        help='Force jobs to stop after they exceed duration (default: %(default)s)', default=60 * 60)
 
     parser.set_defaults(main=default_func)
     return parser
