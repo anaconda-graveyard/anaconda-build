@@ -12,7 +12,6 @@ import psutil
 import requests
 import time
 
-
 from binstar_build_client.utils.rm import rm_rf
 from binstar_build_client.worker.utils import process_wrappers
 from binstar_build_client.worker.utils import script_generator
@@ -231,7 +230,6 @@ class Worker(object):
             build_log.write(msg.encode('utf-8', errors='replace'))
 
             build_log.flush()
-
             script_filename = script_generator.gen_build_script(working_dir,
                 job_data, conda_build_dir=self.args.conda_build_dir)
 
