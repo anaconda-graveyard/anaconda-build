@@ -49,6 +49,9 @@ class TestSuWorker(CLITestCase):
 
     @classmethod
     def setUpClass(cls):
+        WorkerConfiguration.REGISTERED_WORKERS_DIR = test_workers
+        if not os.path.exists(WorkerConfiguration.REGISTERED_WORKERS_DIR):
+            os.mkdir(WorkerConfiguration.REGISTERED_WORKERS_DIR)
         super(TestSuWorker, cls).setUpClass()
 
     def tearDown(self):
