@@ -219,7 +219,39 @@ class Test(unittest.TestCase):
             self.assertEqual(build_env_path, '%WORKING_DIR%\env"')
         else:
             self.assertEqual(build_env_path, '"${WORKING_DIR}/env"')
-
+    @unittest.skipIf(not os.name == 'nt', "Windows only")
+    def test_conda_npy_win(self):
+        bat_file = """
+set HAS_NUMPY=0 & conda list | findstr numpy && set HAS_NUMPY=1
+    if "%HAS_NUMPY%" == "1" (
+         python -c "import sys;import numpy;sys.stdout.write(''.join(numpy.__version__.split('.')[:2]))"  > %TEMP%\CONDA_NPY
+         set /p CONDA_NPY=<%TEMP%\CONDA_NPY
+    )
+echo CONDA_NPY %CONDA_NPY%
+"""
+        fname = 'numpyscript.bat'
+        with open(fname, 'w') as f:
+            f.write(bat_file)
+        self.addCleanup(bat_file)
+        proc = subprocess.Popen([fname],
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE,
+                         cwd='.')
+        proc.wait()
+        out = proc.stdout().read().decode().splitlines()[-1]
+        try:
+            import numpy
+            has_numpy = True
+            conda_npy = "".join(numpy.__version__.split('.')[:2])
+        except ImportError:
+            has_numpy = False
+        no_numpy = not out.replace('CONDA_NPY').strip()
+        if no_numpy:
+            self.assertFalse(has_numpy)
+        else:
+            self.assertTrue(has_numpy)
+            conda_npy_read = out.split()[-1].strip()
+            self.assertEqual(conda_npy, conda_npy_read)
 
 if __name__ == "__main__":
     # import sys;sys.argv = ['', 'Test.test_timeout']
