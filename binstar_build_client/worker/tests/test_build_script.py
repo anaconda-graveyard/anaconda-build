@@ -220,6 +220,34 @@ class Test(unittest.TestCase):
         else:
             self.assertEqual(build_env_path, '"${WORKING_DIR}/env"')
 
+    def test_conda_npy(self):
+        build_data = default_build_data()
+
+        script_filename = gen_build_script(tempfile.mkdtemp(),
+                                           build_data,
+                                           ignore_setup_build=False,
+                                           ignore_fetch_build_source=True)
+
+        self.addCleanup(os.unlink, script_filename)
+        p0 = Popen([script_filename], stdout=PIPE, stderr=STDOUT)
+        return_code = p0.wait()
+        output = p0.stdout.read().decode()
+        lines = output.splitlines()
+        conda_npy = [line for line in lines if "CONDA_NPY" in line]
+        self.assertTrue(len(conda_npy) > 0)
+        conda_npy_read = conda_npy[0].strip().replace('CONDA_NPY=', '')
+        try:
+            import numpy
+            has_numpy = True
+            conda_npy = "".join(numpy.__version__.split('.')[:2])
+        except ImportError:
+            has_numpy = False
+
+        if not conda_npy_read:
+            self.assertFalse(has_numpy)
+        else:
+            self.assertTrue(has_numpy)
+            self.assertEqual(conda_npy, conda_npy_read)
 
 if __name__ == "__main__":
     # import sys;sys.argv = ['', 'Test.test_timeout']

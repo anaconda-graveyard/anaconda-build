@@ -231,16 +231,15 @@ goto:eof
         set /p CONDA_PY=<%TEMP%\CONDA_PY
 
     )
-    if "%CONDA_NPY%" == "" (
-
-        conda list | findstr numpy & python -c "import sys;import numpy;sys.stdout.write(''.join(numpy.__version__.split('.')[:2]))"  > %TEMP%\CONDA_NPY || echo "" > %TEMP%\CONDA_NPY
-        set /p CONDA_NPY=<%TEMP%\CONDA_NPY
-
+    set HAS_NUMPY=0 & conda list | findstr numpy && set HAS_NUMPY=1
+    if "%HAS_NUMPY%" == "1" (
+         python -c "import sys;import numpy;sys.stdout.write(''.join(numpy.__version__.split('.')[:2]))"  > %TEMP%\CONDA_NPY
+         set /p CONDA_NPY=<%TEMP%\CONDA_NPY
     )
 
-    echo CONDARC %CONDARC%
-    echo CONDA_PY %CONDA_PY%
-    echo CONDA_NPY %CONDA_NPY%
+    echo CONDARC=%CONDARC%
+    echo CONDA_PY=%CONDA_PY%
+    echo CONDA_NPY=%CONDA_NPY%
 
 
 goto:eof

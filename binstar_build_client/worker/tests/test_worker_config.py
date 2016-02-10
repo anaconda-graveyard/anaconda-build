@@ -13,6 +13,8 @@ class Test(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         WorkerConfiguration.REGISTERED_WORKERS_DIR = test_workers
+        if not os.path.exists(test_workers):
+            os.mkdir(test_workers)
         super(Test, cls).setUpClass()
 
     def tearDown(self):
