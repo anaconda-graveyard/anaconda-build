@@ -233,7 +233,7 @@ echo CONDA_NPY %CONDA_NPY%
         with open(fname, 'w') as f:
             f.write(bat_file)
         self.addCleanup(os.unlink, bat_file)
-        proc = Popen([fname],
+        proc = Popen(['cmd', '/c', fname],
                      stdout=PIPE,
                      stderr=PIPE,
                      cwd='.')
@@ -245,7 +245,7 @@ echo CONDA_NPY %CONDA_NPY%
             conda_npy = "".join(numpy.__version__.split('.')[:2])
         except ImportError:
             has_numpy = False
-        no_numpy = not out.replace('CONDA_NPY').strip()
+        no_numpy = not out.replace('CONDA_NPY','').strip()
         if no_numpy:
             self.assertFalse(has_numpy)
         else:
