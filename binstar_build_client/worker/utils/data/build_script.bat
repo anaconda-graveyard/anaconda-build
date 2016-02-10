@@ -238,8 +238,8 @@ goto:eof
     )
 
     echo CONDARC %CONDARC%
-    echo CONDA_PY %CONDA_PY%
-    echo CONDA_NPY %CONDA_NPY%
+    echo CONDA_PY=%CONDA_PY%
+    echo CONDA_NPY=%CONDA_NPY%
 
 
 goto:eof
