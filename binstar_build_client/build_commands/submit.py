@@ -52,8 +52,9 @@ def submit_build(binstar, args):
 
     with open(join(path, '.binstar.yml')) as cfg:
         build_matrix = list(yaml.load_all(cfg))
-        if 'envvars' in build_matrix:
-            build_matrix['env'] = build_matrix.pop('envvars')
+        for build in build_matrix:
+            if 'envvars' in build:
+                build['env'] = build.pop('envvars')
     builds = list(serialize_builds(build_matrix))
 
     if args.platform:
