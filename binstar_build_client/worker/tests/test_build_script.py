@@ -232,7 +232,7 @@ echo CONDA_NPY %CONDA_NPY%
         fname = os.path.abspath('numpyscript.bat')
         with open(fname, 'w') as f:
             f.write(bat_file)
-        self.addCleanup(os.unlink, bat_file)
+        self.addCleanup(os.unlink, fname)
         proc = Popen(['cmd', '/c', fname],
                      stdout=PIPE,
                      stderr=PIPE,
