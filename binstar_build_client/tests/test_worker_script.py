@@ -9,7 +9,7 @@ from __future__ import (print_function, unicode_literals, division,
 
 import os
 import yaml
-from mock import patch
+from mock import patch, Mock
 import unittest
 
 from binstar_client.tests.fixture import CLITestCase
@@ -64,6 +64,19 @@ class Test(CLITestCase):
     def test_worker_simple(self, run, load, loop, urls):
 
         main(['--show-traceback', 'worker', 'run', worker_data['worker_id']], False)
+
+        self.assertEqual(loop.call_count, 1)
+
+    @urlpatch
+    @patch('binstar_build_client.worker.docker_worker.DockerWorker.work_forever')
+    @patch('binstar_build_client.worker.register.WorkerConfiguration.load')
+    @patch('binstar_build_client.worker.docker_worker.DockerWorker.run')
+    @patch('binstar_build_client.worker_commands.docker_run.docker')
+    @patch('binstar_build_client.worker.docker_worker.docker')
+    def test_worker_simple_docker(self, docker1, docker2, run, load, loop, urls):
+        docker1.Client = docker2.Client = Mock()
+
+        main(['--show-traceback', 'worker', 'docker_run', worker_data['worker_id']], False)
 
         self.assertEqual(loop.call_count, 1)
 
