@@ -237,7 +237,7 @@ goto:eof
          set /p CONDA_NPY=<%TEMP%\CONDA_NPY
     )
 
-    echo CONDARC %CONDARC%
+    echo CONDARC=%CONDARC%
     echo CONDA_PY=%CONDA_PY%
     echo CONDA_NPY=%CONDA_NPY%
 
