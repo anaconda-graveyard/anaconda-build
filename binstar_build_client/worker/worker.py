@@ -81,6 +81,7 @@ class Worker(object):
                 job_data = bs.pop_build_job(self.config.username,
                                             self.config.queue,
                                             self.worker_id)
+
             except errors.NotFound:
                 self.write_status(False, "worker not found")
                 if self.args.show_traceback:
@@ -201,7 +202,8 @@ class Worker(object):
         Run a single build
         """
         job_id = job_data['job']['_id']
-
+        if 'envvars' in job_data['job']:
+            job_data['job']['env'] = job_data.pop('envvars')
         working_dir = self.working_dir(job_data)
 
         log.info("Removing previous build dir: {0}".format(working_dir))
