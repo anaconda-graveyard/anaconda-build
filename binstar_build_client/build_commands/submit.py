@@ -52,7 +52,8 @@ def submit_build(binstar, args):
 
     with open(join(path, '.binstar.yml')) as cfg:
         build_matrix = list(yaml.load_all(cfg))
-
+        if 'envvars' in build_matrix:
+            build_matrix['env'] = build_matrix.pop('envvars')
     builds = list(serialize_builds(build_matrix))
 
     if args.platform:
@@ -65,9 +66,7 @@ def submit_build(binstar, args):
         if args.platform:
             msg += " for platform %s" % args.platform
         raise errors.BinstarError(msg)
-    for build in builds:
-        if build.get('envvars'):
-            build['env'] = build['envvars']
+
     log.info('Submitting %i sub builds' % len(builds))
     for i, build in enumerate(builds):
         log.info(' %i)' % i + ' %(platform)-10s  %(engine)-15s  %(env)-15s' % build)
