@@ -186,6 +186,8 @@ def main(args):
                     package_name = build.get('package')
                 if build.get('user'):
                     user_name = build.get('user')
+                if build.get('envvars'):
+                    build['env'] = build.pop('envvars')
 
         # Force package to exist
         if args.package:
