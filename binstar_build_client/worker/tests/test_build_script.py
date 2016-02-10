@@ -232,11 +232,11 @@ echo CONDA_NPY %CONDA_NPY%
         fname = 'numpyscript.bat'
         with open(fname, 'w') as f:
             f.write(bat_file)
-        self.addCleanup(bat_file)
-        proc = subprocess.Popen([fname],
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE,
-                         cwd='.')
+        self.addCleanup(os.unlink, bat_file)
+        proc = Popen([fname],
+                     stdout=PIPE,
+                     stderr=PIPE,
+                     cwd='.')
         proc.wait()
         out = proc.stdout().read().decode().splitlines()[-1]
         try:
