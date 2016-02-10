@@ -146,7 +146,7 @@ def create_exports(build_data, working_dir):
            }
 
 
-    build_env = build_item.get('env')
+    build_env = build_item.get('envvars', build_item.get('env'))
     if isinstance(build_env, (str, unicode)):
         _build_env = {}
         for item in shlex.split(build_env):

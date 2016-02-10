@@ -3,7 +3,7 @@ Build command
 
 Submit a build from your local path or  via a git url:
 
-See also: 
+See also:
 
   * [Submit A Build](http://docs.anaconda.org/build.html#SubmitABuild)
   * [Submit A Build From Github](http://docs.anaconda.org/build.html#GithubBuilds)
@@ -65,7 +65,9 @@ def submit_build(binstar, args):
         if args.platform:
             msg += " for platform %s" % args.platform
         raise errors.BinstarError(msg)
-
+    for build in builds:
+        if build.get('envvars'):
+            build['env'] = build['envvars']
     log.info('Submitting %i sub builds' % len(builds))
     for i, build in enumerate(builds):
         log.info(' %i)' % i + ' %(platform)-10s  %(engine)-15s  %(env)-15s' % build)
@@ -136,6 +138,9 @@ def submit_git_build(binstar, args):
     if not args.dry_run:
         log.info("Submitting the following repo for package creation: %s" % args.git_url)
         builds = get_gitrepo(urlparse(args.path))
+        for build in builds:
+            if build.get('envvars'):
+                build['env'] = build['envvars']
         # TODO: change channels= to labels=
         build = binstar.submit_for_url_build(args.package.user, args.package.name, builds,
                                              channels=args.labels, queue=args.queue, sub_dir=args.sub_dir,
