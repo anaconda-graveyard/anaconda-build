@@ -114,7 +114,7 @@ def expand_build_matrix(instruction_set):
 
     platforms = instruction_set.pop('platform', ['linux-64']) or [None]
     if not isinstance(platforms, list): platforms = [platforms]
-    envs = instruction_set.pop('env', [None]) or [None]
+    envs = instruction_set.pop('envvars', instruction_set.pop('env', [None])) or [None]
     if not isinstance(envs, list): envs = [envs]
     engines = instruction_set.pop('engine', ['python=2']) or [None]
     if not isinstance(engines, list): engines = [engines]
