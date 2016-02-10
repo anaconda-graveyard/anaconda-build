@@ -219,7 +219,7 @@ class Test(unittest.TestCase):
             self.assertEqual(build_env_path, '%WORKING_DIR%\env"')
         else:
             self.assertEqual(build_env_path, '"${WORKING_DIR}/env"')
-    @unittest.skipIf(not os.name == 'nt', "Windows only")
+    @unittest.skipIf(os.name != 'nt', "Windows only")
     def test_conda_npy_win(self):
         bat_file = """
 set HAS_NUMPY=0 & conda list | findstr numpy && set HAS_NUMPY=1
@@ -229,9 +229,10 @@ set HAS_NUMPY=0 & conda list | findstr numpy && set HAS_NUMPY=1
     )
 echo CONDA_NPY %CONDA_NPY%
 """
-        fname = os.path.abspath('numpyscript.bat')
+        fname = os.path.join(tempfile.mkdtemp(), 'numpyscript.bat')
         with open(fname, 'w') as f:
             f.write(bat_file)
+
         self.addCleanup(os.unlink, fname)
         proc = Popen(['cmd', '/c', fname],
                      stdout=PIPE,
