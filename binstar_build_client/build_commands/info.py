@@ -62,14 +62,13 @@ def list_builds(args):
 
     log.info('Getting builds:')
 
-    fmt = '%(build_no)15s | %(status)15s | %(platform)15s | %(engine)15s | %(env)15s'
+    fmt = '%(build_no)15s | %(status)15s | %(platform)15s | %(engine)15s | %(envvars)15s'
 
     header = {'build_no':'Build #', 'status':'Status',
               'platform':'Platform',
               'engine':'Engine',
-              'env':'Env',
+              'envvars':'Env',
               }
-
     log.info(fmt % header)
 
     log.info(fmt.replace('|', '+') % dict.fromkeys(header, '-' * 15))
@@ -77,6 +76,8 @@ def list_builds(args):
         for item in build['items']:
             item.setdefault('status', build.get('status', '?'))
             item['build_no'] = '%s.%s' % (build['build_no'], item['sub_build_no'])
+            if not 'envvars' in item:
+                item['envvars'] = header.get('env', '')
             log.info(fmt % item)
     log.info('')
     return
@@ -87,7 +88,6 @@ def add_parser(subparsers):
                                       help='Tail the build output of build number X.Y',
                                       description=__doc__,
                                       )
-
     parser.add_argument('package', metavar='OWNER/PACKAGE',
                        help='build to the package OWNER/PACKAGE',
                        type=package_specs)
@@ -113,6 +113,7 @@ def add_parser(subparsers):
                                       help='list the builds for package',
                                       description=__doc__,
                                       )
+
     parser.add_argument('package', metavar='OWNER/PACKAGE',
                        help='build to the package OWNER/PACKAGE',
                        nargs='?',

@@ -3,7 +3,7 @@ Build command
 
 Submit a build from your local path or  via a git url:
 
-See also: 
+See also:
 
   * [Submit A Build](http://docs.anaconda.org/build.html#SubmitABuild)
   * [Submit A Build From Github](http://docs.anaconda.org/build.html#GithubBuilds)
@@ -54,7 +54,10 @@ def submit_build(binstar, args):
         build_matrix = list(yaml.load_all(cfg))
 
     builds = list(serialize_builds(build_matrix))
-
+    for build in builds:
+        if build.get('envvars'):
+            # Note: backwards compat for a while
+            build['env'] = build['envvars']
     if args.platform:
 
         log.info("Only selecting builds on platform %s" % args.platform)
@@ -68,7 +71,7 @@ def submit_build(binstar, args):
 
     log.info('Submitting %i sub builds' % len(builds))
     for i, build in enumerate(builds):
-        log.info(' %i)' % i + ' %(platform)-10s  %(engine)-15s  %(env)-15s' % build)
+        log.info(' %i)' % i + ' %(platform)-10s  %(engine)-15s  %(envvars)-15s' % build)
 
     if not args.dry_run:
         if args.git_url:
@@ -136,6 +139,9 @@ def submit_git_build(binstar, args):
     if not args.dry_run:
         log.info("Submitting the following repo for package creation: %s" % args.git_url)
         builds = get_gitrepo(urlparse(args.path))
+        for build in builds:
+            if build.get('envvars'):
+                build['env'] = build['envvars']
         # TODO: change channels= to labels=
         build = binstar.submit_for_url_build(args.package.user, args.package.name, builds,
                                              channels=args.labels, queue=args.queue, sub_dir=args.sub_dir,
@@ -182,7 +188,6 @@ def main(args):
                     package_name = build.get('package')
                 if build.get('user'):
                     user_name = build.get('user')
-
         # Force package to exist
         if args.package:
             if user_name and not args.package.user == user_name:
