@@ -146,7 +146,8 @@ def submit_build(args):
 
     with open(join(path, '.binstar.yml')) as cfg:
         build_matrix = list(yaml.load_all(cfg))
-
+        if 'envvars' in build_matrix:
+            build_matrix['env'] = build_matrix.pop('envvars')
     builds = list(serialize_builds(build_matrix))
     log.info('Submitting %i sub builds' % len(builds))
     for i, build in enumerate(builds):
