@@ -229,7 +229,7 @@ set HAS_NUMPY=0 & conda list | findstr numpy && set HAS_NUMPY=1
     )
 echo CONDA_NPY %CONDA_NPY%
 """
-        fname = 'numpyscript.bat'
+        fname = os.path.abspath('numpyscript.bat')
         with open(fname, 'w') as f:
             f.write(bat_file)
         self.addCleanup(os.unlink, bat_file)
@@ -238,7 +238,7 @@ echo CONDA_NPY %CONDA_NPY%
                      stderr=PIPE,
                      cwd='.')
         proc.wait()
-        out = proc.stdout().read().decode().splitlines()[-1]
+        out = proc.stdout.read().decode().splitlines()[-1]
         try:
             import numpy
             has_numpy = True
