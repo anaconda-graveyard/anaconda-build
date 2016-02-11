@@ -219,7 +219,7 @@ def main(args):
     if not isfile(binstar_yml):
         raise UserError("file %s does not exist" % binstar_yml)
 
-    build_matrix = load_all_binstar_yml()
+    build_matrix = load_all_binstar_yml(args.path)
     for build in build_matrix:
         package_name = build.get('package')
         user_name = build.get('user')
