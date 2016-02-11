@@ -34,6 +34,7 @@ from itertools import product
 from binstar_client import errors
 import argparse
 from binstar_client.utils.build_file import initial_build_config
+from binstar_build_client.utils.matrix as load_all_binstar_yml
 import sys
 
 from six.moves import input
@@ -114,7 +115,7 @@ def expand_build_matrix(instruction_set):
 
     platforms = instruction_set.pop('platform', ['linux-64']) or [None]
     if not isinstance(platforms, list): platforms = [platforms]
-    envs = instruction_set.pop('envvars', instruction_set.pop('env', [None])) or [None]
+    envs = instruction_set.pop('env', [None]) or [None]
     if not isinstance(envs, list): envs = [envs]
     engines = instruction_set.pop('engine', ['python=2']) or [None]
     if not isinstance(engines, list): engines = [engines]
@@ -144,11 +145,7 @@ def submit_build(args):
     path = abspath(args.path)
     log.info('Getting build product: %s' % abspath(args.path))
 
-    with open(join(path, '.binstar.yml')) as cfg:
-        build_matrix = list(yaml.load_all(cfg))
-        for build in build_matrix:
-            if 'envvars' in build:
-                build['env'] = build.pop('envvars')
+    build_matrix = load_all_binstar_yml(path)
     builds = list(serialize_builds(build_matrix))
     log.info('Submitting %i sub builds' % len(builds))
     for i, build in enumerate(builds):
@@ -222,10 +219,10 @@ def main(args):
     if not isfile(binstar_yml):
         raise UserError("file %s does not exist" % binstar_yml)
 
-    with open(binstar_yml) as cfg:
-        for build in yaml.load_all(cfg):
-            package_name = build.get('package')
-            user_name = build.get('user')
+    build_matrix = load_all_binstar_yml()
+    for build in build_matrix:
+        package_name = build.get('package')
+        user_name = build.get('user')
 
     # Force package to exist
     if args.package:

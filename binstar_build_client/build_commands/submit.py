@@ -25,7 +25,7 @@ from binstar_build_client import BinstarBuildAPI
 from binstar_build_client.utils.filter import ExcludeGit
 from binstar_build_client.utils.git_utils import is_url, get_urlpath, \
     get_gitrepo
-from binstar_build_client.utils.matrix import serialize_builds
+from binstar_build_client.utils.matrix import serialize_builds, load_all_binstar_yml
 from binstar_client import errors
 from binstar_client.errors import UserError
 from binstar_client.utils import get_binstar, PackageSpec, upload_print_callback
@@ -50,11 +50,7 @@ def submit_build(binstar, args):
 
     log.info('Getting build product: %s' % abspath(args.path))
 
-    with open(join(path, '.binstar.yml')) as cfg:
-        build_matrix = list(yaml.load_all(cfg))
-        for build in build_matrix:
-            if 'envvars' in build:
-                build['env'] = build.pop('envvars')
+    build_matrix = load_all_binstar_yml(path)
     builds = list(serialize_builds(build_matrix))
 
     if args.platform:
@@ -181,14 +177,14 @@ def main(args):
 
         package_name = None
         user_name = None
-        with open(binstar_yml) as cfg:
-            for build in yaml.load_all(cfg):
-                if build.get('package'):
-                    package_name = build.get('package')
-                if build.get('user'):
-                    user_name = build.get('user')
-                if build.get('envvars'):
-                    build['env'] = build.pop('envvars')
+        build_matrix = load_all_binstar_yml(args.path)
+        for build in build_matrix:
+            if build.get('package'):
+                package_name = build.get('package')
+            if build.get('user'):
+                user_name = build.get('user')
+            if build.get('envvars'):
+                build['env'] = build.pop('envvars')
 
         # Force package to exist
         if args.package:
