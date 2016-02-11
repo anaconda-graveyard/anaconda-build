@@ -24,7 +24,7 @@ package: %(PACKAGE_NAME)s
 #===============================================================================
 # Build Matrix Options
 # These options may be a single item, a list or empty
-# The resulting number of builds is [platform * engine * env]
+# The resulting number of builds is [platform * engine * envvars]
 #===============================================================================
 
 ## The platforms to build on.
@@ -36,8 +36,8 @@ package: %(PACKAGE_NAME)s
 # engine:
 #  - python=2
 #  - python=3
-## The env param is an environment variable list
-# env:
+## The envvars param is an environment variable list
+# envvars:
 #  - MY_ENV=A CC=gcc
 #  - MY_ENV=B
 

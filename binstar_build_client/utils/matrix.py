@@ -9,6 +9,8 @@ from __future__ import (print_function, unicode_literals, division,
     absolute_import)
 
 from itertools import product
+import os
+import yaml
 
 def expand_build_matrix(instruction_set):
     instruction_set = instruction_set.copy()
@@ -36,3 +38,12 @@ def serialize_builds(instruction_sets):
     for k, value in sorted(builds.items()):
         if value.get('exclude'): continue
         yield value
+
+
+def load_all_binstar_yml(path):
+    with open(os.path.join(path, '.binstar.yml')) as cfg:
+        build_matrix = list(yaml.load_all(cfg))
+        for build in build_matrix:
+            if 'envvars' in build:
+                build['env'] = build.pop('envvars')
+    return build_matrix

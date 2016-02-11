@@ -240,6 +240,21 @@ class Test(unittest.TestCase):
         self.assertEqual(conda_npy_read, '19')
 
 
+    def test_env_envvars(self):
+        'Test env or envvars can be used in .binstar.yml'
+        build_data = default_build_data()
+        for name in ('env', 'envvars'):
+            build_data['build_item_info'][name] = {'ENVIRONMENT_VARIABLE': '1'}
+            script_filename = gen_build_script(tempfile.mkdtemp(),
+                                                 build_data,
+                                                 ignore_setup_build=True,
+                                                 ignore_fetch_build_source=True)
+            self.addCleanup(os.unlink, script_filename)
+            contents = open(script_filename).read()
+            self.assertIn('ENVIRONMENT_VARIABLE=', contents)
+            build_data['build_item_info'].pop(name)
+
+
 if __name__ == "__main__":
     # import sys;sys.argv = ['', 'Test.test_timeout']
     unittest.main()

@@ -3,7 +3,7 @@ Build command
 
 Submit a build from your local path or  via a git url:
 
-See also: 
+See also:
 
   * [Submit A Build](http://docs.anaconda.org/build.html#SubmitABuild)
   * [Submit A Build From Github](http://docs.anaconda.org/build.html#GithubBuilds)
@@ -15,7 +15,7 @@ from __future__ import (print_function, unicode_literals, division,
 
 from argparse import RawDescriptionHelpFormatter
 from contextlib import contextmanager
-import logging, yaml
+import logging
 import os
 from os.path import abspath, join, isfile
 import tarfile
@@ -25,7 +25,7 @@ from binstar_build_client import BinstarBuildAPI
 from binstar_build_client.utils.filter import ExcludeGit
 from binstar_build_client.utils.git_utils import is_url, get_urlpath, \
     get_gitrepo
-from binstar_build_client.utils.matrix import serialize_builds
+from binstar_build_client.utils.matrix import serialize_builds, load_all_binstar_yml
 from binstar_client import errors
 from binstar_client.errors import UserError
 from binstar_client.utils import get_binstar, PackageSpec, upload_print_callback
@@ -50,9 +50,7 @@ def submit_build(binstar, args):
 
     log.info('Getting build product: %s' % abspath(args.path))
 
-    with open(join(path, '.binstar.yml')) as cfg:
-        build_matrix = list(yaml.load_all(cfg))
-
+    build_matrix = load_all_binstar_yml(path)
     builds = list(serialize_builds(build_matrix))
 
     if args.platform:
@@ -136,6 +134,9 @@ def submit_git_build(binstar, args):
     if not args.dry_run:
         log.info("Submitting the following repo for package creation: %s" % args.git_url)
         builds = get_gitrepo(urlparse(args.path))
+        for build in builds:
+            if build.get('envvars'):
+                build['env'] = build['envvars']
         # TODO: change channels= to labels=
         build = binstar.submit_for_url_build(args.package.user, args.package.name, builds,
                                              channels=args.labels, queue=args.queue, sub_dir=args.sub_dir,
@@ -176,12 +177,12 @@ def main(args):
 
         package_name = None
         user_name = None
-        with open(binstar_yml) as cfg:
-            for build in yaml.load_all(cfg):
-                if build.get('package'):
-                    package_name = build.get('package')
-                if build.get('user'):
-                    user_name = build.get('user')
+        build_matrix = load_all_binstar_yml(args.path)
+        for build in build_matrix:
+            if build.get('package'):
+                package_name = build.get('package')
+            if build.get('user'):
+                user_name = build.get('user')
 
         # Force package to exist
         if args.package:
