@@ -9,6 +9,7 @@ from __future__ import (print_function, unicode_literals, division,
     absolute_import)
 
 from itertools import product
+import os
 import yaml
 
 def expand_build_matrix(instruction_set):
@@ -16,7 +17,7 @@ def expand_build_matrix(instruction_set):
 
     platforms = instruction_set.pop('platform', ['linux-64']) or [None]
     if not isinstance(platforms, list): platforms = [platforms]
-    envs = instruction_set.pop('envvars', instruction_set.pop('env', [None])) or [None]
+    envs = instruction_set.pop('env', [None]) or [None]
     if not isinstance(envs, list): envs = [envs]
     engines = instruction_set.pop('engine', ['python=2']) or [None]
     if not isinstance(engines, list): engines = [engines]
@@ -40,7 +41,7 @@ def serialize_builds(instruction_sets):
 
 
 def load_all_binstar_yml(path):
-    with open(join(path, '.binstar.yml')) as cfg:
+    with open(os.path.join(path, '.binstar.yml')) as cfg:
         build_matrix = list(yaml.load_all(cfg))
         for build in build_matrix:
             if 'envvars' in build:

@@ -15,7 +15,7 @@ from __future__ import (print_function, unicode_literals, division,
 
 from argparse import RawDescriptionHelpFormatter
 from contextlib import contextmanager
-import logging, yaml
+import logging
 import os
 from os.path import abspath, join, isfile
 import tarfile
@@ -183,8 +183,6 @@ def main(args):
                 package_name = build.get('package')
             if build.get('user'):
                 user_name = build.get('user')
-            if build.get('envvars'):
-                build['env'] = build.pop('envvars')
 
         # Force package to exist
         if args.package:

@@ -34,7 +34,7 @@ from itertools import product
 from binstar_client import errors
 import argparse
 from binstar_client.utils.build_file import initial_build_config
-from binstar_build_client.utils.matrix as load_all_binstar_yml
+from binstar_build_client.utils.matrix import load_all_binstar_yml
 import sys
 
 from six.moves import input
