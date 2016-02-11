@@ -363,7 +363,8 @@ class TestDockerWorker(DockerWorker):
         args.image = 'binstar/linux-64'
 
         worker_config = WorkerConfiguration(
-            'worker_id', 'username', 'queue', 'test_platform', 'test_hostname', 'dist')
+            'worker_id', 'worker_id', 'username', 'queue', 'test_platform',
+            'test_hostname', 'dist')
 
         super(TestDockerWorker, self).__init__(bs, worker_config, args)
 

@@ -30,9 +30,7 @@ def main(args):
 
 
     bs = get_binstar(args, cls=BinstarBuildAPI)
-    username = bs.user()['login']
-    worker_config = WorkerConfiguration.load(args.worker_id, bs, username)
-
+    worker_config = WorkerConfiguration.load(args.worker_id, bs)
     worker = DockerWorker(bs, worker_config, args)
     worker.work_forever()
 
