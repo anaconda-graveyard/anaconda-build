@@ -21,6 +21,7 @@ try:
     from docker.utils import kwargs_from_env
 except ImportError:
     docker = None
+    kwargs_from_env = None
 
 class DockerWorker(Worker):
     """

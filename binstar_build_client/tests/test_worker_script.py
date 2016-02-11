@@ -73,7 +73,9 @@ class Test(CLITestCase):
     @patch('binstar_build_client.worker.docker_worker.DockerWorker.run')
     @patch('binstar_build_client.worker_commands.docker_run.docker')
     @patch('binstar_build_client.worker.docker_worker.docker')
-    def test_worker_simple_docker(self, docker1, docker2, run, load, loop, urls):
+    @patch('binstar_build_client.worker.docker_worker.kwargs_from_env')
+    def test_worker_simple_docker(self, kwargs_from_env, docker1, docker2, run, load, loop, urls):
+
         docker1.Client = docker2.Client = Mock()
 
         main(['--show-traceback', 'worker', 'docker_run', worker_data['worker_id']], False)
