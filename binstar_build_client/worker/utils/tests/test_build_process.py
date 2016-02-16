@@ -1,5 +1,5 @@
 import unittest
-from binstar_build_client.worker.utils.process_wrappers import BuildProcess, WIN_32
+from binstar_build_client.worker.utils.process_wrappers import BuildProcess, WIN
 import sys
 import os
 import time
@@ -40,7 +40,7 @@ class Test(unittest.TestCase):
         for c in children:
             if c.is_running(): c.kill()
 
-    @unittest.skipIf(WIN_32, 'This test should only run on posix')
+    @unittest.skipIf(WIN, 'This test should only run on posix')
     def test_terminate_process_group(self):
 
 
@@ -60,7 +60,7 @@ class Test(unittest.TestCase):
         self.assertEqual([c.is_running() for c in children], [False])
 
 
-    @unittest.skipIf(not WIN_32, 'This test should only run on windows')
+    @unittest.skipIf(not WIN, 'This test should only run on windows')
     def test_terminate_job_object(self):
 
         p0 = BuildProcess([sys.executable, run_sub_process], '.')
