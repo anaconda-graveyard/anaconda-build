@@ -58,6 +58,26 @@ class Test(CLITestCase):
         self.assertEqual(deregister.call_count, 1)
 
     @urlpatch
+    @patch('binstar_build_client.worker.register.WorkerConfiguration.register')
+    @patch('binstar_build_client.worker.register.WorkerConfiguration.deregister')
+    @patch('binstar_build_client.worker.register.WorkerConfiguration.load')
+    def test_register_name(self, load, deregister, urls, register):
+
+        main(['register', 'username/queue-1', '--name', 'myworker'], False)
+        self.assertEqual(register.call_count, 1)
+
+        main(['deregister', 'myworker'], False)
+        self.assertEqual(deregister.call_count, 1)
+
+    @urlpatch
+    @patch('binstar_build_client.worker.register.WorkerConfiguration.register')
+    @patch('binstar_build_client.worker.register.WorkerConfiguration.deregister')
+    @patch('binstar_build_client.worker.register.WorkerConfiguration.load')
+    def test_register_bad_name(self, load, deregister, urls, register):
+        with self.assertRaises(errors.BinstarError):
+            main(['register', 'username/queue-1', '--name','!bad-name'], False)
+
+    @urlpatch
     @patch('binstar_build_client.worker.worker.Worker.work_forever')
     @patch('binstar_build_client.worker.register.WorkerConfiguration.load')
     @patch('binstar_build_client.worker.worker.Worker.run')
