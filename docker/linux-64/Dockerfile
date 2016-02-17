@@ -21,7 +21,7 @@ ENV PATH /opt/miniconda/bin:$PATH
 RUN conda config --set always_yes true && \
     conda config --set binstar_upload false && \
     conda config --add channels binstar
-RUN conda install conda-build jinja2 anaconda-client psutil anaconda-build llvm
+RUN conda install conda-build jinja2 anaconda-client psutil binstar-build llvm
 RUN anaconda config --set url https://api.anaconda.org
 USER root
 WORKDIR /root
@@ -36,6 +36,4 @@ RUN yum remove -y git && \
     echo "export PATH=\$PATH:/usr/local/git/bin" >> /etc/bashrc && \
     ln -s /usr/local/git/bin/git /usr/bin/git
 
-USER binstar
-WORKDIR /home/binstar
 
