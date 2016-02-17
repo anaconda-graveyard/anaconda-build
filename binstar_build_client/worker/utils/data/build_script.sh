@@ -1,6 +1,13 @@
 #!/bin/bash
 set +e
 
+tag_maker(){
+    echo
+    echo "###RUNNING_SECTION###" "$@";
+    echo
+    export CURRENT_SECTION_TAG="$@"
+}
+tag_maker build_env_exports
 export BINSTAR_BUILD_RESULT=""
 export PYTHONUNBUFFERED="TRUE"
 
@@ -237,10 +244,13 @@ bb_after_script() {
 #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
 binstar_build(){
-
+    tag_maker anaconda_build_install
     bb_install; eval $bb_check_result
+    tag_maker anaconda_build_test
     bb_test; eval $bb_check_result
+    tag_maker anaconda_build_before_script
     bb_before_script; eval $bb_check_result
+    tag_maker anaconda_build_script
     bb_script; eval $bb_check_result
 
     export BINSTAR_BUILD_RESULT="success"
@@ -303,6 +313,7 @@ upload_build_targets(){
 
 main(){
 
+    tag_maker setup_build
     {% if ignore_setup_build %}
     echo "[Ignore Setup Build]"
     {% else %}
@@ -314,7 +325,7 @@ main(){
         echo "Internal anaconda build error: Could not set up initial build state"
         exit {{EXIT_CODE_ERROR}}
     fi
-
+    tag_maker fetch_build_source
     {% if ignore_fetch_build_source %}
     echo "[Ignore Fetch Build Source]"
     {% else %}
@@ -325,14 +336,16 @@ main(){
         echo "Anaconda build error: Could not fetch build sources"
         exit {{EXIT_CODE_ERROR}}
     fi
-
+    tag_maker anaconda_build
     binstar_build
+    tag_maker anaconda_post_build
     binstar_post_build
 
+    tag_maker upload_build_targets
     upload_build_targets
 
     echo "Exit BINSTAR_BUILD_RESULT=$BINSTAR_BUILD_RESULT"
-
+    tag_maker Exiting $BINSTAR_BUILD_RESULT
     if [ "$BINSTAR_BUILD_RESULT" == "success" ]; then
         exit {{EXIT_CODE_OK}}
     elif [ "$BINSTAR_BUILD_RESULT" == "error" ]; then
@@ -347,6 +360,7 @@ main(){
 #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 # Execute main funtions
 #### #### #### #### #### #### #### #### #### #### #### #### #### ####
+tag_maker parse_options
 parse_options $*;
 main;
 
