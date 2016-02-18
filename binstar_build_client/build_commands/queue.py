@@ -4,7 +4,7 @@ Build Queue
 from __future__ import (print_function, unicode_literals, division,
     absolute_import)
 from binstar_client.utils import get_binstar, bool_input
-from binstar_build_client.utils.validate_name import validate_name
+from binstar_build_client.utils.validate_name import is_valid_name
 from binstar_build_client import BinstarBuildAPI
 from argparse import RawDescriptionHelpFormatter
 from dateutil.parser import parse as parse_date
@@ -57,7 +57,12 @@ def main(args):
 
         if queue_name is None:
             raise errors.BinstarError("Must specify a queue name to create")
-        validate_name(queue_name, 'queue')
+        if not is_valid_name(queue_name):
+            raise errors.BinstarError('Invalid name for '
+                                      'queue: {}.  Must start'
+                                      ' with a letter and contain'
+                                      ' only numbers, letters, -, and _'.format(queue_name))
+
         bs.add_build_queue(username, queue_name)
         print("Created queue %s" % queue_name)
         return
