@@ -102,7 +102,7 @@ class BuildProcess(subprocess.Popen):
         try:
             pgid = os.getpgid(self.pid)
         except OSError as err:
-            log.warning("Could not get process group for pid {}".format(self.pid))
+            log.warning("Could not get process group for pid %s", self.pid, exc_info=err)
             log.warning(err)
             return err
 
@@ -133,8 +133,6 @@ class BuildProcess(subprocess.Popen):
         else:
             err = self.kill_pg()
             msg = 'process group'
-        if err:
-            log.warn('Could not kill {}. Err: {}'.format(msg, repr(err)))
         if parent and parent.is_running():
             log.info("BuildProcess.kill: parent pid {} is being killed".format(parent.pid))
             super(BuildProcess, self).kill()
