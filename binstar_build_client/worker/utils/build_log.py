@@ -17,7 +17,7 @@ class BuildLog(object):
     """
 
     INTERVAL = 10  # Send logs to server every `INTERVAL` seconds
-
+    SECTION_TAG = b'anaconda-build-section-id'
     def __init__(self, bs, username, queue, worker_id, job_id, filename=None):
 
         self.bs = bs
@@ -26,8 +26,9 @@ class BuildLog(object):
         self.worker_id = worker_id
         self.job_id = job_id
         self.terminate_build = False
-
-        self.write_to_server = functools.partial(self.bs.log_build_output,
+        self.current_tag = 'start_build_on_worker'
+        self.status = ''
+        self.write_to_server = functools.partial(self.bs.log_build_output_structured,
                                                  self.username,
                                                  self.queue,
                                                  self.worker_id,
@@ -43,6 +44,12 @@ class BuildLog(object):
     def terminated(self):
         return self.terminate_build
 
+    def detect_section_tag(self, msg):
+        if self.SECTION_TAG in msg:
+            self.current_tag = " ".join(msg.split()[1:])
+            log.info('Enter {} {}'.format(self.SECTION_TAG.decode(), self.current_tag))
+            if self.current_tag.lower().startswith('exiting'):
+                self.current_tag, self.status = (_.strip() for _ in self.current_tag.split())
 
     def write(self, msg):
         """
@@ -58,9 +65,10 @@ class BuildLog(object):
             raise TypeError("a bytes-like object is required, not {}".format(type(msg)))
 
         self.fd.write(msg)
+        self.detect_section_tag(msg)
         n = len(msg)
 
-        terminate_build = self.write_to_server(msg)
+        terminate_build = self.write_to_server(msg, self.current_tag, self.status)
         self.terminate_build = terminate_build
 
         log.info('Wrote {} bytes of build output to anaconda-server'.format(n))

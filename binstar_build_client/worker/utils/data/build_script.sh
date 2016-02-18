@@ -3,7 +3,7 @@ set +e
 
 tag_maker(){
     echo
-    echo "###RUNNING_SECTION###" "$@";
+    echo "anaconda-build-section-id" "$@";
     echo
     export CURRENT_SECTION_TAG="$@"
 }
@@ -55,7 +55,7 @@ bb_check_command_error='exit_status=$?; if [ "$exit_status" != "0" ]; then echo 
 # Check the exit status of the last command and return if it was an error
 bb_check_command_failure='exit_status=$?; if [ "$exit_status" != "0" ]; then echo "command exited with status $exit_status"; export BINSTAR_BUILD_RESULT="failure"; return 1; fi'
 # Check the state of "BINSTAR_BUILD_RESULT" and return if it is set
-bb_check_result='if [ "$BINSTAR_BUILD_RESULT" != "" ]; then return 1; fi'
+bb_check_result='if [ "$BINSTAR_BUILD_RESULT" != "" ]; then if [ "$BINSTAR_BUILD_RESULT" != "success" ]; then echo The build ended in $BINSTAR_BUILD_RESULT in section $CURRENT_SECTION_TAG; fi; return 1; fi'
 
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### ####
@@ -345,7 +345,7 @@ main(){
     upload_build_targets
 
     echo "Exit BINSTAR_BUILD_RESULT=$BINSTAR_BUILD_RESULT"
-    tag_maker Exiting $BINSTAR_BUILD_RESULT
+    tag_maker exiting $BINSTAR_BUILD_RESULT
     if [ "$BINSTAR_BUILD_RESULT" == "success" ]; then
         exit {{EXIT_CODE_OK}}
     elif [ "$BINSTAR_BUILD_RESULT" == "error" ]; then

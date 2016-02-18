@@ -221,7 +221,7 @@ class Worker(object):
         )
 
         build_log = io.BufferedWriter(raw_build_log)
-
+        build_log.write(BuildLog.SECTION_TAG + b' start_build_on_worker\n')
         with build_log:
             instructions = job_data['build_item_info'].get('instructions')
 

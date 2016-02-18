@@ -100,7 +100,7 @@ goto:eof
     call:upload_build_targets
 
     echo Exiting BINSTAR_BUILD_RESULT=%BINSTAR_BUILD_RESULT%
-    call:tag_maker Exiting %BINSTAR_BUILD_RESULT%
+    call:tag_maker exiting %BINSTAR_BUILD_RESULT%
     if "%BINSTAR_BUILD_RESULT%" == "success" (
         exit {{EXIT_CODE_OK}}
     )
@@ -381,6 +381,6 @@ goto:eof
 :tag_maker
     set CURRENT_SECTION_TAG=%*
     echo.
-    echo ###RUNNING_SECTION### %*
+    echo anaconda-build-section-id %*
     echo.
 goto:eof

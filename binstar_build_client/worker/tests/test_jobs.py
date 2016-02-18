@@ -12,6 +12,7 @@ from binstar_build_client.worker.register import WorkerConfiguration
 from binstar_build_client.worker.worker import Worker
 from binstar_build_client.worker_commands.register import get_platform
 from binstar_build_client.worker.utils import script_generator
+from binstar_build_client.worker.utils.build_log import BuildLog
 from binstar_build_client.worker.docker_worker import DockerWorker
 import warnings
 import tempfile
@@ -66,6 +67,7 @@ class MyWorker(Worker):
         self.SLEEP_TIME = 0
         bs = Mock()
         bs.log_build_output.return_value = False
+        bs.log_build_output_structured.return_value = False
         args = Mock()
         args.status_file = None
         args.timeout = 100
@@ -166,6 +168,7 @@ class Test(unittest.TestCase):
         self.assertEqual(popen_args[1:], expected_args[1:])
 
     expected_output_success = (
+        BuildLog.SECTION_TAG + " start_build_on_worker\n"
         "Building on worker test_hostname (platform test_platform)\n"
         "Starting build job_name\n"
         "hello\n"
@@ -217,6 +220,7 @@ class Test(unittest.TestCase):
 
 
     expected_output_timeout = (
+        BuildLog.SECTION_TAG + " start_build_on_worker\n"
         "Building on worker test_hostname (platform test_platform)\n"
         "Starting build job_name\n"
         "hello\n"
@@ -246,6 +250,7 @@ class Test(unittest.TestCase):
             self.assertMultiLineEqual(output, self.expected_output_timeout)
 
     expected_output_iotimeout = (
+        BuildLog.SECTION_TAG + b" start_build_on_worker\n"
         "Building on worker test_hostname (platform test_platform)\n"
         "Starting build job_name\n"
         "hello\n"
@@ -354,6 +359,7 @@ class TestDockerWorker(DockerWorker):
     def __init__(self):
         self.SLEEP_TIME = 0
         bs = Mock()
+        bs.log_build_output_structured.return_value = False
         bs.log_build_output.return_value = False
 
         args = Mock()
