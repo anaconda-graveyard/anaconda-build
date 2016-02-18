@@ -99,7 +99,7 @@ goto:eof
     call:tag_maker upload_build_targets
     call:upload_build_targets
 
-    echo Exiting BINSTAR_BUILD_RESULT=%BINSTAR_BUILD_RESULT%
+    echo Exit BINSTAR_BUILD_RESULT=%BINSTAR_BUILD_RESULT%
     call:tag_maker exiting %BINSTAR_BUILD_RESULT%
     if "%BINSTAR_BUILD_RESULT%" == "success" (
         exit {{EXIT_CODE_OK}}
