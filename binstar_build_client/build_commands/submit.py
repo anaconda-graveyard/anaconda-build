@@ -18,6 +18,10 @@ from contextlib import contextmanager
 import logging
 import os
 from os.path import abspath, join, isfile
+try:
+    from urllib.parse import urlparse
+except ImportError:
+    from urlparse import urlparse
 import tarfile
 import tempfile
 
@@ -105,7 +109,8 @@ def print_build_results(args, build, binstar):
     log.info('')
     build_result_url = build.get('url')
     if not build_result_url:
-        build_result_url = 'http://%s/%s/%s/builds/matrix/%s' % (binstar.domain, args.package.user, args.package.name, build['build_no'])
+        netloc = urlparse(binstar.domain).netloc
+        build_result_url = 'http://%s/%s/%s/builds/matrix/%s' % (netloc, args.package.user, args.package.name, build['build_no'])
     log.info('To view this build go to %s' % build_result_url)
     log.info('')
     log.info('You may also run\n\n    anaconda build tail -f %s/%s %s\n' % (args.package.user, args.package.name, build['build_no']))
