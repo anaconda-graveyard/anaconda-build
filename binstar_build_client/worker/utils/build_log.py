@@ -50,7 +50,7 @@ class BuildLog(object):
 
     def detect_tags(self, msg):
         if self.SECTION_TAG in msg:
-            self.current_tag = " ".join(msg.split()[1:])
+            self.current_tag = b" ".join(msg.split()[1:])
             log.info('Enter {} {}'.format(self.SECTION_TAG.decode(), self.current_tag))
             if self.current_tag.lower().startswith('exiting'):
                 self.current_tag, self.status = (_.strip() for _ in self.current_tag.split())

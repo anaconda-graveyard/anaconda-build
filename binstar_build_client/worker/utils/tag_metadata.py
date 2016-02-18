@@ -16,7 +16,7 @@ def list_build_log_section_tags():
         with open(fname, 'r') as f:
             contents = f.readlines()
         for line in contents:
-            if BuildLog.SECTION_TAG in line and not 'echo' in line:
+            if str(BuildLog.SECTION_TAG) in line and not 'echo' in line:
                 tag = [_.strip() for _ in line.strip().split(BuildLog.SECTION_TAG)]
                 tag = " ".join([_ for _ in tag if not '%' in tag or '$' in tag])
                 tags[end].add(tag)
