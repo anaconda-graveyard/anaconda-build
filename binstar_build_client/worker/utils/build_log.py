@@ -52,7 +52,7 @@ class BuildLog(object):
         if self.SECTION_TAG in msg:
             self.current_tag = b" ".join(msg.split()[1:])
             log.info('Enter {} {}'.format(self.SECTION_TAG.decode(), self.current_tag))
-            if self.current_tag.lower().startswith('exiting'):
+            if self.current_tag.lower().startswith(b'exiting'):
                 self.current_tag, self.status = (_.strip() for _ in self.current_tag.split())
         for tag in self.datatags:
             if msg.startswith(tag):
