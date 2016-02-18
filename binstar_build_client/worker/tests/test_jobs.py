@@ -20,7 +20,7 @@ import shutil
 
 try_unlink = lambda path: os.unlink(path) if os.path.isfile(path) else None
 
-start_msg = str(BuildLog.SECTION_TAG) + ' start_build_on_worker\n'
+start_msg = BuildLog.SECTION_TAG.decode() + ' start_build_on_worker\n'
 
 def default_build_data():
     return {

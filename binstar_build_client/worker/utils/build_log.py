@@ -55,8 +55,9 @@ class BuildLog(object):
             if self.current_tag.lower().startswith(b'exiting'):
                 self.current_tag, self.status = (_.strip() for _ in self.current_tag.split())
         for tag in self.datatags:
-            if msg.startswith(tag):
-                content = msg.replace(tag, '').strip()
+            decoded = msg.decode()
+            if decoded.startswith(tag):
+                content = decoded.replace(tag, '').strip()
                 try:
                     content = json.loads(content)
                 except:
