@@ -57,10 +57,10 @@ class TestBuildLog(unittest.TestCase):
 
     def test_section_breaks(self):
         for exit in (b'success', b'failure', b'error'):
-            new_tag = lambda arg: BuildLog.SECTION_TAG + b' ' + bytes(arg)
+            new_tag = lambda arg: BuildLog.SECTION_TAG + b' ' + arg
             bs = BSClient()
             log = BuildLog(bs, "un", "queue", "worker_id", 123, filename=self.filepath)
-            for tag in string.ascii_letters:
+            for tag in (b'abc', b'def', b'ghi'):
                 log.write(new_tag(tag))
                 self.assertEqual(bs.last_log, new_tag(tag))
                 self.assertEqual(bs.last_tag, tag)

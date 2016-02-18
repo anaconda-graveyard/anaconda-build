@@ -20,6 +20,8 @@ import shutil
 
 try_unlink = lambda path: os.unlink(path) if os.path.isfile(path) else None
 
+start_msg = BuildLog.SECTION_TAG + b' start_build_on_worker\n'
+
 def default_build_data():
     return {
         "build_item_info": {
@@ -167,8 +169,7 @@ class Test(unittest.TestCase):
         self.assertIn('script_filename', (ending_win, ending_posix))
         self.assertEqual(popen_args[1:], expected_args[1:])
 
-    expected_output_success = (
-        BuildLog.SECTION_TAG + " start_build_on_worker\n"
+    expected_output_success = start_msg + (
         "Building on worker test_hostname (platform test_platform)\n"
         "Starting build job_name\n"
         "hello\n"
@@ -219,8 +220,7 @@ class Test(unittest.TestCase):
         self.assertEqual(status, 'error')
 
 
-    expected_output_timeout = (
-        BuildLog.SECTION_TAG + " start_build_on_worker\n"
+    expected_output_timeout = start_msg + (
         "Building on worker test_hostname (platform test_platform)\n"
         "Starting build job_name\n"
         "hello\n"
@@ -249,8 +249,7 @@ class Test(unittest.TestCase):
             output = fd.read()
             self.assertMultiLineEqual(output, self.expected_output_timeout)
 
-    expected_output_iotimeout = (
-        BuildLog.SECTION_TAG + b" start_build_on_worker\n"
+    expected_output_iotimeout = start_msg + (
         "Building on worker test_hostname (platform test_platform)\n"
         "Starting build job_name\n"
         "hello\n"
@@ -383,7 +382,6 @@ class DockerTest(Test):
     def get_worker(self):
         worker = TestDockerWorker()
         return worker
-    start_msg = BuildLog.SECTION_TAG + b' start_build_on_worker\n'
     expected_output_success = start_msg + (
         "Building on worker test_hostname (platform test_platform)\n"
         "Starting build job_name\n"
