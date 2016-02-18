@@ -21,7 +21,7 @@ ENV PATH /opt/miniconda/bin:$PATH
 RUN conda config --set always_yes true && \
     conda config --set binstar_upload false && \
     conda config --add channels binstar
-RUN conda install conda-build jinja2 anaconda-client psutil binstar-build llvm
+RUN conda install conda-build jinja2 anaconda-client psutil anaconda-build llvm
 RUN anaconda config --set url https://api.anaconda.org
 USER root
 WORKDIR /root
