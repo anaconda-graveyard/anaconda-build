@@ -6,6 +6,7 @@ import unittest
 import mock
 
 from binstar_build_client.worker.utils.build_log import BuildLog
+from binstar_build_client.worker.utils.tag_metadata import list_build_log_section_tags
 
 class BSClient(object):
     def log_build_output(self, *args):
@@ -59,7 +60,8 @@ class TestBuildLog(unittest.TestCase):
         for exit in (b'success', b'failure', b'error'):
             new_tag = lambda arg: BuildLog.SECTION_TAG + b' ' + arg
             bs = BSClient()
-            log = BuildLog(bs, "un", "queue", "worker_id", 123, filename=self.filepath)
+            log = BuildLog(bs, "un", "queue", "worker_id", 123,
+                           filename=self.filepath, datatags=('datatag1','datatag2'))
             for tag in (b'abc', b'def', b'ghi'):
                 log.write(new_tag(tag))
                 self.assertEqual(bs.last_log, new_tag(tag))
@@ -67,10 +69,14 @@ class TestBuildLog(unittest.TestCase):
                 self.assertEqual(bs.status, '')
                 log.write(b'info')
                 self.assertEqual(bs.last_log, b'info')
+            log.write(b'datatag1 {"abc": "123"}')
+            log.write(b'datatag2 hello world')
             log.write(new_tag(b'exiting ' + exit))
             self.assertEqual(bs.status, exit)
-
-
+            self.assertEqual(log.user_data,
+                             {'datatag1': [{'abc':'123'},],
+                              'datatag2': ['hello world',],
+                             })
 
 if __name__ == '__main__':
     unittest.main()

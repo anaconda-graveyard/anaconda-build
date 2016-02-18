@@ -158,7 +158,7 @@ class Worker(object):
                 job_data['job']['_id']
             )
         else:
-            job_data = bs.fininsh_build(
+            job_data = bs.finish_build(
                 self.config.username,
                 self.config.queue,
                 self.worker_id,
@@ -202,22 +202,25 @@ class Worker(object):
         Run a single build
         """
         job_id = job_data['job']['_id']
-        if 'envvars' in job_data['job']:
-            job_data['job']['env'] = job_data.pop('envvars')
+        if 'envvars' in job_data['build_item_info']:
+            job_data['build_item_info']['env'] = job_data['build_item_info'].pop('envvars')
         working_dir = self.working_dir(job_data)
 
         log.info("Removing previous build dir: {0}".format(working_dir))
         rm_rf(working_dir)
         log.info("Creating working dir: {0}".format(working_dir))
         os.makedirs(working_dir)
-
+        datatags = job_data['build_item_info']['instructions'].get('datatags', None) or None
+        if datatags and not isinstance(datatags, (list, tuple)):
+            datatags = [datatags]
         raw_build_log = BuildLog(
             self.bs,
             self.config.username,
             self.config.queue,
             self.worker_id,
             job_id,
-            filename=self.build_logfile(job_data)
+            filename=self.build_logfile(job_data),
+            datatags=datatags,
         )
 
         build_log = io.BufferedWriter(raw_build_log)
@@ -252,7 +255,13 @@ class Worker(object):
                 job_data, script_filename, build_log, timeout, iotimeout, api_token,
                 git_oauth_token, build_filename, instructions=instructions,
                 build_was_stopped_by_user=raw_build_log.terminated)
-
+            self.bs.upload_user_tagged_data(
+                self.config.username,
+                self.config.queue,
+                self.worker_id,
+                job_id,
+                raw_build_log.user_data
+            )
             log.info("Build script exited with code {0}".format(exit_code))
             if exit_code == script_generator.EXIT_CODE_OK:
                 failed = False
@@ -271,7 +280,6 @@ class Worker(object):
                 status = 'error'
                 log.error("Unknown build exit status {0} for build {1}".format(
                     exit_code, job_data['job_name']))
-
             return failed, status
 
     def run(self, build_data, script_filename, build_log, timeout, iotimeout, api_token=None,
@@ -338,6 +346,7 @@ class Worker(object):
                             pass
                         else:
                             build_log.write("    + {0}\n".format(cmdline))
+
         return p0.poll()
 
     def download_build_source(self, working_dir, job_id):

@@ -83,7 +83,36 @@ class BuildQueueMixin(object):
 
         return result
 
-    def fininsh_build(self, username, queue_name, worker_id, job_id, status='success', failed=False):
+    def upload_user_tagged_data(self, username, queue, worker_id, job_id, user_data):
+        ''' Upload user tagged data from build log.
+
+        If user has `datatags` in .binstar.yml (a list or string)
+
+        accumulate user data in dict like:
+
+        {'abc':[{'statement1':'def'}], 'def':['hello', 'world']}
+
+        `datatags` form the keys for user data
+        the values are list of json.loaded objects or
+        strings if json.loads fails.
+
+        '''
+        if getattr(self, 'log_build_output_structured_failed', False):
+            log.info('Not uploading user-tagged-data because {}'
+                     ' is using plain build logs'.format(self.domain))
+            return
+        url = '%s/build-worker/%s/%s/%s/jobs/%s/logged-user-data' % (self.domain, username, queue_name, worker_id, job_id)
+        res = self.session.post(url, data=user_data)
+        self._check_response(res, [201, 200])
+
+        try:
+            result = res.json().get('terminate_build', False)
+        except ValueError:
+            result = False
+
+        return result
+
+    def finish_build(self, username, queue_name, worker_id, job_id, status='success', failed=False):
         url = '%s/build-worker/%s/%s/%s/jobs/%s/finish' % (self.domain, username, queue_name, worker_id, job_id)
         data, headers = jencode(status=status, failed=failed)
         res = self.session.post(url, data=data, headers=headers)

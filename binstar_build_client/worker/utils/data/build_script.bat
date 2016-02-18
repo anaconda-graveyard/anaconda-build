@@ -92,7 +92,6 @@ goto:eof
         echo %BINSTAR_BUILD_RESULT%: Could not fetch build sources
         exit {{EXIT_CODE_ERROR}}
     )
-    call:tag_maker anaconda_build
     call:binstar_build
     call:tag_maker anaconda_post_build
     call:binstar_post_build
@@ -381,6 +380,6 @@ goto:eof
 :tag_maker
     set CURRENT_SECTION_TAG=%*
     echo.
-    echo anaconda-build-section-id %*
+    echo anaconda-build-section-tag %*
     echo.
 goto:eof

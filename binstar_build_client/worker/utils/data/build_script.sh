@@ -3,7 +3,7 @@ set +e
 
 tag_maker(){
     echo
-    echo "anaconda-build-section-id" "$@";
+    echo "anaconda-build-section-tag" "$@";
     echo
     export CURRENT_SECTION_TAG="$@"
 }
@@ -336,7 +336,6 @@ main(){
         echo "Anaconda build error: Could not fetch build sources"
         exit {{EXIT_CODE_ERROR}}
     fi
-    tag_maker anaconda_build
     binstar_build
     tag_maker anaconda_post_build
     binstar_post_build

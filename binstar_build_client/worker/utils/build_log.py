@@ -5,6 +5,7 @@ from __future__ import print_function, unicode_literals, absolute_import
 
 import codecs
 import functools
+import json
 import logging
 
 
@@ -17,8 +18,9 @@ class BuildLog(object):
     """
 
     INTERVAL = 10  # Send logs to server every `INTERVAL` seconds
-    SECTION_TAG = b'anaconda-build-section-id'
-    def __init__(self, bs, username, queue, worker_id, job_id, filename=None):
+    SECTION_TAG = b'anaconda-build-section-tag'
+    def __init__(self, bs, username, queue, worker_id,
+                 job_id, filename=None, datatags=None):
 
         self.bs = bs
         self.username = username
@@ -28,6 +30,8 @@ class BuildLog(object):
         self.terminate_build = False
         self.current_tag = 'start_build_on_worker'
         self.status = ''
+        self.datatags = datatags or []
+        self.user_data = {}
         self.write_to_server = functools.partial(self.bs.log_build_output_structured,
                                                  self.username,
                                                  self.queue,
@@ -44,12 +48,22 @@ class BuildLog(object):
     def terminated(self):
         return self.terminate_build
 
-    def detect_section_tag(self, msg):
+    def detect_tags(self, msg):
         if self.SECTION_TAG in msg:
             self.current_tag = " ".join(msg.split()[1:])
             log.info('Enter {} {}'.format(self.SECTION_TAG.decode(), self.current_tag))
             if self.current_tag.lower().startswith('exiting'):
                 self.current_tag, self.status = (_.strip() for _ in self.current_tag.split())
+        for tag in self.datatags:
+            if msg.startswith(tag):
+                content = msg.replace(tag, '').strip()
+                try:
+                    content = json.loads(content)
+                except:
+                    pass
+                if not tag in self.user_data:
+                    self.user_data[tag] = []
+                self.user_data[tag].append(content)
 
     def write(self, msg):
         """
@@ -65,7 +79,7 @@ class BuildLog(object):
             raise TypeError("a bytes-like object is required, not {}".format(type(msg)))
 
         self.fd.write(msg)
-        self.detect_section_tag(msg)
+        self.detect_tags(msg)
         n = len(msg)
 
         terminate_build = self.write_to_server(msg, self.current_tag, self.status)
