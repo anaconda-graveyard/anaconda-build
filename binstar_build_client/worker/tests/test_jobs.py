@@ -383,8 +383,8 @@ class DockerTest(Test):
     def get_worker(self):
         worker = TestDockerWorker()
         return worker
-
-    expected_output_success = (
+    start_msg = BuildLog.SECTION_TAG + b' start_build_on_worker\n'
+    expected_output_success = start_msg + (
         "Building on worker test_hostname (platform test_platform)\n"
         "Starting build job_name\n"
         "Docker Image: binstar/linux-64\n"
@@ -395,7 +395,7 @@ class DockerTest(Test):
         "exit 0\n"
     )
 
-    expected_output_timeout = (
+    expected_output_timeout = start_msg +(
         "Building on worker test_hostname (platform test_platform)\n"
         "Starting build job_name\n"
         "Docker Image: binstar/linux-64\n"
@@ -408,7 +408,7 @@ class DockerTest(Test):
         "[Terminated]\n"
     )
 
-    expected_output_iotimeout = (
+    expected_output_iotimeout = start_msg +(
         "Building on worker test_hostname (platform test_platform)\n"
         "Starting build job_name\n"
         "Docker Image: binstar/linux-64\n"
