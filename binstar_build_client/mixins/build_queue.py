@@ -1,7 +1,9 @@
 import logging
 
-from binstar_client.utils import jencode
 import requests
+
+from binstar_client import errors
+from binstar_client.utils import jencode
 import binstar_client
 import binstar_build_client
 
@@ -54,15 +56,20 @@ class BuildQueueMixin(object):
 
         return result
 
-    def log_build_output_structured(self, username, queue_name,
-                                    worker_id, job_id,
-                                    msg, tag, status):
+    def log_build_output_structured(self,
+                                    username,
+                                    queue_name,
+                                    worker_id,
+                                    job_id,
+                                    msg,
+                                    metadata):
         '''Call /tagged-log endpoint or fallback to plain log '''
         if getattr(self, 'log_build_output_structured_failed', False):
             return self.log_build_output(username, queue_name, worker_id,
                                          job_id, msg)
         url = '%s/build-worker/%s/%s/%s/jobs/%s/tagged-log' % (self.domain, username, queue_name, worker_id, job_id)
-        content = {'msg': msg, 'binstar_build_result': status}
+        content = metadata.copy()
+        content['msg'] = msg
         res = self.session.post(url, data=content)
         try:
             self._check_response(res, [201, 200])
@@ -75,35 +82,6 @@ class BuildQueueMixin(object):
             return self.log_build_output(username, queue_name,
                                   worker_id, job_id,
                                   msg)
-
-        try:
-            result = res.json().get('terminate_build', False)
-        except ValueError:
-            result = False
-
-        return result
-
-    def upload_user_tagged_data(self, username, queue, worker_id, job_id, user_data):
-        ''' Upload user tagged data from build log.
-
-        If user has `datatags` in .binstar.yml (a list or string)
-
-        accumulate user data in dict like:
-
-        {'abc':[{'statement1':'def'}], 'def':['hello', 'world']}
-
-        `datatags` form the keys for user data
-        the values are list of json.loaded objects or
-        strings if json.loads fails.
-
-        '''
-        if getattr(self, 'log_build_output_structured_failed', False):
-            log.info('Not uploading user-tagged-data because {}'
-                     ' is using plain build logs'.format(self.domain))
-            return
-        url = '%s/build-worker/%s/%s/%s/jobs/%s/logged-user-data' % (self.domain, username, queue_name, worker_id, job_id)
-        res = self.session.post(url, data=user_data)
-        self._check_response(res, [201, 200])
 
         try:
             result = res.json().get('terminate_build', False)

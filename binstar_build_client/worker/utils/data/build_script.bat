@@ -1,8 +1,13 @@
 @echo off
 
-call:tag_maker build_env_exports
-set "PYTHONUNBUFFERED=TRUE"
 
+{% macro start_section(name, silent=False) %}
+echo "{{metadata(section=name)}}"
+{% if not silent %}
+echo "[{{name.title().replace('_',' ')}}]"
+{% endif %}
+set "CURRENT_SECTION_TAG={{name}}"
+{% endmacro %}
 {% macro set_error(fail_type='error') -%}
 set "BINSTAR_BUILD_RESULT={{fail_type}}" & goto:eof
 {%- endmacro %}
@@ -16,12 +21,14 @@ if not "%BINSTAR_BUILD_RESULT%" == "" (
 )
 {%- endmacro %}
 
+{{ start_section('build_env_exports', silent=True) }}
+set "PYTHONUNBUFFERED=TRUE"
+set "BUILD_PYTHON={{ executable }}"
 
 {% for key, value in exports %}
 set "{{key}}={{value}}"
 {% endfor %}
 
-call:tag_maker parse_options
 call:parse_options %*
 call:main
 goto:eof
@@ -31,6 +38,7 @@ goto:eof
 :: #######################################################
 
 :parse_options
+  {{ start_section('parse_options', silent=True) }}
 
   :parse_options_loop
     IF NOT "%1"=="" (
@@ -68,7 +76,7 @@ goto:eof
 
     set BINSTAR_BUILD_RESULT=
 
-    call:tag_maker setup_build
+
     {% if ignore_setup_build %}
     echo [ignore setup_build]
     {% else %}
@@ -80,7 +88,7 @@ goto:eof
         echo Internal binstar build error: Could not set up initial build state
         exit {{EXIT_CODE_ERROR}}
     )
-    call:tag_maker fetch_build_source
+
     {% if ignore_fetch_build_source %}
     echo [ignore fetch_build_source]
     {% else %}
@@ -92,14 +100,15 @@ goto:eof
         echo %BINSTAR_BUILD_RESULT%: Could not fetch build sources
         exit {{EXIT_CODE_ERROR}}
     )
+
     call:binstar_build
-    call:tag_maker anaconda_post_build
     call:binstar_post_build
-    call:tag_maker upload_build_targets
+
     call:upload_build_targets
 
     echo Exit BINSTAR_BUILD_RESULT=%BINSTAR_BUILD_RESULT%
-    call:tag_maker exiting %BINSTAR_BUILD_RESULT%
+    call:bb_metadata binstar_build_result %BINSTAR_BUILD_RESULT%
+
     if "%BINSTAR_BUILD_RESULT%" == "success" (
         exit {{EXIT_CODE_OK}}
     )
@@ -124,8 +133,7 @@ goto:eof
 
     @echo off
 
-    echo.
-    echo [Fetching Build Source]
+    {{ start_section('fetch_build_source') }}
 
     Rmdir /s /q "%SOURCE_DIR%"
 
@@ -180,8 +188,8 @@ goto:eof
 goto:eof
 
 :setup_build
+    {{ start_section('setup_build') }}
 
-    echo [Setup Build]
     echo|set /p "noNewline=Host: "
     hostname
 
@@ -269,16 +277,18 @@ goto:eof
     :: Empty set of instructions for {{key}}
     {% else -%}
 
-    echo.
-    echo [{{key.title().replace('_',' ')}}]
+    {{ start_section(key) }}
 
     {%   for instruction_lines in all_instruction_lines -%}
+    echo {{metadata(command=instruction_lines)}}
 
     {%      for instruction_line in instruction_lines.split('\n') %}
     echo {{instruction_line}}
     {%      endfor %}
 
     ( {{instruction_lines}} ) || ( {{set_error(fail_type)}} )
+
+    echo {{metadata(command=None)}}
     {%   endfor -%}
 
     @echo off
@@ -302,18 +312,16 @@ goto:eof
 {{ format_instructions('after_script') }}
 
 :binstar_build
-    call:tag_maker anaconda_build_install
+
     call:bb_install
     {{check_result()}}
-    call:tag_maker anaconda_build_test
+
     call:bb_test
     {{check_result()}}
 
-    call:tag_maker anaconda_build_before_script
     call:bb_before_script
     {{check_result()}}
 
-    call:tag_maker anaconda_build_script
     call:bb_script
     {{check_result()}}
 
@@ -347,14 +355,13 @@ goto:eof
     set "CONDARC="
 
     {% if instructions.get('test_results') %}
-    echo
-    echo [Test Results]
+    {{ start_section('upload_test_results') }}
     {% endif %}
 
     {%for test_result, filename in instructions.get('test_results', {}).items() %}
 
     echo anaconda build -q -t %%TOKEN%% results {{test_result}} "%BINSTAR_OWNER%/%BINSTAR_PACKAGE%" "%BINSTAR_BUILD%" {{filename}}
-    anaconda -q -t "%BINSTAR_API_TOKEN%" results {{test_result}} "%BINSTAR_OWNER%/%BINSTAR_PACKAGE%" "%BINSTAR_BUILD%" {{filename}}
+    anaconda build -q -t "%BINSTAR_API_TOKEN%" results {{test_result}} "%BINSTAR_OWNER%/%BINSTAR_PACKAGE%" "%BINSTAR_BUILD%" {{filename}}
 
     {% endfor %}
 
@@ -370,8 +377,7 @@ goto:eof
     {% else %}
 
 
-    echo .
-    echo [Build Targets]
+    {{ start_section('upload_build_targets') }}
 
     {% for tgt in files %}
     echo anaconda -q -t %%TOKEN%% upload --force --user %BINSTAR_OWNER% --package %BINSTAR_PACKAGE% {{labels}} {{tgt}} --build-id %BINSTAR_BUILD_MAJOR%
@@ -389,4 +395,8 @@ goto:eof
     echo.
     echo anaconda-build-section-tag %*
     echo.
+goto:eof
+
+:bb_metadata
+    "%BUILD_PYTHON%" -c "from sys import argv; from binstar_build_client.worker.utils.build_log import encode_metadata as m; print(m({argv[1]: argv[2]}))" %*
 goto:eof
