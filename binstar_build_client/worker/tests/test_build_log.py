@@ -55,10 +55,10 @@ class TestBuildLog(unittest.TestCase):
     def assertContentEqual(self, expected):
         with open(self.filepath, 'rb') as fd:
             local_log = fd.read()
-        server_log = b''.join(log['msg'] for log in self.log_entries)
+        server_log = b''.join(log['msg'].encode('utf-8') for log in self.log_entries)
 
-        self.assertMultiLineEqual(expected, local_log)
-        self.assertMultiLineEqual(expected, server_log)
+        self.assertEqual(expected, local_log)
+        self.assertEqual(expected, server_log)
 
     def test_write(self):
         with self.mk_log() as log:
@@ -75,7 +75,14 @@ class TestBuildLog(unittest.TestCase):
         with self.mk_log() as log:
             log.write(b'this can not be unicode \xe2')
 
-        self.assertContentEqual(b'this can not be unicode \xe2')
+        with open(self.filepath, 'rb') as fd:
+            local_log = fd.read()
+        server_log = b''.join(log['msg'].encode('utf-8') for log in self.log_entries)
+
+        self.assertEqual(local_log, b'this can not be unicode \xe2')
+        # the server replaces the bad byte with a unicode replacement character
+        # (when performing form decoding)
+        self.assertEqual(server_log, 'this can not be unicode \ufffd'.encode('utf-8'))
 
     def test_read(self):
         with self.mk_log() as log:
@@ -108,7 +115,7 @@ class TestBuildLog(unittest.TestCase):
             log.write(b'nope\n')
 
         self.assertContentEqual(
-            '''\
+            b'''\
 echo "oops"
 oops
 echo "nope"
