@@ -7,9 +7,12 @@ import logging
 import os
 import pipes
 import shlex
+import sys
+
 import jinja2
 
 from binstar_build_client.utils import get_conda_root_prefix
+from binstar_build_client.worker.utils import build_log
 
 try:
     unicode
@@ -29,6 +32,12 @@ EXIT_CODE_FAILED = 12
 #===============================================================================
 # Helper functions
 #===============================================================================
+
+def metadata(**kwargs):
+    '''
+    Returns a metadata tag that is safe for inclusion in script or bat files
+    '''
+    return build_log.encode_metadata(kwargs)
 
 def get_labels(job_data):
     """
@@ -175,7 +184,13 @@ def gen_build_script(working_dir, build_data, **context):
     platform = build_data['build_item_info']['platform']
 
     env = jinja2.Environment(loader=jinja2.PackageLoader(__name__, 'data'))
-    env.globals.update(get_list=get_list, quote=lambda item: pipes.quote(str(item)))
+    # Additional helper functions to call from the template.
+    env.globals.update(
+        get_list=get_list,
+        quote=lambda item: pipes.quote(str(item)),
+        metadata=metadata,
+        executable=sys.executable,
+    )
 
     if platform in ['win-32', 'win-64']:
         build_script_template = env.get_or_select_template('build_script.bat')

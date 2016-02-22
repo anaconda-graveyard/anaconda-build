@@ -20,8 +20,6 @@ import shutil
 
 try_unlink = lambda path: os.unlink(path) if os.path.isfile(path) else None
 
-start_msg = BuildLog.SECTION_TAG.decode() + ' start_build_on_worker\n'
-
 def default_build_data():
     return {
         "build_item_info": {
@@ -169,7 +167,7 @@ class Test(unittest.TestCase):
         self.assertIn('script_filename', (ending_win, ending_posix))
         self.assertEqual(popen_args[1:], expected_args[1:])
 
-    expected_output_success = start_msg + (
+    expected_output_success = (
         "Building on worker test_hostname (platform test_platform)\n"
         "Starting build job_name\n"
         "hello\n"
@@ -220,7 +218,7 @@ class Test(unittest.TestCase):
         self.assertEqual(status, 'error')
 
 
-    expected_output_timeout = start_msg + (
+    expected_output_timeout = (
         "Building on worker test_hostname (platform test_platform)\n"
         "Starting build job_name\n"
         "hello\n"
@@ -249,7 +247,7 @@ class Test(unittest.TestCase):
             output = fd.read()
             self.assertMultiLineEqual(output, self.expected_output_timeout)
 
-    expected_output_iotimeout = start_msg + (
+    expected_output_iotimeout = (
         "Building on worker test_hostname (platform test_platform)\n"
         "Starting build job_name\n"
         "hello\n"
@@ -382,7 +380,8 @@ class DockerTest(Test):
     def get_worker(self):
         worker = TestDockerWorker()
         return worker
-    expected_output_success = start_msg + (
+
+    expected_output_success = (
         "Building on worker test_hostname (platform test_platform)\n"
         "Starting build job_name\n"
         "Docker Image: binstar/linux-64\n"
@@ -393,7 +392,7 @@ class DockerTest(Test):
         "exit 0\n"
     )
 
-    expected_output_timeout = start_msg +(
+    expected_output_timeout = (
         "Building on worker test_hostname (platform test_platform)\n"
         "Starting build job_name\n"
         "Docker Image: binstar/linux-64\n"
@@ -406,7 +405,7 @@ class DockerTest(Test):
         "[Terminated]\n"
     )
 
-    expected_output_iotimeout = start_msg +(
+    expected_output_iotimeout = (
         "Building on worker test_hostname (platform test_platform)\n"
         "Starting build job_name\n"
         "Docker Image: binstar/linux-64\n"

@@ -213,7 +213,7 @@ class Worker(object):
         datatags = job_data['build_item_info']['instructions'].get('datatags', None) or None
         if datatags and not isinstance(datatags, (list, tuple)):
             datatags = [datatags]
-        raw_build_log = BuildLog(
+        build_log = BuildLog(
             self.bs,
             self.config.username,
             self.config.queue,
@@ -223,8 +223,7 @@ class Worker(object):
             datatags=datatags,
         )
 
-        build_log = io.BufferedWriter(raw_build_log)
-        build_log.write(BuildLog.SECTION_TAG + b' start_build_on_worker\n')
+        build_log.update_metadata({'section': 'dequeue_build'})
         with build_log:
             instructions = job_data['build_item_info'].get('instructions')
 
@@ -235,7 +234,7 @@ class Worker(object):
             msg = "Starting build {0}\n".format(job_data['job_name'])
             build_log.write(msg.encode('utf-8', errors='replace'))
 
-            build_log.flush()
+            # build_log.flush()
 
             script_filename = script_generator.gen_build_script(working_dir,
                 job_data, conda_build_dir=self.args.conda_build_dir)
@@ -254,14 +253,7 @@ class Worker(object):
             exit_code = self.run(
                 job_data, script_filename, build_log, timeout, iotimeout, api_token,
                 git_oauth_token, build_filename, instructions=instructions,
-                build_was_stopped_by_user=raw_build_log.terminated)
-            self.bs.upload_user_tagged_data(
-                self.config.username,
-                self.config.queue,
-                self.worker_id,
-                job_id,
-                raw_build_log.user_data
-            )
+                build_was_stopped_by_user=build_log.terminated)
             log.info("Build script exited with code {0}".format(exit_code))
             if exit_code == script_generator.EXIT_CODE_OK:
                 failed = False

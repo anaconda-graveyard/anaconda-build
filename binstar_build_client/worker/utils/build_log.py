@@ -3,6 +3,7 @@ Write IO back to build log on the binstar server
 """
 from __future__ import print_function, unicode_literals, absolute_import
 
+import base64
 import codecs
 import functools
 import json
@@ -11,6 +12,40 @@ import logging
 
 log = logging.getLogger(__name__)
 
+METADATA_PREFIX = b'anaconda-build-metadata:'
+
+def encode_metadata(metadata):
+    '''
+    Encodes the dictionary *metadata* into something safe to interpolate into a
+    script.
+
+    We can't just json.dumps, because the shell might freak out about some
+    special characters like $, ' or ^
+
+    Args:
+        metadata: (dict)
+
+    Returns:
+        (bytes) the encoded metadata
+    '''
+    payload = base64.urlsafe_b64encode(json.dumps(metadata).encode('ascii'))
+    return METADATA_PREFIX + payload
+
+
+def decode_metadata(metadata_tag):
+    '''
+    Converts an encoded metadata tag into a dictionary of metadata
+
+    Raises:
+        ValueError: not a valid metadata tag
+
+    '''
+    if not metadata_tag.startswith(METADATA_PREFIX):
+        raise ValueError('Metadata should begin with %r' % METADATA_PREFIX)
+    payload = metadata_tag[len(METADATA_PREFIX):]
+    return json.loads(base64.urlsafe_b64decode(payload).decode('ascii'))
+
+
 class BuildLog(object):
     """
     This IO object writes data build log output to the
@@ -18,7 +53,6 @@ class BuildLog(object):
     """
 
     INTERVAL = 10  # Send logs to server every `INTERVAL` seconds
-    SECTION_TAG = b'anaconda-build-section-tag'
     def __init__(self, bs, username, queue, worker_id,
                  job_id, filename=None, datatags=None):
 
@@ -28,8 +62,9 @@ class BuildLog(object):
         self.worker_id = worker_id
         self.job_id = job_id
         self.terminate_build = False
-        self.current_tag = 'start_build_on_worker'
-        self.status = ''
+        self.current_section = 'dequeue_build'
+        self.status = None
+        self.metadata = {'section': 'dequeue_build'}
         self.datatags = datatags or []
         self.user_data = {}
         self.write_to_server = functools.partial(self.bs.log_build_output_structured,
@@ -48,23 +83,20 @@ class BuildLog(object):
     def terminated(self):
         return self.terminate_build
 
-    def detect_tags(self, msg):
-        if self.SECTION_TAG in msg:
-            self.current_tag = b" ".join(msg.split()[1:])
-            log.info('Enter {} {}'.format(self.SECTION_TAG.decode(), self.current_tag))
-            if self.current_tag.lower().startswith(b'exiting'):
-                self.current_tag, self.status = (_.strip() for _ in self.current_tag.split())
-        for tag in self.datatags:
-            decoded = msg.decode()
-            if decoded.startswith(tag):
-                content = decoded.replace(tag, '').strip()
-                try:
-                    content = json.loads(content)
-                except:
-                    pass
-                if not tag in self.user_data:
-                    self.user_data[tag] = []
-                self.user_data[tag].append(content)
+    def update_metadata(self, metadata):
+        self.metadata.update(metadata)
+        if 'section' in metadata:
+            self.current_section = metadata['section']
+            log.info('New section %s', self.current_section)
+
+    def detect_metadata(self, msg):
+        # TODO: this call is duplicated in decode_metadata... but exceptions
+        # are slow... right?
+        if msg.startswith(METADATA_PREFIX):
+            try:
+                return decode_metadata(msg)
+            except ValueError:
+                return None
 
     def write(self, msg):
         """
@@ -79,11 +111,17 @@ class BuildLog(object):
         if not isinstance(msg, bytes):
             raise TypeError("a bytes-like object is required, not {}".format(type(msg)))
 
-        self.fd.write(msg)
-        self.detect_tags(msg)
         n = len(msg)
 
-        terminate_build = self.write_to_server(msg, self.current_tag, self.status)
+        metadata = self.detect_metadata(msg)
+        if metadata:
+            self.update_metadata(metadata)
+            log.info('Consumed {} bytes of build output metadata'.format(n))
+            return n
+
+        self.fd.write(msg)
+
+        terminate_build = self.write_to_server(msg, self.metadata)
         self.terminate_build = terminate_build
 
         log.info('Wrote {} bytes of build output to anaconda-server'.format(n))

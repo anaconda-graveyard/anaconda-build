@@ -1,13 +1,19 @@
 #!/bin/bash
 set +e
 
-tag_maker(){
-    echo
-    echo "anaconda-build-section-tag" "$@";
-    echo
-    export CURRENT_SECTION_TAG="$@"
+BUILD_PYTHON={{ executable }}
+bb_metadata() {
+    $BUILD_PYTHON -c 'from sys import argv; from binstar_build_client.worker.utils.build_log import encode_metadata as m; print(m({argv[1]: argv[2]}))' "$@"
 }
-tag_maker build_env_exports
+{%- macro start_section(name, silent=False) %}
+echo '{{metadata(section=name)}}'
+{% if not silent %}
+echo '[{{name.title().replace('_',' ')}}]'
+{% endif %}
+export CURRENT_SECTION_TAG={{name}}
+{% endmacro -%}
+
+{{ start_section('build_env_exports', silent=True) }}
 export BINSTAR_BUILD_RESULT=""
 export PYTHONUNBUFFERED="TRUE"
 
@@ -16,6 +22,7 @@ export PYTHONUNBUFFERED="TRUE"
 #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
 parse_options(){
+    {{ start_section('parse_options', silent=True) }}
 
 
     while [[ $# > 1 ]]
@@ -70,11 +77,11 @@ export {{key}}={{quote(value)}}
 # User defined build commands
 #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 setup_build(){
+    {{ start_section('setup_build') }}
 
 
     export BUILD_ENV_PATH="${WORKING_DIR}/env"
 
-    echo -e "\n[Setup Build]"
 
     echo "Host:" `hostname`
     echo 'Setting engine'
@@ -121,9 +128,8 @@ setup_build(){
 }
 
 fetch_build_source(){
+    {{ start_section('fetch_build_source') }}
 
-
-    echo -e '\n[Fetching Build Source]'
 
     SOURCE_DIR="${WORKING_DIR}/source"
     echo "SOURCE_DIR=$SOURCE_DIR"
@@ -189,13 +195,16 @@ fetch_build_source(){
     # Empty set of instructions for {{key}}
     true;
     {%- else %}
-    echo -e '\n[{{key.title().replace('_',' ')}}]'
+    {{ start_section(key) }}
 
     {%   for instruction_lines in all_instruction_lines -%}
     {%-     for iline in instruction_lines.split('\n') -%}
-    echo {{quote(iline)}}
+
+    echo {{ metadata(command=iline) }}
+    echo {{ quote(iline) }}
     {{iline|safe}}
-        eval $bb_check_command_{{fail_type}}
+    eval $bb_check_command_{{fail_type}}
+    echo {{ metadata(command=None) }}
 
     {%     endfor -%}
     {%   endfor -%}
@@ -244,13 +253,9 @@ bb_after_script() {
 #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
 binstar_build(){
-    tag_maker anaconda_build_install
     bb_install; eval $bb_check_result
-    tag_maker anaconda_build_test
     bb_test; eval $bb_check_result
-    tag_maker anaconda_build_before_script
     bb_before_script; eval $bb_check_result
-    tag_maker anaconda_build_script
     bb_script; eval $bb_check_result
 
     export BINSTAR_BUILD_RESULT="success"
@@ -278,7 +283,7 @@ upload_build_targets(){
     source deactivate
 
     {% if instructions.get('test_results') %}
-    echo -e "\n[Test Results]"
+    {{ start_section('upload_test_results') }}
     {% endif %}
 
     {%for test_result, filename in instructions.get('test_results', {}).items() %}
@@ -289,7 +294,6 @@ upload_build_targets(){
     {% endfor %}
 
 
-
     if [ "$BINSTAR_BUILD_RESULT" != "success" ]; then
         return 1;
     fi
@@ -297,12 +301,11 @@ upload_build_targets(){
     echo -e '\nRunning Build in "Test Only" mode, not uploading build targets'
     {% else %}
 
-    echo -e '\n[Build Targets]'
+    {{ start_section('upload_build_targets') }}
     eval $bb_check_command_error
     {% for tgt in files %}
-    echo "anaconda  -q -t \$TOKEN upload --force --user $BINSTAR_OWNER --package $BINSTAR_PACKAGE {{labels}} {{tgt}} --build-id $BINSTAR_BUILD"
-
-    anaconda  -q -t "$BINSTAR_API_TOKEN" upload --force --user "$BINSTAR_OWNER" --package "$BINSTAR_PACKAGE" {{labels}} {{tgt}} --build-id "$BINSTAR_BUILD"
+    echo "anaconda -q -t \$TOKEN upload --force --user $BINSTAR_OWNER --package $BINSTAR_PACKAGE {{labels}} {{tgt}} --build-id $BINSTAR_BUILD"
+    anaconda -q -t "$BINSTAR_API_TOKEN" upload --force --user "$BINSTAR_OWNER" --package "$BINSTAR_PACKAGE" {{labels}} {{tgt}} --build-id "$BINSTAR_BUILD"
     eval $bb_check_command_error
     {% else %}
     echo "No build targets specified"
@@ -313,7 +316,6 @@ upload_build_targets(){
 
 main(){
 
-    tag_maker setup_build
     {% if ignore_setup_build %}
     echo "[Ignore Setup Build]"
     {% else %}
@@ -325,7 +327,6 @@ main(){
         echo "Internal anaconda build error: Could not set up initial build state"
         exit {{EXIT_CODE_ERROR}}
     fi
-    tag_maker fetch_build_source
     {% if ignore_fetch_build_source %}
     echo "[Ignore Fetch Build Source]"
     {% else %}
@@ -337,14 +338,12 @@ main(){
         exit {{EXIT_CODE_ERROR}}
     fi
     binstar_build
-    tag_maker anaconda_post_build
     binstar_post_build
-
-    tag_maker upload_build_targets
     upload_build_targets
 
     echo "Exit BINSTAR_BUILD_RESULT=$BINSTAR_BUILD_RESULT"
-    tag_maker exiting $BINSTAR_BUILD_RESULT
+    bb_metadata binstar_build_result "$BINSTAR_BUILD_RESULT"
+
     if [ "$BINSTAR_BUILD_RESULT" == "success" ]; then
         exit {{EXIT_CODE_OK}}
     elif [ "$BINSTAR_BUILD_RESULT" == "error" ]; then
@@ -359,7 +358,6 @@ main(){
 #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 # Execute main funtions
 #### #### #### #### #### #### #### #### #### #### #### #### #### ####
-tag_maker parse_options
 parse_options $*;
 main;
 

@@ -2,7 +2,6 @@ from __future__ import print_function, unicode_literals, absolute_import
 
 from os import path
 import os
-import re
 from subprocess import Popen, PIPE, STDOUT
 import unittest
 import tempfile
@@ -10,7 +9,6 @@ import tempfile
 
 from binstar_build_client.worker_commands.register import get_platform
 from binstar_build_client.worker.utils.script_generator import gen_build_script
-from binstar_build_client.worker.utils.tag_metadata import list_build_log_section_tags
 
 def default_build_data():
     return {
@@ -223,8 +221,8 @@ class Test(unittest.TestCase):
         else:
             self.assertEqual(build_env_path, '"${WORKING_DIR}/env"')
 
-    def test_conda_npy_and_tags(self):
-        expected_tags = list(list_build_log_section_tags())
+    @unittest.skip('this test is too slow')
+    def test_conda_npy(self):
         build_data = default_build_data()
         build_data['build_item_info']['engine'] = 'numpy=1.9'
 
@@ -242,15 +240,7 @@ class Test(unittest.TestCase):
         self.assertTrue(len(conda_npy) > 0)
         conda_npy_read = conda_npy[0].strip().replace('CONDA_NPY=', '')
         self.assertEqual(conda_npy_read, '19')
-        for line in lines:
-            pop = None
-            for idx, tag in expected_tags:
-                if line.startswith(tag):
-                    pop = idx
-                    break
-            if pop is not None:
-                expected_tags.pop(pop)
-        self.assertEqual(len(expected_tags), 0)
+
 
     def test_env_envvars(self):
         'Test env or envvars can be used in .binstar.yml'
