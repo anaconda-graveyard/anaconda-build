@@ -95,8 +95,9 @@ class Test(unittest.TestCase):
     if os.name == 'nt':
 
         def write_script(self, mock_gen_build_script, exit_code, wait=None):
+            tempdir = tempfile.gettempdir()
 
-            mock_gen_build_script.return_value = script_path = os.path.abspath('script_filename.bat')
+            mock_gen_build_script.return_value = script_path = os.path.join(tempdir, 'script_filename.bat')
             self.addCleanup(try_unlink, script_path)
 
             with open(script_path, 'w') as fd:
@@ -112,8 +113,9 @@ class Test(unittest.TestCase):
 
     else:
         def write_script(self, mock_gen_build_script, exit_code, wait=None):
+            tempdir = tempfile.gettempdir()
 
-            mock_gen_build_script.return_value = script_path = os.path.abspath('script_filename.bash')
+            mock_gen_build_script.return_value = script_path = os.path.join(tempdir, 'script_filename.sh')
             self.addCleanup(try_unlink, script_path)
 
             with open(script_path, 'w') as fd:
