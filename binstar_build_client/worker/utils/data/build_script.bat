@@ -65,7 +65,7 @@ goto:eof
         )
 
         echo "Unknown option %1"
-        exit {{EXIT_CODE_ERROR}}
+        exit /b {{EXIT_CODE_ERROR}}
 
     )
 
@@ -86,7 +86,7 @@ goto:eof
 
     if not "%BINSTAR_BUILD_RESULT%" == "" (
         echo Internal binstar build error: Could not set up initial build state
-        exit {{EXIT_CODE_ERROR}}
+        exit /b {{EXIT_CODE_ERROR}}
     )
 
     {% if ignore_fetch_build_source %}
@@ -98,7 +98,7 @@ goto:eof
 
     if not "%BINSTAR_BUILD_RESULT%" == "" (
         echo %BINSTAR_BUILD_RESULT%: Could not fetch build sources
-        exit {{EXIT_CODE_ERROR}}
+        exit /b {{EXIT_CODE_ERROR}}
     )
 
     call:binstar_build
@@ -110,17 +110,17 @@ goto:eof
     call:bb_metadata binstar_build_result %BINSTAR_BUILD_RESULT%
 
     if "%BINSTAR_BUILD_RESULT%" == "success" (
-        exit {{EXIT_CODE_OK}}
+        exit /b {{EXIT_CODE_OK}}
     )
     if "%BINSTAR_BUILD_RESULT%" == "error" (
-        exit {{EXIT_CODE_ERROR}}
+        exit /b {{EXIT_CODE_ERROR}}
     )
 
     if "%BINSTAR_BUILD_RESULT%" == "failure" (
-        exit {{EXIT_CODE_FAILED}}
+        exit /b {{EXIT_CODE_FAILED}}
     )
 
-    exit {{EXIT_CODE_ERROR}}
+    exit /b {{EXIT_CODE_ERROR}}
 
 
 goto:eof
