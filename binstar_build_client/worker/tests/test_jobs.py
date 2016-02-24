@@ -90,7 +90,7 @@ class MyWorker(Worker):
 class Test(unittest.TestCase):
     if os.name == 'nt':
 
-        def write_sript(self, mock_gen_build_script, exit_code, wait=None):
+        def write_script(self, mock_gen_build_script, exit_code, wait=None):
             tempdir = tempfile.gettempdir()
 
             mock_gen_build_script.return_value = script_path = os.path.join(tempdir, 'script_filename.bat')
@@ -108,7 +108,7 @@ class Test(unittest.TestCase):
                 print('EXIT /B {}'.format(exit_code), file=fd)
 
     else:
-        def write_sript(self, mock_gen_build_script, exit_code, wait=None):
+        def write_script(self, mock_gen_build_script, exit_code, wait=None):
             tempdir = tempfile.gettempdir()
 
             mock_gen_build_script.return_value = script_path = os.path.join(tempdir, 'script_filename.sh')
@@ -179,7 +179,7 @@ class Test(unittest.TestCase):
     @patch('binstar_build_client.worker.utils.script_generator.gen_build_script')
     def test_build_success(self, gen_build_script):
 
-        self.write_sript(gen_build_script, script_generator.EXIT_CODE_OK)
+        self.write_script(gen_build_script, script_generator.EXIT_CODE_OK)
 
         worker = self.get_worker()
         job_data = default_build_data()
@@ -197,7 +197,7 @@ class Test(unittest.TestCase):
     @patch('binstar_build_client.worker.utils.script_generator.gen_build_script')
     def test_build_fail(self, gen_build_script):
 
-        self.write_sript(gen_build_script, script_generator.EXIT_CODE_FAILED)
+        self.write_script(gen_build_script, script_generator.EXIT_CODE_FAILED)
 
         worker = self.get_worker()
         job_data = default_build_data()
@@ -210,7 +210,7 @@ class Test(unittest.TestCase):
     def test_build_error(self, gen_build_script):
 
 
-        self.write_sript(gen_build_script, script_generator.EXIT_CODE_ERROR)
+        self.write_script(gen_build_script, script_generator.EXIT_CODE_ERROR)
 
         worker = self.get_worker()
         job_data = default_build_data()
@@ -233,7 +233,7 @@ class Test(unittest.TestCase):
     @patch('binstar_build_client.worker.utils.script_generator.gen_build_script')
     def test_build_timeout(self, gen_build_script):
 
-        self.write_sript(gen_build_script, script_generator.EXIT_CODE_OK, wait=2)
+        self.write_script(gen_build_script, script_generator.EXIT_CODE_OK, wait=2)
 
         worker = self.get_worker()
         worker.args.timeout = 0.5
@@ -263,7 +263,7 @@ class Test(unittest.TestCase):
     @patch('binstar_build_client.worker.utils.script_generator.gen_build_script')
     def test_build_iotimeout(self, gen_build_script):
 
-        self.write_sript(gen_build_script, script_generator.EXIT_CODE_OK, wait=2)
+        self.write_script(gen_build_script, script_generator.EXIT_CODE_OK, wait=2)
 
         worker = self.get_worker()
 #         worker.args.timeout = 0.5
