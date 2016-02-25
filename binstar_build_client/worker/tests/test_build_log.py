@@ -11,12 +11,17 @@ from binstar_client.tests import urlmock
 from binstar_build_client import BinstarBuildAPI
 from binstar_build_client.worker.utils import build_log
 from binstar_build_client.worker.utils.build_log import BuildLog
-
+from six import text_type
 
 class TestBuildLog(unittest.TestCase):
 
     def add_log_entry(self, request):
-        log = dict(urllib.parse.parse_qsl(request.body))
+        # werkzeug decodes form content with errors=replace, but urllib.parse.parse_qsl
+        # returns `str` in Python 2. We should decode for consistent behavior.
+        log = {
+           key: value if isinstance(value, text_type) else value.decode('utf-8', 'replace')
+            for key, value in urllib.parse.parse_qsl(request.body)
+        }
         self.log_entries.append(log)
 
     def setUp(self):
