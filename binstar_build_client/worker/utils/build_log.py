@@ -120,7 +120,7 @@ class BuildLog(object):
             log.info('Consumed {} bytes of build output metadata'.format(n))
             return n
 
-        if self.quiet and msg.endswith('\r'):
+        if self.quiet and msg.endswith(b'\r'):
             log.info('Quiet: ignored %s bytes of output', n)
             return n
 
