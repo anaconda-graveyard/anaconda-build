@@ -24,7 +24,7 @@ class Timeout:
     def __init__(self, seconds=60 * 60):
         self.seconds = seconds
         self.event = Event()
-        self.timout_occurred = False
+        self.timeout_occurred = False
         self.last_tick = time.time()
 
     def __call__(self, func):
@@ -38,9 +38,9 @@ class Timeout:
         while not self.event.wait(1):
             diff_time = time.time() - self.last_tick
             if diff_time > self.seconds:
-                log.debug("Timer: timout_occurred")
+                log.debug("Timer: timeout_occurred")
                 self.event.set()
-                self.timout_occurred = True
+                self.timeout_occurred = True
                 self.callback()
                 break
         log.debug("Timer: finished")
@@ -59,7 +59,7 @@ class Timeout:
 def read_with_timeout(p0, output,
                       timeout=60 * 60,
                       iotimeout=60,
-                      flush_iterval=10,
+                      flush_interval=10,
                       build_was_stopped_by_user=lambda:None,
                       quiet=False):
     """
@@ -96,7 +96,7 @@ def read_with_timeout(p0, output,
                 p0.kill()
                 break
 
-            if time.time() - last_flush > flush_iterval:
+            if time.time() - last_flush > flush_interval:
                 last_flush = time.time()
                 log.debug("Flush output")
                 output.flush()
@@ -112,15 +112,15 @@ def read_with_timeout(p0, output,
         log.info("Waiting for build process with pid {} to end".format(p0.pid))
         time.sleep(1)
 
-    log.debug("Waiting for process  {} to finish".format(p0.pid))
+    log.debug("Waiting for process {} to finish".format(p0.pid))
     p0.wait()
 
-    if timer.timout_occurred:
+    if timer.timeout_occurred:
         output.write("\nTimeout: build exceeded maximum build time of {} seconds\n"
                      .format(timeout).encode(errors='replace'))
         output.write(b"[Terminated]\n")
 
-    if iotimer.timout_occurred:
+    if iotimer.timeout_occurred:
         output.write("\n\nTimeout: No output from program for {} seconds\n"
                      .format(iotimeout).encode(errors='replace'))
         output.write(b"\nTimeout: If you require a longer timeout you "
