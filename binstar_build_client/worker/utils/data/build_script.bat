@@ -2,9 +2,9 @@
 
 
 {% macro start_section(name, silent=False) %}
-echo "{{metadata(section=name)}}"
+echo {{metadata(section=name)}}
 {% if not silent %}
-echo "[{{name.title().replace('_',' ')}}]"
+echo [{{name.title().replace('_',' ')}}]
 {% endif %}
 set "CURRENT_SECTION_TAG={{name}}"
 {% endmacro %}
