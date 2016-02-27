@@ -8,10 +8,12 @@ import codecs
 import functools
 import json
 import logging
-
+from io import BytesIO
 
 log = logging.getLogger(__name__)
 
+# write to the servers when more than 8kB of data has been buffered
+BUF_SIZE = 8 * 1024 # bytes
 METADATA_PREFIX = b'anaconda-build-metadata:'
 
 def encode_metadata(metadata):
@@ -54,24 +56,24 @@ class BuildLog(object):
 
     INTERVAL = 10  # Send logs to server every `INTERVAL` seconds
     def __init__(self, bs, username, queue, worker_id,
-                 job_id, filename=None, datatags=None):
+                 job_id, filename=None, quiet=False):
 
         self.bs = bs
         self.username = username
         self.queue = queue
         self.worker_id = worker_id
         self.job_id = job_id
+        self.quiet = quiet
+
         self.terminate_build = False
-        self.current_section = 'dequeue_build'
-        self.status = None
         self.metadata = {'section': 'dequeue_build'}
-        self.datatags = datatags or []
-        self.user_data = {}
         self.write_to_server = functools.partial(self.bs.log_build_output_structured,
                                                  self.username,
                                                  self.queue,
                                                  self.worker_id,
                                                  self.job_id)
+
+        self.buf = BytesIO()
 
 
         log.info("Writing build log to %s" % filename)
@@ -86,8 +88,7 @@ class BuildLog(object):
     def update_metadata(self, metadata):
         self.metadata.update(metadata)
         if 'section' in metadata:
-            self.current_section = metadata['section']
-            log.info('New section %s', self.current_section)
+            log.info('Started section %s', metadata['section'])
 
     def detect_metadata(self, msg):
         # TODO: this call is duplicated in decode_metadata... but exceptions
@@ -100,7 +101,6 @@ class BuildLog(object):
 
     def write(self, msg):
         """
-        Write to server and also stdout
 
         The if the io thread is running, msg will be appended an internal message buffer
         """
@@ -115,19 +115,18 @@ class BuildLog(object):
 
         metadata = self.detect_metadata(msg)
         if metadata:
+            self.flush()
             self.update_metadata(metadata)
             log.info('Consumed {} bytes of build output metadata'.format(n))
             return n
 
-        self.fd.write(msg)
+        if self.quiet and msg.endswith('\r'):
+            log.info('Quiet: ignored %s bytes of output', n)
+            return n
 
-        terminate_build = self.write_to_server(msg, self.metadata)
-        self.terminate_build = terminate_build
-
-        log.info('Wrote {} bytes of build output to anaconda-server'.format(n))
-
-        if terminate_build:
-            log.info('anaconda-server responded that the build should be terminated')
+        self.buf.write(msg)
+        if self.buf.tell() > BUF_SIZE:
+            self.flush()
 
         return n
 
@@ -148,9 +147,29 @@ class BuildLog(object):
         self.close()
 
     def close(self):
+        self.flush()
+        self.buf.close()
         self.fd.close()
         return
 
     def flush(self):
+        self.buf.truncate()
+        msg = self.buf.getvalue()
+        self.buf.seek(0)
+
+        if not msg:
+            # don't send empty messages to the server
+            return
+
+        self.fd.write(msg)
+
+        terminate_build = self.write_to_server(msg, self.metadata)
+        self.terminate_build = terminate_build
+
+        log.info('Wrote %s bytes of build output to anaconda-server', len(msg))
+
+        if terminate_build:
+            log.info('anaconda-server responded that the build should be terminated')
+
         self.fd.flush()
 
