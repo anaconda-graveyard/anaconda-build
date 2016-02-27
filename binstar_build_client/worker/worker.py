@@ -210,9 +210,6 @@ class Worker(object):
         rm_rf(working_dir)
         log.info("Creating working dir: {0}".format(working_dir))
         os.makedirs(working_dir)
-        datatags = job_data['build_item_info']['instructions'].get('datatags', None) or None
-        if datatags and not isinstance(datatags, (list, tuple)):
-            datatags = [datatags]
         build_log = BuildLog(
             self.bs,
             self.config.username,
@@ -220,7 +217,6 @@ class Worker(object):
             self.worker_id,
             job_id,
             filename=self.build_logfile(job_data),
-            datatags=datatags,
         )
 
         build_log.update_metadata({'section': 'dequeue_build'})
@@ -312,11 +308,10 @@ class Worker(object):
                 iotimeout,
                 BuildLog.INTERVAL,
                 build_was_stopped_by_user,
-                quiet
             )
         except BaseException:
             log.error(
-                "Binstar build process caught an exception while waiting for the build to" "finish")
+                "Anaconda build process caught an exception while waiting for the build to finish")
             p0.kill()
             p0.wait()
             raise
@@ -347,7 +342,6 @@ class Worker(object):
         Download them.
         """
         log.info("Fetching build data")
-
         build_filename = os.path.join(working_dir, 'source.tar.bz2')
 
         fp = self.bs.fetch_build_source(

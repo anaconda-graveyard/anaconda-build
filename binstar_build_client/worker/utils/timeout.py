@@ -60,8 +60,8 @@ def read_with_timeout(p0, output,
                       timeout=60 * 60,
                       iotimeout=60,
                       flush_interval=10,
-                      build_was_stopped_by_user=lambda:None,
-                      quiet=False):
+                      build_was_stopped_by_user=lambda:None
+                      ):
     """
     Read the stdout from a Popen object and wait for it to
     """
@@ -83,11 +83,6 @@ def read_with_timeout(p0, output,
         last_flush = time.time()
 
         while line:
-            if quiet:
-                while any(re.search(q, line) for q in QUIET_REGEXES):
-                    line = p0.readline()
-                    iotimer.tick()
-
             iotimer.tick()
 
             output.write(line)

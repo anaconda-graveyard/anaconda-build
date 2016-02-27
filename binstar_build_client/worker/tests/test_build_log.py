@@ -1,6 +1,7 @@
 from __future__ import print_function, unicode_literals, absolute_import
 import os
 import string
+import tempfile
 import unittest
 from six.moves import urllib
 
@@ -25,7 +26,8 @@ class TestBuildLog(unittest.TestCase):
         self.log_entries.append(log)
 
     def setUp(self):
-        self.filepath = os.path.join(os.getcwd(), 'build-log-test.txt')
+        tempdir = tempfile.gettempdir()
+        self.filepath = os.path.join(tempdir, 'build-log-test.txt')
         self.log_entries = []
         self.urls = urlmock.Registry()
         self.urls.__enter__()
@@ -45,7 +47,10 @@ class TestBuildLog(unittest.TestCase):
     def tearDown(self):
         self.urls.__exit__()
         self.urls = None
-        os.unlink(self.filepath)
+        try:
+            os.unlink(self.filepath)
+        except (OSError, IOError):
+            pass
 
     def mk_log(self, **kwargs):
         return BuildLog(
@@ -127,6 +132,41 @@ echo "nope"
 nope
 ''')
 
+
+    def test_loud_shows_cr(self):
+        with self.mk_log() as log:
+            log.write(b'this is some normal data\n')
+            log.write(b'this is data that is overwriting\r')
+            log.write(b'this is more normal data\n')
+
+        self.assertContentEqual(
+            b'this is some normal data\n'
+            b'this is data that is overwriting\r'
+            b'this is more normal data\n'
+        )
+
+    def test_quiet_hides_cr(self):
+        with self.mk_log(quiet=True) as log:
+            log.write(b'this is some normal data\n')
+            log.write(b'this is data that is overwriting\r')
+            log.write(b'this is more normal data\n')
+
+        self.assertContentEqual(
+            b'this is some normal data\n'
+            b'this is more normal data\n'
+        )
+
+    def test_quiet_shows_crlf(self):
+        with self.mk_log(quiet=True) as log:
+            log.write(b'this is some normal data\n')
+            log.write(b'this is some normal data with crlf\r\n')
+            log.write(b'this is more normal data\n')
+
+        self.assertContentEqual(
+            b'this is some normal data\n'
+            b'this is some normal data with crlf\r\n'
+            b'this is more normal data\n'
+        )
 
 
 if __name__ == '__main__':
