@@ -21,7 +21,7 @@ script:
 
 build_targets: conda
 
-# quiet: True
+quiet: True
 ---
 #Modify the windows builds to add  pywin32
 
@@ -36,4 +36,4 @@ install: # Overwrite the common install section above
   - conda install anaconda-client pip setuptools pywin32
   - pip install coverage mock
 
-# quiet: True
+quiet: True
