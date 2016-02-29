@@ -49,7 +49,6 @@ class InvalidWorkerConfigFile(errors.BinstarError):
 class WorkerConfiguration(object):
     REGISTERED_WORKERS_DIR = os.path.join(os.path.expanduser('~'), '.workers')
     HOSTNAME = platform.node()
-
     def __init__(self, name, worker_id, username, queue, platform, hostname, dist):
         worker_id_to_name = WorkerConfiguration.backwards_compat_lookup()
         self.name = worker_id_to_name.get(worker_id, None) or name
@@ -91,7 +90,7 @@ class WorkerConfiguration(object):
         return self.to_dict() == other.to_dict()
 
     @classmethod
-    def registered_workers(cls, bs):
+    def registered_workers(cls, bs, this_host=False):
         "Iterate over the registered workers on this machine"
 
         build_query = bs.build_queues(username=None)
@@ -104,8 +103,6 @@ class WorkerConfiguration(object):
             except Exception as e:
                 raise ValueError(repr(queue_name))
             for worker in workers:
-                if worker['hostname'] != cls.HOSTNAME:
-                    continue
                 try:
                     worker = cls(name=worker.get('name', worker['id']),
                               worker_id=worker['id'],
@@ -114,6 +111,9 @@ class WorkerConfiguration(object):
                               platform=worker['platform'],
                               hostname=worker['hostname'],
                               dist=worker['dist'])
+                    if this_host and worker.hostname != cls.HOSTNAME:
+                        continue
+
                     yield worker
 
                 except Exception as e:
@@ -174,13 +174,18 @@ class WorkerConfiguration(object):
 
 
     @classmethod
-    def load(cls, worker_name, bs):
+    def load(cls, worker_name, bs, warn=False):
 
         'Load a worker config from a worker_id'
         for worker in cls.registered_workers(bs):
-            if worker_name == worker.worker_id or worker_name == worker.name:
-                if worker.hostname == cls.HOSTNAME:
-                    return worker
+            if worker_name in (worker.worker_id, worker.name):
+                if warn and worker.hostname != cls.HOSTNAME:
+                    log.warn('Proceeding with worker id registered for '
+                             'different hostname: {}. '
+                             'This host is: {}.'.format(worker.hostname,
+                                                       cls.HOSTNAME))
+                return worker
+
         raise errors.BinstarError('Worker with id '
                                   '{} not found'.format(worker_name))
     @classmethod
@@ -190,7 +195,7 @@ class WorkerConfiguration(object):
 
         log.info('Registered workers:')
 
-        for wconfig in cls.registered_workers(bs):
+        for wconfig in cls.registered_workers(bs, this_host=True):
             has_workers = True
 
             msg = '{name}, id:{worker_id}, hostname:{hostname}, queue:{username}/{queue}'.format(name=wconfig.name, **wconfig.to_dict())
@@ -208,9 +213,9 @@ class WorkerConfiguration(object):
         Register the worker with anaconda server
         '''
         for worker in cls.registered_workers(bs):
-            if worker.name == name:
+            if name in (worker.name, worker.worker_id):
                 raise errors.BinstarError('Cannot have duplicate worker '
-                                          '--name from same host: {}'.format(name))
+                                          '--name or id: {}'.format(name))
         worker_id = bs.register_worker(username, queue, platform, hostname, dist,name=name)
         log.info('Registered worker with worker_id:\t{}'.format(worker_id))
 
