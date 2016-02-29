@@ -179,6 +179,7 @@ class Worker(object):
                 with self.job_context(journal, job_data):
                     self._handle_job(job_data)
 
+
     def working_dir(self, build_data):
 
         owner = build_data['owner']['login']
@@ -210,6 +211,8 @@ class Worker(object):
         rm_rf(working_dir)
         log.info("Creating working dir: {0}".format(working_dir))
         os.makedirs(working_dir)
+
+        quiet = job_data['build_item_info'].get('instructions',{}).get('quiet', False)
         build_log = BuildLog(
             self.bs,
             self.config.username,
@@ -217,6 +220,7 @@ class Worker(object):
             self.worker_id,
             job_id,
             filename=self.build_logfile(job_data),
+            quiet=quiet,
         )
 
         build_log.update_metadata({'section': 'dequeue_build'})
@@ -285,7 +289,6 @@ class Worker(object):
 
         elif build_filename:
             args.extend(['--build-tarball', build_filename])
-        quiet = build_data['build_item_info'].get('instructions',{}).get('quiet', False)
 
         log.info("Running command: (iotimeout={0})".format(iotimeout))
         log.info(" ".join(args))
