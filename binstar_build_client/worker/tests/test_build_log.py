@@ -117,10 +117,10 @@ class TestBuildLog(unittest.TestCase):
         # the server.
 
         with self.mk_log() as log:
-            log.write(build_log.encode_metadata({'section': 'my_section', 'command': 'echo "oops"'}))
+            log.write(build_log.encode_metadata({'section': 'oops', 'command': 'echo "oops"'}))
             log.write(b'echo "oops"\n')
             log.write(b'oops\n')
-            log.write(build_log.encode_metadata({'section': 'section_2', 'command': 'echo "nope"'}))
+            log.write(build_log.encode_metadata({'section': 'nope', 'command': 'echo "nope"'}))
             log.write(b'echo "nope"\n')
             log.write(b'nope\n')
 
@@ -131,6 +131,9 @@ oops
 echo "nope"
 nope
 ''')
+
+        for entry in self.log_entries:
+            self.assertIn(entry['section'], entry['msg'])
 
 
     def test_loud_shows_cr(self):
