@@ -99,6 +99,7 @@ class BuildLog(object):
             except ValueError:
                 return None
 
+
     def write(self, msg):
         """
 
@@ -113,6 +114,7 @@ class BuildLog(object):
 
         n = len(msg)
 
+
         metadata = self.detect_metadata(msg)
         if metadata:
             self.flush()
@@ -121,10 +123,13 @@ class BuildLog(object):
             return n
 
         if self.quiet:
-            assert msg[-1] == b'\n', 'BuildLog.write should write a newline'
-            # we don't look at the last 2 characters, because we don't want to ignore
-            # data that ends with CRLF, only data that ends with just CR
-            cr = msg.rfind(b'\r', 0, -2)
+            end = None
+            if msg and msg[-1] == b'\n':
+                # if the message terminates with a LF,
+                # we don't look at the last 2 characters, because we don't want to ignore
+                # data that ends with CRLF, only data that ends with just CR
+                end = -2
+            cr = msg.rfind(b'\r', 0, end)
             if cr != -1:
                 n_ignored = cr + 1
                 log.info('Quiet: ignored %s bytes of output', n_ignored)
