@@ -120,9 +120,15 @@ class BuildLog(object):
             log.info('Consumed {} bytes of build output metadata'.format(n))
             return n
 
-        if self.quiet and msg.endswith(b'\r'):
-            log.info('Quiet: ignored %s bytes of output', n)
-            return n
+        if self.quiet:
+            assert msg[-1] == b'\n', 'BuildLog.write should write a newline'
+            # we don't look at the last 2 characters, because we don't want to ignore
+            # data that ends with CRLF, only data that ends with just CR
+            cr = msg.rfind(b'\r', 0, -2)
+            if cr != -1:
+                n_ignored = cr + 1
+                log.info('Quiet: ignored %s bytes of output', n_ignored)
+                msg = msg[n_ignored:]
 
         self.buf.write(msg)
         if self.buf.tell() > BUF_SIZE:
