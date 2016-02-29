@@ -139,8 +139,8 @@ nope
     def test_loud_shows_cr(self):
         with self.mk_log() as log:
             log.write(b'this is some normal data\n')
-            log.write(b'this is data that is overwriting\r')
-            log.write(b'this is more normal data\n')
+            log.write(b'this is data that is overwriting\r'
+                      b'this is more normal data\n')
 
         self.assertContentEqual(
             b'this is some normal data\n'
@@ -151,8 +151,8 @@ nope
     def test_quiet_hides_cr(self):
         with self.mk_log(quiet=True) as log:
             log.write(b'this is some normal data\n')
-            log.write(b'this is data that is overwriting\r')
-            log.write(b'this is more normal data\n')
+            log.write(b'this is data that is overwriting\r'
+                      b'this is more normal data\n')
 
         self.assertContentEqual(
             b'this is some normal data\n'
