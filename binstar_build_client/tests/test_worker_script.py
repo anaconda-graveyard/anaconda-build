@@ -16,6 +16,7 @@ from binstar_client.tests.fixture import CLITestCase
 from binstar_client.tests.urlmock import urlpatch
 from binstar_build_client.scripts.worker import main
 from binstar_build_client.worker.register import WorkerConfiguration
+from binstar_build_client import worker
 from glob import glob
 from binstar_client import errors
 
@@ -49,13 +50,33 @@ class Test(CLITestCase):
     @patch('binstar_build_client.worker.register.WorkerConfiguration.register')
     @patch('binstar_build_client.worker.register.WorkerConfiguration.deregister')
     @patch('binstar_build_client.worker.register.WorkerConfiguration.load')
-    def test_register(self, load, deregister, urls, register):
+    def test_register(self, load, deregister, register, urls):
 
         main(['register', 'username/queue-1'], False)
-        self.assertEqual(register.call_count, 1)
+        self.assertEqual(urls.call_count, 1)
 
         main(['deregister', 'worker_id'], False)
         self.assertEqual(deregister.call_count, 1)
+
+    @urlpatch
+    @patch('binstar_build_client.worker.register.WorkerConfiguration.load')
+    def test_register_duplicate_name(self, load, urls):
+        registered = {}
+        @classmethod
+        def register_func(cls, *args, **kwargs):
+            name = kwargs.get('name')
+            if name in registered:
+                raise errors.BinstarError('already registered {}'.format(registered))
+            registered[name] = True
+            args2 = [name] + list(args)
+            return WorkerConfiguration(*args2)
+
+        with patch.object(worker.register.WorkerConfiguration, 'register', new=register_func) as register:
+            main(['register', 'username/queue-1', '--name', 'worker1'], False)
+            self.assertEqual(registered, {'worker1': True})
+            with self.assertRaises(errors.BinstarError):
+                main(['register', 'username/queue-1', '--name', 'worker1'], False)
+
 
     @urlpatch
     @patch('binstar_build_client.worker.worker.Worker.work_forever')
