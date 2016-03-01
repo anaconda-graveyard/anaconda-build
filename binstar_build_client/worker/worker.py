@@ -180,7 +180,8 @@ class Worker(object):
                     self._handle_job(job_data)
 
     def working_dir(self, job_data):
-        '''The location where the build execution should take place
+        '''The location where the build process should `cd`
+        before execution. Relative to the container file system.
 
         :param job_data: the job information
         :return: path (str)
@@ -190,6 +191,7 @@ class Worker(object):
     def staging_dir(self, job_data):
         '''
         The location where the build files for this job should be created
+        while setting up
 
         :param job_data: The job information
         :return:  path (str)
