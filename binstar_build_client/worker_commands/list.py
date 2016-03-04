@@ -13,11 +13,33 @@ from binstar_build_client import BinstarBuildAPI
 import logging
 log = logging.getLogger('binstar.build')
 
+def print_registered_workers(bs, args):
+
+    has_workers = False
+
+    log.info('Registered workers:')
+
+    for wconfig in WorkerConfiguration.registered_workers(bs):
+        has_workers = True
+        if args.this_host_only and wconfig.hostname != WorkerConfiguration.HOSTNAME:
+            continue
+        if args.queue and args.queue != wconfig:
+            continue
+        if args.org and args.org != wconfig.username:
+            continue
+        msg = '{name}, id:{worker_id}, hostname:{hostname}, queue:{username}/{queue}'.format(name=wconfig.name, **wconfig.to_dict())
+        if wconfig.pid:
+            msg += ' (running with pid: {})'.format(wconfig.pid)
+
+        log.info(msg)
+
+    if not has_workers:
+        log.info('(No registered workers)')
 
 def main(args):
 
     bs = get_binstar(args, cls=BinstarBuildAPI)
-    WorkerConfiguration.print_registered_workers(bs)
+    print_registered_workers(bs, this_host_only=args.this_host_only)
 
 def add_parser(subparsers, name='list',
                description='List build workers and queues',
@@ -26,6 +48,15 @@ def add_parser(subparsers, name='list',
                                    help=description, description=description,
                                    epilog=epilog
                                    )
+    parser.add_argument('--this-host-only',
+                        '-t',
+                        help="Print only workers registered from this hostname.")
+    parser.add_argument('--org',
+                        '-o',
+                        help="Print only workers registered in this organization")
+    parser.add_argument('--queue',
+                        '-q',
+                        help="Print only workers registered to this queue.")
     parser.set_defaults(main=main)
 
     return parser

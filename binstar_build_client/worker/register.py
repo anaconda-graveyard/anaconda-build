@@ -75,6 +75,7 @@ class WorkerConfiguration(object):
 
     def to_dict(self):
         return {
+            "name": getattr(self, 'name', self.worker_id),
             "worker_id": self.worker_id,
             "username": self.username,
             "queue": self.queue,
@@ -90,7 +91,26 @@ class WorkerConfiguration(object):
         return self.to_dict() == other.to_dict()
 
     @classmethod
-    def registered_workers(cls, bs, this_host=False):
+    def validate_worker_name(cls, bs, name):
+        worker_name_to_id = {}
+        for worker in cls.registered_workers(bs):
+            if not worker.name in worker_name_to_id:
+                worker_name_to_id[worker.name] = [worker]
+            else:
+                worker_name_to_id[worker.name].append(worker)
+        worker_name_to_id = {k:v for k,v in worker_name_to_id.items() if len(v) > 1}
+
+        if name in worker_name_to_id:
+            msg = ''
+            for worker in worker_name_to_id[name]:
+                worker.name = name
+                msg += '{name}, id:{worker_id}, hostname:{hostname}, queue:{username}/{queue}\n'.format(**worker.to_dict())
+            raise errors.BinstarError('Cannot anaconda worker run {}'
+                                      ' (the name is ambiguous).  Use'
+                                      ' one of the worker id\'s below'
+                                      ' instead.\n\n' + msg)
+    @classmethod
+    def registered_workers(cls, bs):
         "Iterate over the registered workers on this machine"
 
         build_query = bs.build_queues(username=None)
@@ -105,15 +125,12 @@ class WorkerConfiguration(object):
             for worker in workers:
                 try:
                     worker = cls(name=worker.get('name', worker['id']),
-                              worker_id=worker['id'],
-                              username=user,
-                              queue=queue,
-                              platform=worker['platform'],
-                              hostname=worker['hostname'],
-                              dist=worker['dist'])
-                    if this_host and worker.hostname != cls.HOSTNAME:
-                        continue
-
+                                 worker_id=worker['id'],
+                                 username=user,
+                                 queue=queue,
+                                 platform=worker['platform'],
+                                 hostname=worker['hostname'],
+                                 dist=worker['dist'])
                     yield worker
 
                 except Exception as e:
@@ -179,33 +196,10 @@ class WorkerConfiguration(object):
         'Load a worker config from a worker_id'
         for worker in cls.registered_workers(bs):
             if worker_name in (worker.worker_id, worker.name):
-                if warn and worker.hostname != cls.HOSTNAME:
-                    log.warn('Proceeding with worker id registered for '
-                             'different hostname: {}. '
-                             'This host is: {}.'.format(worker.hostname,
-                                                       cls.HOSTNAME))
                 return worker
 
         raise errors.BinstarError('Worker with id '
                                   '{} not found'.format(worker_name))
-    @classmethod
-    def print_registered_workers(cls, bs):
-
-        has_workers = False
-
-        log.info('Registered workers:')
-
-        for wconfig in cls.registered_workers(bs, this_host=True):
-            has_workers = True
-
-            msg = '{name}, id:{worker_id}, hostname:{hostname}, queue:{username}/{queue}'.format(name=wconfig.name, **wconfig.to_dict())
-            if wconfig.pid:
-                msg += ' (running with pid: {})'.format(wconfig.pid)
-
-            log.info(msg)
-
-        if not has_workers:
-            log.info('(No registered workers)')
 
     @classmethod
     def register(cls, bs, username, queue, platform, hostname, dist, name=None):
