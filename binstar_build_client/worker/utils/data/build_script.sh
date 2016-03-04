@@ -1,10 +1,6 @@
 #!/bin/bash
 set +e
 
-BUILD_PYTHON={{ executable }}
-bb_metadata() {
-    $BUILD_PYTHON -c 'from sys import argv; from binstar_build_client.worker.utils.build_log import encode_metadata as m; print(m({argv[1]: argv[2]}))' "$@"
-}
 {%- macro start_section(name, silent=False) %}
 echo '{{metadata(section=name)}}'
 {% if not silent %}
@@ -348,21 +344,24 @@ main(){
     upload_build_targets
 
     echo "Exit BINSTAR_BUILD_RESULT=$BINSTAR_BUILD_RESULT"
-    bb_metadata binstar_build_result "$BINSTAR_BUILD_RESULT"
 
     if [ "$BINSTAR_BUILD_RESULT" == "success" ]; then
+        echo {{ metadata(binstar_build_result='success') }}
         exit {{EXIT_CODE_OK}}
     elif [ "$BINSTAR_BUILD_RESULT" == "error" ]; then
+        echo {{ metadata(binstar_build_result='error') }}
         exit {{EXIT_CODE_ERROR}}
     elif [ "$BINSTAR_BUILD_RESULT" == "failure" ]; then
+        echo {{ metadata(binstar_build_result='failure') }}
         exit {{EXIT_CODE_FAILED}}
     else
+        echo {{ metadata(binstar_build_result='error') }}
         exit {{EXIT_CODE_ERROR}}
     fi
 }
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### ####
-# Execute main funtions
+# Execute main functions
 #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 parse_options $*;
 main;
