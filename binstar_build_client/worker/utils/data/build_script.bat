@@ -107,16 +107,18 @@ goto:eof
     call:upload_build_targets
 
     echo Exit BINSTAR_BUILD_RESULT=%BINSTAR_BUILD_RESULT%
-    call:bb_metadata binstar_build_result %BINSTAR_BUILD_RESULT%
 
     if "%BINSTAR_BUILD_RESULT%" == "success" (
+        echo {{metadata(binstar_build_result='success')}}
         exit {{EXIT_CODE_OK}}
     )
     if "%BINSTAR_BUILD_RESULT%" == "error" (
+        echo {{metadata(binstar_build_result='error')}}
         exit {{EXIT_CODE_ERROR}}
     )
 
     if "%BINSTAR_BUILD_RESULT%" == "failure" (
+        echo {{metadata(binstar_build_result='failure')}}
         exit {{EXIT_CODE_FAILED}}
     )
 
@@ -381,15 +383,4 @@ goto:eof
     {% endif %}
 
 
-goto:eof
-
-:tag_maker
-    set CURRENT_SECTION_TAG=%*
-    echo.
-    echo anaconda-build-section-tag %*
-    echo.
-goto:eof
-
-:bb_metadata
-    "%BUILD_PYTHON%" -c "from sys import argv; from binstar_build_client.worker.utils.build_log import encode_metadata as m; print(m({argv[1]: argv[2]}))" %*
 goto:eof

@@ -96,7 +96,7 @@ class BuildLog(object):
         if msg.startswith(METADATA_PREFIX):
             try:
                 return decode_metadata(msg)
-            except ValueError:
+            except (ValueError, TypeError):
                 return None
 
 
