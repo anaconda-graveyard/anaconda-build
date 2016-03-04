@@ -72,6 +72,7 @@ class MyWorker(Worker):
         args.status_file = None
         args.timeout = 100
         args.show_new_procs = False
+        args.cwd = tempfile.mkdtemp()
 
         worker_config = WorkerConfiguration(
             'worker_name',
@@ -79,12 +80,7 @@ class MyWorker(Worker):
             'test_platform', 'test_hostname', 'dist'
         )
 
-        self._working_dir = tempfile.mkdtemp()
         super(MyWorker, self).__init__(bs, worker_config, args)
-
-    def working_dir(self, *args):
-
-        return self._working_dir
 
 
 class Test(unittest.TestCase):
@@ -128,7 +124,7 @@ class Test(unittest.TestCase):
             st = os.stat(script_path)
             os.chmod(script_path, st.st_mode | stat.S_IEXEC)
 
-
+    maxDiff = None
     def get_worker(self):
         worker = MyWorker()
         return worker
@@ -298,6 +294,7 @@ class Test(unittest.TestCase):
         working_dir = tempfile.mkdtemp()
         try:
             script = script_generator.gen_build_script(working_dir,
+                                                       working_dir,
                                                        default_build_data())
             with open(script, 'r') as f:
                 contents = f.read()
@@ -315,6 +312,7 @@ class Test(unittest.TestCase):
             build_data['build_item_info']['instructions']['install_channels'] = []
             build_data['build_item_info']['engine'] = 'r'
             script = script_generator.gen_build_script(working_dir,
+                                                       working_dir,
                                                        build_data)
             with open(script, 'r') as f:
                 contents = f.read()
@@ -367,6 +365,7 @@ class TestDockerWorker(DockerWorker):
         args.timeout = 100
         args.show_new_procs = False
         args.image = 'binstar/linux-64'
+        args.cwd = tempfile.mkdtemp()
 
         worker_config = WorkerConfiguration(
             'worker_id', 'worker_id', 'username', 'queue', 'test_platform',
@@ -374,8 +373,6 @@ class TestDockerWorker(DockerWorker):
 
         super(TestDockerWorker, self).__init__(bs, worker_config, args)
 
-    def working_dir(self, *args):
-        return os.path.abspath('test_worker')
 
 
 @unittest.skipIf(not have_docker(), "Don't have docker")

@@ -60,7 +60,8 @@ class Test(unittest.TestCase):
     def test_bad_tarball(self):
         build_data = default_build_data()
 
-        script_filename = gen_build_script(tempfile.mkdtemp(), build_data, ignore_setup_build=True)
+        tempdir = tempfile.mkdtemp()
+        script_filename = gen_build_script(tempdir, tempdir, build_data, ignore_setup_build=True)
         self.addCleanup(os.unlink, script_filename)
 
         build_tarball = path.join(path.dirname(__file__), 'data', 'does_not_exist.tar.bz2')
@@ -73,7 +74,8 @@ class Test(unittest.TestCase):
     def test_instructions_success(self):
 
         build_data = default_build_data()
-        script_filename = gen_build_script(tempfile.mkdtemp(), build_data,
+        tempdir = tempfile.mkdtemp()
+        script_filename = gen_build_script(tempdir, tempdir, build_data,
                                            ignore_setup_build=True,
                                            ignore_fetch_build_source=True)
 
@@ -97,7 +99,9 @@ class Test(unittest.TestCase):
 
         build_data = default_build_data()
         build_data['build_item_info']['instructions']['install'] = 'invalid_command'
-        script_filename = gen_build_script(tempfile.mkdtemp(),
+        tempdir = tempfile.mkdtemp()
+        script_filename = gen_build_script(tempdir,
+                                           tempdir,
                                            build_data,
                                            ignore_setup_build=True,
                                            ignore_fetch_build_source=True)
@@ -120,7 +124,9 @@ class Test(unittest.TestCase):
 
         build_data = default_build_data()
         build_data['build_item_info']['instructions']['test'] = 'invalid_command'
-        script_filename = gen_build_script(tempfile.mkdtemp(),
+        tempdir = tempfile.mkdtemp()
+        script_filename = gen_build_script(tempdir,
+                                           tempdir,
                                            build_data,
                                            ignore_setup_build=True,
                                            ignore_fetch_build_source=True)
@@ -144,7 +150,9 @@ class Test(unittest.TestCase):
 
         build_data = default_build_data()
         build_data['build_item_info']['instructions']['script'] = 'invalid_command'
-        script_filename = gen_build_script(tempfile.mkdtemp(),
+        tempdir = tempfile.mkdtemp()
+        script_filename = gen_build_script(tempdir,
+                                           tempdir,
                                            build_data,
                                            ignore_setup_build=True,
                                            ignore_fetch_build_source=True)
@@ -170,7 +178,9 @@ class Test(unittest.TestCase):
             'files': 'output_file',
             'channels': ['foo'],
         }
-        script_filename = gen_build_script(tempfile.mkdtemp(),
+        tempdir = tempfile.mkdtemp()
+        script_filename = gen_build_script(tempdir,
+                                           tempdir,
                                            build_data,
                                            ignore_setup_build=True,
                                            ignore_fetch_build_source=True)
@@ -187,7 +197,9 @@ class Test(unittest.TestCase):
         build_data['build_item_info']['instructions']['build_targets'] = {
             'files': 'output_file',
         }
-        script_filename = gen_build_script(tempfile.mkdtemp(),
+        tempdir = tempfile.mkdtemp()
+        script_filename = gen_build_script(tempdir,
+                                           tempdir,
                                            build_data,
                                            ignore_setup_build=True,
                                            ignore_fetch_build_source=True)
@@ -204,7 +216,9 @@ class Test(unittest.TestCase):
         build_data['build_item_info']['instructions']['build_targets'] = {
             'files': 'output_file',
         }
-        script_filename = gen_build_script(tempfile.mkdtemp(),
+        tempdir = tempfile.mkdtemp()
+        script_filename = gen_build_script(tempdir,
+                                           tempdir,
                                            build_data,
                                            ignore_setup_build=True,
                                            ignore_fetch_build_source=True)
@@ -226,7 +240,9 @@ class Test(unittest.TestCase):
         build_data = default_build_data()
         build_data['build_item_info']['engine'] = 'numpy=1.9'
 
-        script_filename = gen_build_script(tempfile.mkdtemp(),
+        tempdir = tempfile.mkdtemp()
+        script_filename = gen_build_script(tempdir,
+                                           tempdir,
                                            build_data,
                                            ignore_setup_build=False,
                                            ignore_fetch_build_source=True)
@@ -247,7 +263,9 @@ class Test(unittest.TestCase):
         build_data = default_build_data()
         for name in ('env', 'envvars'):
             build_data['build_item_info'][name] = {'ENVIRONMENT_VARIABLE': '1'}
-            script_filename = gen_build_script(tempfile.mkdtemp(),
+            tempdir = tempfile.mkdtemp()
+            script_filename = gen_build_script(tempdir,
+                                               tempdir,
                                                  build_data,
                                                  ignore_setup_build=True,
                                                  ignore_fetch_build_source=True)

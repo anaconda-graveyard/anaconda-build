@@ -12,6 +12,7 @@ module_dir = os.path.dirname(__file__)
 run_sub_process = os.path.join(module_dir, 'run_sub_process.py')
 echo_hello = os.path.join(module_dir, 'echo_hello.py')
 
+
 class Test(unittest.TestCase):
 
     def test_build_process_can_create_processes(self):
@@ -41,6 +42,7 @@ class Test(unittest.TestCase):
             if c.is_running(): c.kill()
 
     @unittest.skipIf(WIN_32, 'This test should only run on posix')
+    @unittest.skipIf(os.path.exists('/.dockerinit'), 'Cannot have nested process group inside docker container')
     def test_terminate_process_group(self):
 
 
