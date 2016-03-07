@@ -10,11 +10,15 @@ import json
 import logging
 from io import BytesIO
 
-log = logging.getLogger(__name__)
+import requests
 
-# write to the servers when more than 8kB of data has been buffered
-BUF_SIZE = 8 * 1024 # bytes
+log = logging.getLogger('binstar.build')
+
+# write to the servers when more than BUF_SIZE of data has been buffered
+BUF_SIZE = 72 # bytes
 METADATA_PREFIX = b'anaconda-build-metadata:'
+# number of write attempts to make before giving up
+MAX_WRITE_FAILURES = 5
 
 def encode_metadata(metadata):
     '''
@@ -65,6 +69,7 @@ class BuildLog(object):
         self.job_id = job_id
         self.quiet = quiet
 
+
         self.terminate_build = False
         self.metadata = {'section': 'dequeue_build'}
         self.write_to_server = functools.partial(self.bs.log_build_output_structured,
@@ -72,6 +77,9 @@ class BuildLog(object):
                                                  self.queue,
                                                  self.worker_id,
                                                  self.job_id)
+        # the number of consecutive write failures - when this exceeds
+        # MAX_WRITE_FAILURES, terminate the build
+        self.write_failures = 0
 
         self.buf = BytesIO()
 
@@ -113,7 +121,6 @@ class BuildLog(object):
             raise TypeError("a bytes-like object is required, not {}".format(type(msg)))
 
         n = len(msg)
-
 
         metadata = self.detect_metadata(msg)
         if metadata:
@@ -174,11 +181,22 @@ class BuildLog(object):
 
         self.fd.write(msg)
 
-        terminate_build = self.write_to_server(msg, self.metadata)
-        self.terminate_build = terminate_build
+        terminate_build = False
+        try:
+            terminate_build = self.write_to_server(msg, self.metadata)
+        except (requests.HTTPError, requests.ConnectionError):
+            self.write_failures += 1
+            log.warn('Failed to write log to server, %s attempts remaining', MAX_WRITE_FAILURES - self.write_failures)
+
+            if self.write_failures > MAX_WRITE_FAILURES:
+                terminate_build = True
+                log.error('Failed to write log to server %s times in a row, terminating build', MAX_WRITE_FAILURES)
+        else:
+            self.write_failures = 0
 
         log.info('Wrote %s bytes of build output to anaconda-server', len(msg))
 
+        self.terminate_build = terminate_build
         if terminate_build:
             log.info('anaconda-server responded that the build should be terminated')
 
