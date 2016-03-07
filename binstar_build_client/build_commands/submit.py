@@ -80,7 +80,7 @@ def submit_build(binstar, args):
                     exclude = ExcludeGit(path, use_git_ignore=not args.dont_git_ignore)
                     tf.add(path, '.', exclude=exclude)
 
-                log.info("Created archive (%i files); Uploading to binstar" % exclude.num_included)
+                log.info("Created archive (%i files); Uploading to Anaconda Build service" % exclude.num_included)
                 queue_tags = []
                 if args.buildhost:
                     queue_tags.append('hostname:%s' % args.buildhost)
@@ -262,9 +262,9 @@ def add_parser(subparsers):
                        help="Upload targets to this label")
     cgroup.add_argument('--test-only', '--no-upload', action='store_true',
                         dest='test_only',
-                        help="Don't upload the build targets to binstar, but run everything else")
+                        help="Don't upload the build targets to Anaconda Cloud, but run everything else")
     cgroup.add_argument('-p', '--package',
-                       help="The binstar package namespace to upload the build to",
+                       help="The Anaconda Cloud package namespace to upload the build to",
                        metavar='USER/PACKAGE',
                        type=package_specs)
 
