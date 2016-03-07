@@ -2,6 +2,10 @@
 
 import os
 import sys
+try:
+    from urllib.parse import urlparse
+except ImportError:
+    from urlparse import urlparse
 
 CONDA_EXE = 'conda.exe' if os.name == 'nt' else 'conda'
 
@@ -18,3 +22,8 @@ def get_conda_root_prefix():
             bin_dir = os.path.dirname(conda_exe_path)
             return os.path.dirname(bin_dir)
 
+def get_anaconda_url(binstar):
+    netloc = urlparse(binstar.domain).netloc
+    if netloc.startswith('api.'):
+        netloc = netloc.replace('api.', '')
+    return netloc

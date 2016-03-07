@@ -18,14 +18,11 @@ from contextlib import contextmanager
 import logging
 import os
 from os.path import abspath, join, isfile
-try:
-    from urllib.parse import urlparse
-except ImportError:
-    from urlparse import urlparse
 import tarfile
 import tempfile
 
 from binstar_build_client import BinstarBuildAPI
+from binstar_build_client.utils import get_anaconda_url
 from binstar_build_client.utils.filter import ExcludeGit
 from binstar_build_client.utils.git_utils import is_url, get_urlpath, \
     get_gitrepo
@@ -104,12 +101,13 @@ def submit_build(binstar, args):
     else:
         log.info('Build not submitted (dry-run)')
 
+
 def print_build_results(args, build, binstar):
 
     log.info('')
     build_result_url = build.get('url')
     if not build_result_url:
-        netloc = urlparse(binstar.domain).netloc
+        netloc = get_anaconda_url(binstar)
         build_result_url = 'http://%s/%s/%s/builds/matrix/%s' % (netloc, args.package.user, args.package.name, build['build_no'])
     log.info('To view this build go to %s' % build_result_url)
     log.info('')
