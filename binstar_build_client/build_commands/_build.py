@@ -3,17 +3,17 @@ Build command
 
 Initialize the build directory:
 
-    binstar build --init
+    anaconda build --init
 
 This will create a default .binstar.yml file in the current directory
 
 Submit a build:
 
-    binstar build --submit
+    anaconda build submit ./ --queue orgname/queuename
 
 Tail the output of a build until it is complete:
 
-    binstar build --tail 1.0
+    anaconda build tail -f orgname/packagename 1
 
 '''
 
@@ -42,7 +42,7 @@ from six.moves import input
 log = logging.getLogger('binstar.build')
 
 @contextmanager
-def mktemp(suffix=".tar.gz", prefix='binstar', dir=None):
+def mktemp(suffix=".tar.gz", prefix='anaconda', dir=None):
     tmp = tempfile.mktemp(suffix, prefix, dir)
     log.debug('Creating temp file: %s' % tmp)
     try:
@@ -200,8 +200,10 @@ def init_build(args):
         _ = binstar.package(user['login'], package_name)
     except errors.NotFound:
         log.warn('The package %(username)s/%(name)s does not exist\n'
-                 'Please run:\n   binstar package %(username)s/%(name)s --create' % dict(username=user['login'], name=package_name))
-    log.info("Run 'binstar build --submit' to submit your first build")
+                 'Please run:\n   anaconda package %(username)s/%(name)s --create' % dict(username=user['login'], name=package_name))
+    log.info("Run 'anaconda build submit {} "
+             "--queue orgname/queuename' to "
+             "submit your first build".format(args.path))
     return
 
 def main(args):
@@ -242,7 +244,7 @@ def main(args):
         _ = binstar.package(user_name, package_name)
     except errors.NotFound:
         log.error("The package %s/%s does not exist." % (user_name, package_name))
-        log.error("Run: 'binstar package --create %s/%s' to create this package" % (user_name, package_name))
+        log.error("Run: 'anaconda package --create %s/%s' to create this package" % (user_name, package_name))
         raise errors.NotFound('Package %s/%s' % (user_name, package_name))
     args.package = PackageSpec(user_name, package_name)
 

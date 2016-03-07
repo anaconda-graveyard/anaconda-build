@@ -7,17 +7,22 @@ Created on Feb 18, 2014
 from __future__ import (print_function, unicode_literals, division,
     absolute_import)
 
+from argparse import Namespace
+from glob import glob
 import os
 import yaml
-from mock import patch, Mock
+from mock import patch, Mock, MagicMock
 import unittest
+
+from binstar_client import errors
+from binstar_client.utils import get_binstar
 
 from binstar_client.tests.fixture import CLITestCase
 from binstar_client.tests.urlmock import urlpatch
 from binstar_build_client.scripts.worker import main
 from binstar_build_client.worker.register import WorkerConfiguration
-from glob import glob
-from binstar_client import errors
+from binstar_build_client import worker
+from binstar_build_client import BinstarBuildAPI
 
 test_workers = os.path.abspath('./test-workers')
 worker_data = {
@@ -49,10 +54,10 @@ class Test(CLITestCase):
     @patch('binstar_build_client.worker.register.WorkerConfiguration.register')
     @patch('binstar_build_client.worker.register.WorkerConfiguration.deregister')
     @patch('binstar_build_client.worker.register.WorkerConfiguration.load')
-    def test_register(self, load, deregister, urls, register):
+    def test_register(self, load, deregister, register, urls):
 
         main(['register', 'username/queue-1'], False)
-        self.assertEqual(register.call_count, 1)
+        self.assertEqual(urls.call_count, 1)
 
         main(['deregister', 'worker_id'], False)
         self.assertEqual(deregister.call_count, 1)
@@ -78,10 +83,31 @@ class Test(CLITestCase):
             main(['register', 'username/queue-1', '--name','!bad-name'], False)
 
     @urlpatch
+    @patch('binstar_build_client.worker.register.WorkerConfiguration.load')
+    def test_register_duplicate_name(self, load, urls):
+        registered = {}
+        @classmethod
+        def register_func(cls, *args, **kwargs):
+            name = kwargs.get('name')
+            if name in registered:
+                raise errors.BinstarError('already registered {}'.format(registered))
+            registered[name] = True
+            args2 = [name] + list(args)
+            return WorkerConfiguration(*args2)
+
+        with patch.object(worker.register.WorkerConfiguration, 'register', new=register_func) as register:
+            main(['register', 'username/queue-1', '--name', 'worker1'], False)
+            self.assertEqual(registered, {'worker1': True})
+            with self.assertRaises(errors.BinstarError):
+                main(['register', 'username/queue-1', '--name', 'worker1'], False)
+
+
+    @urlpatch
     @patch('binstar_build_client.worker.worker.Worker.work_forever')
     @patch('binstar_build_client.worker.register.WorkerConfiguration.load')
     @patch('binstar_build_client.worker.worker.Worker.run')
-    def test_worker_simple(self, run, load, loop, urls):
+    @patch('binstar_build_client.worker.register.WorkerConfiguration.validate_worker_name')
+    def test_worker_simple(self, validate, run, load, loop, urls):
 
         main(['--show-traceback', 'worker', 'run', worker_data['worker_id']], False)
 
@@ -94,13 +120,31 @@ class Test(CLITestCase):
     @patch('binstar_build_client.worker_commands.docker_run.docker')
     @patch('binstar_build_client.worker.docker_worker.docker')
     @patch('binstar_build_client.worker.docker_worker.kwargs_from_env')
-    def test_worker_simple_docker(self, kwargs_from_env, docker1, docker2, run, load, loop, urls):
+    @patch('binstar_build_client.worker.register.WorkerConfiguration.validate_worker_name')
+    def test_worker_simple_docker(self, validate, kwargs_from_env, docker1, docker2, run, load, loop, urls):
 
         docker1.Client = docker2.Client = Mock()
 
         main(['--show-traceback', 'worker', 'docker_run', worker_data['worker_id']], False)
 
         self.assertEqual(loop.call_count, 1)
+
+    @patch('binstar_build_client.worker.register.WorkerConfiguration.registered_workers')
+    def test_duplicate_worker_name(self, registered):
+        worker_configs = [Namespace(name='abc',
+                          worker_id='id_' + worker,
+                          username='user',
+                          queue='queue',
+                          platform='platform',
+                          hostname='hostname',
+                          dist='dist')  for worker in ('a', 'b')]
+
+        for worker_config in worker_configs:
+            worker_config.to_dict = lambda : worker_config.__dict__
+        registered.return_value = iter(worker_configs)
+        bs = get_binstar(Namespace(), cls=BinstarBuildAPI)
+        with self.assertRaises(errors.BinstarError):
+            WorkerConfiguration.validate_worker_name(bs, 'abc')
 
     def test_register_backwards_compat(self):
 

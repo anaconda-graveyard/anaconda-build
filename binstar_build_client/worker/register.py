@@ -49,7 +49,6 @@ class InvalidWorkerConfigFile(errors.BinstarError):
 class WorkerConfiguration(object):
     REGISTERED_WORKERS_DIR = os.path.join(os.path.expanduser('~'), '.workers')
     HOSTNAME = platform.node()
-
     def __init__(self, name, worker_id, username, queue, platform, hostname, dist):
         worker_id_to_name = WorkerConfiguration.backwards_compat_lookup()
         self.name = worker_id_to_name.get(worker_id, None) or name
@@ -76,6 +75,7 @@ class WorkerConfiguration(object):
 
     def to_dict(self):
         return {
+            "name": getattr(self, 'name', self.worker_id),
             "worker_id": self.worker_id,
             "username": self.username,
             "queue": self.queue,
@@ -91,6 +91,24 @@ class WorkerConfiguration(object):
         return self.to_dict() == other.to_dict()
 
     @classmethod
+    def validate_worker_name(cls, bs, name):
+        workers_by_name = {}
+        for worker in cls.registered_workers(bs):
+            if not worker.name in workers_by_name:
+                workers_by_name[worker.name] = [worker]
+            else:
+                workers_by_name[worker.name].append(worker)
+        workers = workers_by_name.get(name, [])
+        if len(workers) > 1:
+            msg = ''
+            for worker in workers:
+                worker.name = name
+                msg += '{name}, id:{worker_id}, hostname:{hostname}, queue:{username}/{queue}\n'.format(**worker.to_dict())
+            raise errors.BinstarError('Cannot anaconda worker run {}'
+                                      ' (the name is ambiguous).  Use'
+                                      ' one of the worker id\'s below'
+                                      ' instead.\n\n' + msg)
+    @classmethod
     def registered_workers(cls, bs):
         "Iterate over the registered workers on this machine"
 
@@ -104,16 +122,14 @@ class WorkerConfiguration(object):
             except Exception as e:
                 raise ValueError(repr(queue_name))
             for worker in workers:
-                if worker['hostname'] != cls.HOSTNAME:
-                    continue
                 try:
                     worker = cls(name=worker.get('name', worker['id']),
-                              worker_id=worker['id'],
-                              username=user,
-                              queue=queue,
-                              platform=worker['platform'],
-                              hostname=worker['hostname'],
-                              dist=worker['dist'])
+                                 worker_id=worker['id'],
+                                 username=user,
+                                 queue=queue,
+                                 platform=worker['platform'],
+                                 hostname=worker['hostname'],
+                                 dist=worker['dist'])
                     yield worker
 
                 except Exception as e:
@@ -174,33 +190,15 @@ class WorkerConfiguration(object):
 
 
     @classmethod
-    def load(cls, worker_name, bs):
+    def load(cls, worker_name, bs, warn=False):
 
         'Load a worker config from a worker_id'
         for worker in cls.registered_workers(bs):
-            if worker_name == worker.worker_id or worker_name == worker.name:
-                if worker.hostname == cls.HOSTNAME:
-                    return worker
+            if worker_name in (worker.worker_id, worker.name):
+                return worker
+
         raise errors.BinstarError('Worker with id '
                                   '{} not found'.format(worker_name))
-    @classmethod
-    def print_registered_workers(cls, bs):
-
-        has_workers = False
-
-        log.info('Registered workers:')
-
-        for wconfig in cls.registered_workers(bs):
-            has_workers = True
-
-            msg = '{name}, id:{worker_id}, hostname:{hostname}, queue:{username}/{queue}'.format(name=wconfig.name, **wconfig.to_dict())
-            if wconfig.pid:
-                msg += ' (running with pid: {})'.format(wconfig.pid)
-
-            log.info(msg)
-
-        if not has_workers:
-            log.info('(No registered workers)')
 
     @classmethod
     def register(cls, bs, username, queue, platform, hostname, dist, name=None):
@@ -208,9 +206,9 @@ class WorkerConfiguration(object):
         Register the worker with anaconda server
         '''
         for worker in cls.registered_workers(bs):
-            if worker.name == name:
+            if name in (worker.name, worker.worker_id):
                 raise errors.BinstarError('Cannot have duplicate worker '
-                                          '--name from same host: {}'.format(name))
+                                          '--name or id: {}'.format(name))
         worker_id = bs.register_worker(username, queue, platform, hostname, dist,name=name)
         log.info('Registered worker with worker_id:\t{}'.format(worker_id))
 

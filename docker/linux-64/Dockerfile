@@ -36,6 +36,4 @@ RUN yum remove -y git && \
     echo "export PATH=\$PATH:/usr/local/git/bin" >> /etc/bashrc && \
     ln -s /usr/local/git/bin/git /usr/bin/git
 
-USER binstar
-WORKDIR /home/binstar
 
