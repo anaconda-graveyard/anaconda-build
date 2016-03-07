@@ -73,7 +73,7 @@ def add_parser(subparsers):
                         help='The http github url to the repo')
 
     parser.add_argument('-p', '--package',
-                       help="The binstar package namespace to upload the build to",
+                       help="The Anaconda Cloud package namespace to upload the build to",
                        metavar='USER/PACKAGE',
                        type=package_specs)
 
@@ -90,7 +90,7 @@ def add_parser(subparsers):
                        help="Build on this queue")
 
     parser.add_argument('--email', action='append',
-                        help="Binstar usernames or email adresses to email when the build completes"
+                        help="Anaconda Cloud usernames or email addresses to email when the build completes"
                         )
 
     parser.set_defaults(main=main)
