@@ -220,6 +220,7 @@ class Test(unittest.TestCase):
         else:
             self.assertEqual(build_env_path, '"${WORKING_DIR}/env"')
 
+    @unittest.skip('This test is too slow')
     def test_conda_npy(self):
         build_data = default_build_data()
         build_data['build_item_info']['engine'] = 'numpy=1.9'
