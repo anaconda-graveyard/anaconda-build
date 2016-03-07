@@ -46,7 +46,7 @@ def add_parser(subparsers):
                                       )
 
     parser.add_argument('package',
-                       help="The binstar package to trigger a build on",
+                       help="The Anaconda Cloud package to trigger a build on",
                        metavar='USER/PACKAGE',
                        type=package_specs)
 
@@ -69,7 +69,7 @@ def add_parser(subparsers):
 
     parser.add_argument('--test-only', '--no-upload', action='store_true',
                         dest='test_only',
-                        help="Don't upload the build targets to binstar, but run everything else")
+                        help="Don't upload the build targets to Anaconda Cloud, but run everything else")
 
 
     parser.set_defaults(main=main)
