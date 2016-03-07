@@ -209,7 +209,7 @@ goto:eof
     set "BINSTAR_CONFIG_DIR=%WORKING_DIR%\binstar"
     echo "mkdir %BINSTAR_CONFIG_DIR%"
     mkdir "%BINSTAR_CONFIG_DIR%"
-    echo "anaconda config --set url "%BINSTAR_API_SITE%"
+    echo "anaconda config --set url %BINSTAR_API_SITE%"
     anaconda config --set url "%BINSTAR_API_SITE%"
 
     call:bb_before_environment

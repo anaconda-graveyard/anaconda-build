@@ -17,6 +17,11 @@ import warnings
 import tempfile
 import shutil
 
+
+DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
+def data_path(filename):
+    return os.path.join(DATA_DIR, filename)
+
 try_unlink = lambda path: os.unlink(path) if os.path.isfile(path) else None
 
 def default_build_data():
@@ -60,7 +65,7 @@ def default_build_data():
 
 class MyWorker(Worker):
     download_build_source = Mock()
-    download_build_source.return_value = 'build_source_filename'
+    download_build_source.return_value = data_path('example_package.tar.gz')
 
     def __init__(self):
         self.SLEEP_TIME = 0
@@ -70,6 +75,7 @@ class MyWorker(Worker):
         args.status_file = None
         args.timeout = 100
         args.show_new_procs = False
+        args.cwd = tempfile.mkdtemp()
 
         worker_config = WorkerConfiguration(
             'worker_name',
@@ -77,12 +83,7 @@ class MyWorker(Worker):
             'test_platform', 'test_hostname', 'dist'
         )
 
-        self._working_dir = tempfile.mkdtemp()
         super(MyWorker, self).__init__(bs, worker_config, args)
-
-    def working_dir(self, *args):
-
-        return self._working_dir
 
 
 class Test(unittest.TestCase):
@@ -124,7 +125,6 @@ class Test(unittest.TestCase):
             st = os.stat(script_path)
             os.chmod(script_path, st.st_mode | stat.S_IEXEC)
 
-
     def get_worker(self):
         worker = MyWorker()
         return worker
@@ -158,7 +158,7 @@ class Test(unittest.TestCase):
             '--api-token',
             'upload_token',
             '--build-tarball',
-            'build_source_filename'
+            data_path('example_package.tar.gz'),
         ]
         ending_posix = popen_args[0].split('/')[-1]
         ending_win = popen_args[0].split('\\')[-1]
@@ -293,6 +293,7 @@ class Test(unittest.TestCase):
         working_dir = tempfile.mkdtemp()
         try:
             script = script_generator.gen_build_script(working_dir,
+                                                       working_dir,
                                                        default_build_data())
             with open(script, 'r') as f:
                 contents = f.read()
@@ -310,6 +311,7 @@ class Test(unittest.TestCase):
             build_data['build_item_info']['instructions']['install_channels'] = []
             build_data['build_item_info']['engine'] = 'r'
             script = script_generator.gen_build_script(working_dir,
+                                                       working_dir,
                                                        build_data)
             with open(script, 'r') as f:
                 contents = f.read()
@@ -349,7 +351,7 @@ def have_docker():
 
 class TestDockerWorker(DockerWorker):
     download_build_source = Mock()
-    download_build_source.return_value = os.path.abspath('build_source_filename')
+    download_build_source.return_value = data_path('example_package.tar.gz')
 
     def __init__(self):
         self.SLEEP_TIME = 0
@@ -361,6 +363,7 @@ class TestDockerWorker(DockerWorker):
         args.timeout = 100
         args.show_new_procs = False
         args.image = 'binstar/linux-64'
+        args.cwd = tempfile.mkdtemp()
 
         worker_config = WorkerConfiguration(
             'worker_id', 'worker_id', 'username', 'queue', 'test_platform',
@@ -368,8 +371,6 @@ class TestDockerWorker(DockerWorker):
 
         super(TestDockerWorker, self).__init__(bs, worker_config, args)
 
-    def working_dir(self, *args):
-        return os.path.abspath('test_worker')
 
 
 @unittest.skipIf(not have_docker(), "Don't have docker")

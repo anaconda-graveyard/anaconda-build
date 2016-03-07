@@ -1,5 +1,5 @@
 '''
-Build queue backlog  
+Build queue backlog
 '''
 
 from __future__ import (print_function, unicode_literals, division,
@@ -41,7 +41,7 @@ def main(args):
         print('%(name)-30s | %(build_no)10s | %(tags)10s | %(enqueued)30s' % job)
 
 def add_parser(subparsers, name='backlog',
-               description='Run a build worker to build jobs off of a binstar build queue',
+               description='Run a build worker to build jobs off of a anaconda build queue',
                epilog=__doc__):
 
     parser = subparsers.add_parser(name,

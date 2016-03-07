@@ -59,7 +59,8 @@ class Test(unittest.TestCase):
     def test_bad_tarball(self):
         build_data = default_build_data()
 
-        script_filename = gen_build_script(tempfile.mkdtemp(), build_data, ignore_setup_build=True)
+        tempdir = tempfile.mkdtemp()
+        script_filename = gen_build_script(tempdir, tempdir, build_data, ignore_setup_build=True)
         self.addCleanup(os.unlink, script_filename)
 
         build_tarball = path.join(path.dirname(__file__), 'data', 'does_not_exist.tar.bz2')
@@ -72,7 +73,8 @@ class Test(unittest.TestCase):
     def test_instructions_success(self):
 
         build_data = default_build_data()
-        script_filename = gen_build_script(tempfile.mkdtemp(), build_data,
+        tempdir = tempfile.mkdtemp()
+        script_filename = gen_build_script(tempdir, tempdir, build_data,
                                            ignore_setup_build=True,
                                            ignore_fetch_build_source=True)
 
@@ -96,7 +98,9 @@ class Test(unittest.TestCase):
 
         build_data = default_build_data()
         build_data['build_item_info']['instructions']['install'] = 'invalid_command'
-        script_filename = gen_build_script(tempfile.mkdtemp(),
+        tempdir = tempfile.mkdtemp()
+        script_filename = gen_build_script(tempdir,
+                                           tempdir,
                                            build_data,
                                            ignore_setup_build=True,
                                            ignore_fetch_build_source=True)
@@ -119,7 +123,9 @@ class Test(unittest.TestCase):
 
         build_data = default_build_data()
         build_data['build_item_info']['instructions']['test'] = 'invalid_command'
-        script_filename = gen_build_script(tempfile.mkdtemp(),
+        tempdir = tempfile.mkdtemp()
+        script_filename = gen_build_script(tempdir,
+                                           tempdir,
                                            build_data,
                                            ignore_setup_build=True,
                                            ignore_fetch_build_source=True)
@@ -143,7 +149,9 @@ class Test(unittest.TestCase):
 
         build_data = default_build_data()
         build_data['build_item_info']['instructions']['script'] = 'invalid_command'
-        script_filename = gen_build_script(tempfile.mkdtemp(),
+        tempdir = tempfile.mkdtemp()
+        script_filename = gen_build_script(tempdir,
+                                           tempdir,
                                            build_data,
                                            ignore_setup_build=True,
                                            ignore_fetch_build_source=True)
@@ -169,7 +177,9 @@ class Test(unittest.TestCase):
             'files': 'output_file',
             'channels': ['foo'],
         }
-        script_filename = gen_build_script(tempfile.mkdtemp(),
+        tempdir = tempfile.mkdtemp()
+        script_filename = gen_build_script(tempdir,
+                                           tempdir,
                                            build_data,
                                            ignore_setup_build=True,
                                            ignore_fetch_build_source=True)
@@ -186,7 +196,9 @@ class Test(unittest.TestCase):
         build_data['build_item_info']['instructions']['build_targets'] = {
             'files': 'output_file',
         }
-        script_filename = gen_build_script(tempfile.mkdtemp(),
+        tempdir = tempfile.mkdtemp()
+        script_filename = gen_build_script(tempdir,
+                                           tempdir,
                                            build_data,
                                            ignore_setup_build=True,
                                            ignore_fetch_build_source=True)
@@ -203,7 +215,9 @@ class Test(unittest.TestCase):
         build_data['build_item_info']['instructions']['build_targets'] = {
             'files': 'output_file',
         }
-        script_filename = gen_build_script(tempfile.mkdtemp(),
+        tempdir = tempfile.mkdtemp()
+        script_filename = gen_build_script(tempdir,
+                                           tempdir,
                                            build_data,
                                            ignore_setup_build=True,
                                            ignore_fetch_build_source=True)
@@ -223,29 +237,47 @@ class Test(unittest.TestCase):
     def test_conda_npy(self):
         build_data = default_build_data()
         build_data['build_item_info']['engine'] = 'numpy=1.9'
-
-        script_filename = gen_build_script(tempfile.mkdtemp(),
+        tempdir = tempfile.mkdtemp()
+        script_filename = gen_build_script(tempdir,
+                                           tempdir,
                                            build_data,
                                            ignore_setup_build=False,
                                            ignore_fetch_build_source=True)
 
         self.addCleanup(os.unlink, script_filename)
-        p0 = Popen([script_filename], stdout=PIPE, stderr=STDOUT)
-        return_code = p0.wait()
-        output = p0.stdout.read().decode()
-        lines = output.splitlines()
-        conda_npy = [line for line in lines if "CONDA_NPY" in line]
-        self.assertTrue(len(conda_npy) > 0)
-        conda_npy_read = conda_npy[0].strip().replace('CONDA_NPY=', '')
-        self.assertEqual(conda_npy_read, '19')
-
+        with open(script_filename, 'r') as f:
+            script_lines = [_.strip() for _ in f.readlines()]
+        relates_to_npy = [idx for idx, line in enumerate(script_lines) if 'NUMPY' in line or 'NPY' in line]
+        # Test that the export showed up at top
+        if script_lines[relates_to_npy[0]].startswith(('export', 'set')):
+            exported = relates_to_npy.pop(0)
+            self.assertIn('=19', script_lines[exported])
+            self.assertIn('CONDA_NPY', script_lines[exported])
+        # Test that the other type of CONDA_NPY identification
+        # can run without error
+        other_numpy = "\n".join(script_lines[min(relates_to_npy): max(relates_to_npy) + 1])
+        script_name = 'numpy_script'
+        if os.name == 'nt':
+            script_name += '.bat'
+            exe = ['cmd', '/c', 'call']
+        else:
+            script_name += '.sh'
+            exe = ['bash']
+        with open(script_name, 'w') as f:
+            f.write(other_numpy)
+        proc = Popen(exe + [os.path.abspath(script_name)], stdout=PIPE, stderr=STDOUT, cwd='.')
+        output = proc.stdout.read().decode().splitlines()
+        npy = len([line for line in output if 'CONDA_NPY=' in line])
+        self.assertTrue(npy >= 1)
 
     def test_env_envvars(self):
         'Test env or envvars can be used in .binstar.yml'
         build_data = default_build_data()
         for name in ('env', 'envvars'):
             build_data['build_item_info'][name] = {'ENVIRONMENT_VARIABLE': '1'}
-            script_filename = gen_build_script(tempfile.mkdtemp(),
+            tempdir = tempfile.mkdtemp()
+            script_filename = gen_build_script(tempdir,
+                                               tempdir,
                                                  build_data,
                                                  ignore_setup_build=True,
                                                  ignore_fetch_build_source=True)

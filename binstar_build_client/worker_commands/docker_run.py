@@ -13,6 +13,7 @@ from binstar_client.utils import get_binstar
 from binstar_build_client import BinstarBuildAPI
 from binstar_build_client.worker.docker_worker import DockerWorker
 from binstar_build_client.worker_commands.run import add_parser as add_worker_parser
+from binstar_build_client.worker_commands.run import WRONG_HOSTNAME_MSG
 from binstar_build_client.worker.register import WorkerConfiguration
 
 try:
@@ -28,9 +29,12 @@ def main(args):
         raise errors.UserError("anaconda worker docker_run requires docker and docker-py to be installed\n"
                                "Run:\n\tpip install docker-py")
 
-
     bs = get_binstar(args, cls=BinstarBuildAPI)
-    worker_config = WorkerConfiguration.load(args.worker_id, bs)
+    worker_config = WorkerConfiguration.load(args.worker_id, bs, warn=True)
+    WorkerConfiguration.validate_worker_name(bs, args.worker_id)
+    if worker_config.hostname != WorkerConfiguration.HOSTNAME:
+        log.warn(WRONG_HOSTNAME_MSG.format(worker_config.hostname,
+                                           WorkerConfiguration.HOSTNAME))
     worker = DockerWorker(bs, worker_config, args)
     worker.work_forever()
 
