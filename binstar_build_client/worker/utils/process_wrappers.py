@@ -1,3 +1,4 @@
+import collections
 import logging
 import psutil
 import requests
@@ -20,9 +21,13 @@ class DockerBuildProcess(object):
         self.cont = cont
         self.stream = self.cli.attach(cont, stream=True, stdout=True, stderr=True)
         self.pid = 'docker container'
+        self.lines = collections.deque()
 
     def kill(self):
-        self.cli.kill(self.cont)
+        try:
+            self.cli.kill(self.cont)
+        except requests.HTTPError:
+            log.warn('Could not kill docker process', exc_info=True)
 
     def wait(self):
         return self.cli.wait(self.cont)
@@ -31,7 +36,14 @@ class DockerBuildProcess(object):
         self.cli.remove_container(self.cont, v=True)
 
     def readline(self):
-        return next(self.stream, b'')
+        if not self.lines:
+            log.debug('Blocking for next line from Docker')
+            self.lines.extend(next(self.stream, b'').splitlines(True))
+
+        if not self.lines:
+            return b''
+
+        return self.lines.popleft()
 
     def poll(self):
         try:
