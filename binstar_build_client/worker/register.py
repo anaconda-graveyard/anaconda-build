@@ -92,17 +92,16 @@ class WorkerConfiguration(object):
 
     @classmethod
     def validate_worker_name(cls, bs, name):
-        worker_name_to_id = {}
+        workers_by_name = {}
         for worker in cls.registered_workers(bs):
-            if not worker.name in worker_name_to_id:
-                worker_name_to_id[worker.name] = [worker]
+            if not worker.name in workers_by_name:
+                workers_by_name[worker.name] = [worker]
             else:
-                worker_name_to_id[worker.name].append(worker)
-        worker_name_to_id = {k:v for k,v in worker_name_to_id.items() if len(v) > 1}
-
-        if name in worker_name_to_id:
+                workers_by_name[worker.name].append(worker)
+        workers = workers_by_name.get(name, [])
+        if len(workers) > 1:
             msg = ''
-            for worker in worker_name_to_id[name]:
+            for worker in workers:
                 worker.name = name
                 msg += '{name}, id:{worker_id}, hostname:{hostname}, queue:{username}/{queue}\n'.format(**worker.to_dict())
             raise errors.BinstarError('Cannot anaconda worker run {}'
