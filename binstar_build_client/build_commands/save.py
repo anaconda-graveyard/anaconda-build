@@ -1,7 +1,7 @@
 '''
 Save build info to be triggered later
 
-See also: 
+See also:
 
   * [Save and Trigger Your Builds](http://docs.anaconda.org/build.html#SaveAndTriggerYourBuilds)
 
