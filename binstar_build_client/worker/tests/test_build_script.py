@@ -250,7 +250,7 @@ class Test(unittest.TestCase):
         with open(script_name, 'w') as f:
             f.write(other_numpy)
         proc = Popen(exe + [os.path.abspath(script_name)], stdout=PIPE, stderr=STDOUT, cwd='.')
-        output = proc.stdout.read().splitlines()
+        output = proc.stdout.read().decode().splitlines()
         npy = len([line for line in output if 'CONDA_NPY=' in line])
         self.assertTrue(npy >= 1)
 
