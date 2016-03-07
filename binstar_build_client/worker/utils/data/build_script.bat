@@ -62,7 +62,7 @@ goto:eof
 
     set BINSTAR_BUILD_RESULT=
 
-    echo "Starting build at %BUILD_UTC_DATETIME%"
+    echo Starting build at %BUILD_UTC_DATETIME%
 
     {% if ignore_setup_build %}
     echo [ignore setup_build]
