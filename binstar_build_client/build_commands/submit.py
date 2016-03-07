@@ -22,6 +22,7 @@ import tarfile
 import tempfile
 
 from binstar_build_client import BinstarBuildAPI
+from binstar_build_client.utils import get_anaconda_url
 from binstar_build_client.utils.filter import ExcludeGit
 from binstar_build_client.utils.git_utils import is_url, get_urlpath, \
     get_gitrepo
@@ -79,7 +80,7 @@ def submit_build(binstar, args):
                     exclude = ExcludeGit(path, use_git_ignore=not args.dont_git_ignore)
                     tf.add(path, '.', exclude=exclude)
 
-                log.info("Created archive (%i files); Uploading to binstar" % exclude.num_included)
+                log.info("Created archive (%i files); Uploading to Anaconda Build service" % exclude.num_included)
                 queue_tags = []
                 if args.buildhost:
                     queue_tags.append('hostname:%s' % args.buildhost)
@@ -95,17 +96,19 @@ def submit_build(binstar, args):
                                                      queue=args.queue, queue_tags=queue_tags,
                                                      test_only=args.test_only, callback=upload_print_callback(args))
 
-                print_build_results(args, build)
+                print_build_results(args, build, binstar)
 
     else:
         log.info('Build not submitted (dry-run)')
 
-def print_build_results(args, build):
+
+def print_build_results(args, build, binstar):
 
     log.info('')
     build_result_url = build.get('url')
     if not build_result_url:
-        build_result_url = 'http://anaconda.org/%s/%s/builds/matrix/%s' % (args.package.user, args.package.name, build['build_no'])
+        netloc = get_anaconda_url(binstar)
+        build_result_url = 'http://%s/%s/%s/builds/matrix/%s' % (netloc, args.package.user, args.package.name, build['build_no'])
     log.info('To view this build go to %s' % build_result_url)
     log.info('')
     log.info('You may also run\n\n    anaconda build tail -f %s/%s %s\n' % (args.package.user, args.package.name, build['build_no']))
@@ -144,7 +147,7 @@ def submit_git_build(binstar, args):
                                              filter_platform=args.platform,
                                                 )
 
-        print_build_results(args, build)
+        print_build_results(args, build, binstar)
 
     else:
         log.info('Build not submitted (dry-run)')
@@ -203,7 +206,7 @@ def main(args):
             _ = binstar.package(user_name, package_name)
         except errors.NotFound:
             log.error("The package %s/%s does not exist." % (user_name, package_name))
-            log.error("Run: \n\n    binstar package --create %s/%s\n\n to create this package" % (user_name, package_name))
+            log.error("Run: \n\n    anaconda package --create %s/%s\n\n to create this package" % (user_name, package_name))
             raise errors.NotFound('Package %s/%s' % (user_name, package_name))
         args.package = PackageSpec(user_name, package_name)
 
@@ -259,9 +262,9 @@ def add_parser(subparsers):
                        help="Upload targets to this label")
     cgroup.add_argument('--test-only', '--no-upload', action='store_true',
                         dest='test_only',
-                        help="Don't upload the build targets to binstar, but run everything else")
+                        help="Don't upload the build targets to Anaconda Cloud, but run everything else")
     cgroup.add_argument('-p', '--package',
-                       help="The binstar package namespace to upload the build to",
+                       help="The Anaconda Cloud package namespace to upload the build to",
                        metavar='USER/PACKAGE',
                        type=package_specs)
 
