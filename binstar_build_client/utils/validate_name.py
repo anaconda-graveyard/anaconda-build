@@ -16,7 +16,4 @@ def is_valid_name(name):
         name: the name to validate
 
     '''
-    if re.search(PATTERN, name) is not None:
-        return True
-    else:
-        return False
+    return bool(re.search(PATTERN, name))
