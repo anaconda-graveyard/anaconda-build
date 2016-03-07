@@ -20,8 +20,6 @@ script:
   - conda build conda.recipe
 
 build_targets: conda
-
-quiet: True
 ---
 #Modify the windows builds to add  pywin32
 
@@ -35,5 +33,3 @@ platform:
 install: # Overwrite the common install section above
   - conda install anaconda-client pip setuptools pywin32
   - pip install coverage mock
-
-quiet: True
