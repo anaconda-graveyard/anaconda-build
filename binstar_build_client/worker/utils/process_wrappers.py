@@ -103,7 +103,6 @@ class BuildProcess(subprocess.Popen):
             pgid = os.getpgid(self.pid)
         except OSError as err:
             log.warning("Could not get process group for pid %s", self.pid, exc_info=err)
-            log.warning(err)
             return err
 
         log.info("Kill posix process group pgid: {0}".format(pgid))
@@ -111,8 +110,7 @@ class BuildProcess(subprocess.Popen):
         try:
             os.killpg(pgid, signal.SIGTERM)
         except OSError as err:
-            log.warning("Could not kill process group for pid {}".format(self.pid))
-            log.warning(err)
+            log.warning("Could not kill process group for pid {}".format(self.pid), exc_info=err)
             return err
 
     def kill(self):
