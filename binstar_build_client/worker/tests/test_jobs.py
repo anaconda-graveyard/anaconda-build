@@ -120,7 +120,6 @@ class Test(unittest.TestCase):
             st = os.stat(script_path)
             os.chmod(script_path, st.st_mode | stat.S_IEXEC)
 
-    maxDiff = None
     def get_worker(self):
         worker = MyWorker()
         return worker
