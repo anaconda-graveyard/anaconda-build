@@ -6,10 +6,6 @@ import time
 log = logging.getLogger('binstar.build')
 
 
-QUIET_REGEXES = [
-    re.compile(b'\r$'),
-]
-
 class Timeout:
     """
     Timeout context
@@ -56,6 +52,7 @@ class Timeout:
         self.event.set()
         self._t.join()
 
+
 def read_with_timeout(p0, output,
                       timeout=60 * 60,
                       iotimeout=60,
@@ -101,7 +98,7 @@ def read_with_timeout(p0, output,
             # when the io timer kills the process
             log.debug("Wait for line ...")
             line = p0.readline()
-            log.debug("Got line {}:{}".format(len(line), line))
+            log.debug("Got line {}:{!r}".format(len(line), line))
 
     while p0.poll() is None:
         log.info("Waiting for build process with pid {} to end".format(p0.pid))
