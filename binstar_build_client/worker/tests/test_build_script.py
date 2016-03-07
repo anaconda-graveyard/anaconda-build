@@ -252,7 +252,7 @@ class Test(unittest.TestCase):
         proc = Popen(exe + [os.path.abspath(script_name)], stdout=PIPE, stderr=STDOUT, cwd='.')
         output = proc.stdout.read().splitlines()
         npy = len([line for line in output if 'CONDA_NPY=' in line])
-        self.assertEqual(npy, 1)
+        self.assertTrue(npy > 1)
 
     def test_env_envvars(self):
         'Test env or envvars can be used in .binstar.yml'
