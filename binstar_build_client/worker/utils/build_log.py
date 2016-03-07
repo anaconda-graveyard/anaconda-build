@@ -107,6 +107,26 @@ class BuildLog(object):
             except (ValueError, TypeError):
                 return None
 
+    def writeline(self, line):
+        n = len(line)
+
+        metadata = self.detect_metadata(line)
+        if metadata:
+            self.flush()
+            self.update_metadata(metadata)
+            log.info('Consumed {} bytes of build output metadata'.format(n))
+            return n
+
+        if self.quiet and line.endswith(b'\r'):
+            log.info('Quiet: ignored %s bytes of output', )
+            return n
+
+        self.buf.write(line)
+        if self.buf.tell() >= BUF_SIZE:
+            self.flush()
+
+        return n
+
 
     def write(self, msg):
         """
