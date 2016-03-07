@@ -243,13 +243,13 @@ class Test(unittest.TestCase):
         script_name = 'numpy_script'
         if os.name == 'nt':
             script_name += '.bat'
-            exe = 'call'
+            exe = ['cmd', '/c', 'call']
         else:
             script_name += '.sh'
-            exe = 'bash'
+            exe = ['bash']
         with open(script_name, 'w') as f:
             f.write(other_numpy)
-        proc = Popen([exe, os.path.abspath(script_name)], stdout=PIPE, stderr=STDOUT, cwd='.')
+        proc = Popen(exe + [os.path.abspath(script_name)], stdout=PIPE, stderr=STDOUT, cwd='.')
         output = proc.stdout.read().splitlines()
         npy = len([line for line in output if 'CONDA_NPY=' in line])
         self.assertEqual(npy, 1)
