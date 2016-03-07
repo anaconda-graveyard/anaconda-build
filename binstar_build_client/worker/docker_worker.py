@@ -37,7 +37,12 @@ class DockerWorker(Worker):
         )
         log.info('Connecting to docker daemon ...')
         try:
-            images = self.client.images(args.image)
+            image = args.image
+            if ':' in image:
+                image, tag = image.split(':', 1)
+            else:
+                image, tag = image, None
+            images = self.client.images(image)
         except ConnectionError as err:
             raise errors.BinstarError(
                 "Docker client could not connect to daemon (is docker installed?)\n"
