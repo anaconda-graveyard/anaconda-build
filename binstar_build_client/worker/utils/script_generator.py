@@ -3,6 +3,7 @@
 """
 from __future__ import print_function, unicode_literals, absolute_import
 
+import datetime
 import logging
 import os
 import pipes
@@ -143,6 +144,7 @@ def create_exports(build_data, working_dir):
             'CONDA_BUILD_DIR': os.path.join(conda_root_prefix, 'conda-bld', build_item.get('platform', 'linux-64')),
             'WORKING_DIR': working_dir,
             'CONDA_NPY': CONDA_NPY,
+            'BUILD_UTC_DATETIME': datetime.datetime.utcnow().isoformat(),
            }
 
 

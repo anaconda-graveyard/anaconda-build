@@ -309,6 +309,8 @@ upload_build_targets(){
 
 main(){
 
+    echo "Starting build at ${BUILD_UTC_DATETIME}"
+
     {% if ignore_setup_build %}
     echo "[Ignore Setup Build]"
     {% else %}
