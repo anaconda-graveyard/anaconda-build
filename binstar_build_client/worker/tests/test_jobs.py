@@ -17,6 +17,11 @@ import warnings
 import tempfile
 import shutil
 
+
+DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
+def data_path(filename):
+    return os.path.join(DATA_DIR, filename)
+
 try_unlink = lambda path: os.unlink(path) if os.path.isfile(path) else None
 
 def default_build_data():
@@ -60,7 +65,7 @@ def default_build_data():
 
 class MyWorker(Worker):
     download_build_source = Mock()
-    download_build_source.return_value = 'build_source_filename'
+    download_build_source.return_value = data_path('example_package.tar.gz')
 
     def __init__(self):
         self.SLEEP_TIME = 0
@@ -153,7 +158,7 @@ class Test(unittest.TestCase):
             '--api-token',
             'upload_token',
             '--build-tarball',
-            'build_source_filename'
+            data_path('example_package.tar.gz'),
         ]
         ending_posix = popen_args[0].split('/')[-1]
         ending_win = popen_args[0].split('\\')[-1]
@@ -346,7 +351,7 @@ def have_docker():
 
 class TestDockerWorker(DockerWorker):
     download_build_source = Mock()
-    download_build_source.return_value = os.path.abspath('build_source_filename')
+    download_build_source.return_value = data_path('example_package.tar.gz')
 
     def __init__(self):
         self.SLEEP_TIME = 0
