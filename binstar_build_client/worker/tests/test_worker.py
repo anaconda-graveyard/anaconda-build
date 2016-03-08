@@ -3,6 +3,7 @@ from __future__ import print_function, unicode_literals, absolute_import
 from mock import Mock, patch
 import io
 import os
+import re
 import unittest
 
 import requests
@@ -134,8 +135,8 @@ class Test(unittest.TestCase):
             pass
 
         value = journal.getvalue()
-        expected = 'starting build, test_job_id, job_name\nfinished build, test_job_id, job_name\n'
-        self.assertEqual(value, expected)
+        expected = 'starting build, test_job_id, job_name at [-:T\d\.]+\nfinished build, test_job_id, job_name\n'
+        self.assertTrue(bool(re.search(expected, value)))
 
     def test_job_context_error(self):
 
@@ -148,8 +149,8 @@ class Test(unittest.TestCase):
             raise TypeError("hai -- Expected Error")
 
         value = journal.getvalue()
-        expected = 'starting build, test_job_id, job_name\nbuild errored, test_job_id, job_name\n'
-        self.assertEqual(value, expected)
+        expected = 'starting build, test_job_id, job_name at [-:T\d\.]+\nbuild errored, test_job_id, job_name\n'
+        self.assertTrue(bool(re.search(expected, value)))
 
 if __name__ == '__main__':
     unittest.main()

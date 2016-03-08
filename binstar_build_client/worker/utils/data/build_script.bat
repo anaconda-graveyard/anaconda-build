@@ -62,7 +62,6 @@ goto:eof
 
     set BINSTAR_BUILD_RESULT=
 
-
     {% if ignore_setup_build %}
     echo [ignore setup_build]
     {% else %}
