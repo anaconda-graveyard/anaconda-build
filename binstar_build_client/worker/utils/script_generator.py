@@ -3,7 +3,6 @@
 """
 from __future__ import print_function, unicode_literals, absolute_import
 
-import datetime
 import logging
 import os
 import pipes
@@ -149,9 +148,7 @@ def create_exports(build_data, working_dir):
         'CONDA_BUILD_DIR': os.path.join(conda_root_prefix, 'conda-bld', build_item.get('platform', 'linux-64')),
         'WORKING_DIR': working_dir,
         'CONDA_NPY': CONDA_NPY,
-        'BUILD_UTC_DATETIME': datetime.datetime.utcnow().isoformat(),
     }
-
     build_env = build_item.get('envvars', build_item.get('env'))
     if isinstance(build_env, (str, unicode)):
         _build_env = {}
@@ -191,7 +188,6 @@ def render_build_script(working_dir, build_data, **context):
     env.globals.update(GLOBALS)
 
     exports = create_exports(build_data, working_dir)
-
     instructions = build_data['build_item_info'].get('instructions', {})
     install_channels = instructions.get('install_channels', None) or ['defaults']
     if 'defaults' not in install_channels:

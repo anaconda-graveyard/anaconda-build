@@ -4,6 +4,7 @@ The worker
 from __future__ import print_function, absolute_import, unicode_literals
 
 from contextlib import contextmanager
+import datetime
 import inspect
 import io
 import logging
@@ -247,8 +248,7 @@ class Worker(object):
             msg = "Building on worker {0} (platform {1})\n".format(
                     self.config.hostname, self.config.platform)
             build_log.write(msg.encode('utf-8', errors='replace'))
-
-            msg = "Starting build {0}\n".format(job_data['job_name'])
+            msg = "Starting build {0} at {1}\n".format(job_data['job_name'], job_data['BUILD_UTC_DATETIME'])
             build_log.write(msg.encode('utf-8', errors='replace'))
 
             build_log.flush()
@@ -394,10 +394,10 @@ class Worker(object):
 
         If the context is not exited within 'args.timeout' seconds, an exception will be raised
         """
-        ctx = (job_data['job']['_id'], job_data['job_name'])
-
-        log.info('Starting build, {0}, {1}'.format(*ctx))
-        journal.write('starting build, {0}, {1}\n'.format(*ctx))
+        job_data['BUILD_UTC_DATETIME'] = datetime.datetime.utcnow().isoformat()
+        ctx = (job_data['job']['_id'], job_data['job_name'], job_data['BUILD_UTC_DATETIME'])
+        log.info('Starting build, {0}, {1} at {2}'.format(*ctx))
+        journal.write('starting build, {0}, {1} at {2}\n'.format(*ctx))
 
         start_time = time.time()
         log.info('Setting alarm to terminate build after {0} seconds'.format(self.args.timeout))

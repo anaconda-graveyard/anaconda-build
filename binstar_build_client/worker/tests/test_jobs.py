@@ -1,6 +1,7 @@
 from __future__ import print_function, unicode_literals, absolute_import
 
 import copy
+import datetime
 import unittest
 from mock import Mock, patch
 import os
@@ -24,6 +25,7 @@ def data_path(filename):
 
 try_unlink = lambda path: os.unlink(path) if os.path.isfile(path) else None
 
+started_date = datetime.datetime.utcnow().isoformat()
 def default_build_data():
     return {
         "build_item_info": {
@@ -59,7 +61,8 @@ def default_build_data():
             "login": "me"
         },
         "upload_token": "upload_token",
-        "job_name": "job_name"
+        "job_name": "job_name",
+        "BUILD_UTC_DATETIME": started_date,
     }
 
 
@@ -167,10 +170,10 @@ class Test(unittest.TestCase):
 
     expected_output_success = (
         "Building on worker test_hostname (platform test_platform)\n"
-        "Starting build job_name\n"
+        "Starting build job_name at {0}\n"
         "hello\n"
         "exit 0\n"
-    )
+    ).format(started_date)
 
     @patch('binstar_build_client.worker.utils.script_generator.gen_build_script')
     def test_build_success(self, gen_build_script):
@@ -218,12 +221,12 @@ class Test(unittest.TestCase):
 
     expected_output_timeout = (
         "Building on worker test_hostname (platform test_platform)\n"
-        "Starting build job_name\n"
+        "Starting build job_name at {0}\n"
         "hello\n"
         "sleep for 2 seconds\n\n"
         "Timeout: build exceeded maximum build time of 0.5 seconds\n"
         "[Terminated]\n"
-    )
+    ).format(started_date)
 
 
     @patch('binstar_build_client.worker.utils.script_generator.gen_build_script')
@@ -247,14 +250,14 @@ class Test(unittest.TestCase):
 
     expected_output_iotimeout = (
         "Building on worker test_hostname (platform test_platform)\n"
-        "Starting build job_name\n"
+        "Starting build job_name at {0}\n"
         "hello\n"
         "sleep for 2 seconds\n\n\n"
         "Timeout: No output from program for 0.5 seconds\n\n"
         "Timeout: If you require a longer timeout you may set the 'iotimeout' "
           "variable in your .binstar.yml file\n"
         "[Terminated]\n"
-    )
+    ).format(started_date)
 
     @patch('binstar_build_client.worker.utils.script_generator.gen_build_script')
     def test_build_iotimeout(self, gen_build_script):
@@ -381,18 +384,18 @@ class DockerTest(Test):
 
     expected_output_success = (
         "Building on worker test_hostname (platform test_platform)\n"
-        "Starting build job_name\n"
+        "Starting build job_name at {0}\n"
         "Docker Image: binstar/linux-64\n"
         "Docker: Create container\n"
         "Docker: Attach output\n"
         "Docker: Start\n"
         "hello\n"
         "exit 0\n"
-    )
+    ).format(started_date)
 
     expected_output_timeout = (
         "Building on worker test_hostname (platform test_platform)\n"
-        "Starting build job_name\n"
+        "Starting build job_name at {0}\n"
         "Docker Image: binstar/linux-64\n"
         "Docker: Create container\n"
         "Docker: Attach output\n"
@@ -401,11 +404,11 @@ class DockerTest(Test):
         "sleep for 2 seconds\n\n"
         "Timeout: build exceeded maximum build time of 0.5 seconds\n"
         "[Terminated]\n"
-    )
+    ).format(started_date)
 
     expected_output_iotimeout = (
         "Building on worker test_hostname (platform test_platform)\n"
-        "Starting build job_name\n"
+        "Starting build job_name at {0}\n"
         "Docker Image: binstar/linux-64\n"
         "Docker: Create container\n"
         "Docker: Attach output\n"
@@ -416,7 +419,7 @@ class DockerTest(Test):
         "Timeout: If you require a longer timeout you may set the 'iotimeout' "
           "variable in your .binstar.yml file\n"
         "[Terminated]\n"
-    )
+    ).format(started_date)
 
 
 if __name__ == "__main__":
