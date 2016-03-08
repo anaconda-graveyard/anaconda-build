@@ -11,10 +11,11 @@ import logging
 
 from binstar_client import errors
 from binstar_client.utils import get_binstar
-
+from binstar_build_client.utils.validate_name import is_valid_name
 from binstar_build_client import BinstarBuildAPI
 from binstar_build_client.worker.register import (WorkerConfiguration,
                                                   split_queue_arg)
+
 
 OS_MAP = {'darwin': 'osx', 'windows':'win'}
 ARCH_MAP = {'x86': '32',
@@ -51,6 +52,13 @@ def main(args):
 
     args.username, args.queue = split_queue_arg(args.queue)
     bs = get_binstar(args, cls=BinstarBuildAPI)
+
+    if args.name:
+        if not is_valid_name(args.name):
+            raise errors.BinstarError('Invalid name for '
+                                  'worker: {}.  Must start'
+                                  ' with a letter and contain'
+                                  ' only numbers, letters, -, and _'.format(args.name))
 
     worker_config = WorkerConfiguration.register(
         bs, args.username, args.queue,

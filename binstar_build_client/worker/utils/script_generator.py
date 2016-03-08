@@ -158,7 +158,6 @@ def create_exports(build_data, working_dir):
         'WORKING_DIR': working_dir,
         'CONDA_NPY': CONDA_NPY,
     }
-
     build_env = build_item.get('envvars', build_item.get('env'))
     if isinstance(build_env, (str, unicode)):
         _build_env = {}
@@ -199,7 +198,6 @@ def render_build_script(working_dir, build_data, **context):
     env.globals.update(GLOBALS)
 
     exports = create_exports(build_data, working_dir)
-
     instructions = build_data['build_item_info'].get('instructions', {})
     install_channels = instructions.get('install_channels', None) or ['defaults']
     if 'defaults' not in install_channels:

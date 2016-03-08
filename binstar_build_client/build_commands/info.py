@@ -3,17 +3,17 @@ Build command
 
 Initialize the build directory:
 
-    binstar build --init
+    anaconda build init
 
 This will create a default .binstar.yml file in the current directory
 
 Submit a build:
 
-    binstar build --submit
+    anaconda build submit ./ --queue orgname/queuename
 
 Tail the output of a build until it is complete:
 
-    binstar build --tail 1.0
+    anaconda build tail -f orgname/packagename 1
 
 '''
 
