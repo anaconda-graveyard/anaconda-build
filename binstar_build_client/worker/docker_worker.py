@@ -94,30 +94,30 @@ class DockerWorker(Worker):
                 else:
                     repository, tag = image, None
 
-                build_log.write(b'Docker: Pull {0}\n'.format(image))
-                for line in cli.pull(repository, tag=tag, stream=True):
+                build_log.writeline(b'Docker: Pull {0}\n'.format(image))
+                for index, line in enumerate(cli.pull(repository, tag=tag, stream=True)):
                     msg = json.loads(line)
                     if msg.get('status') == 'Downloading':
-                        build_log.write(b'.')
+                        build_log.writeline(b'.' * index + '\r')
                     elif msg.get('status'):
-                        build_log.write(msg.get('status', '').encode('utf-8', 'replace') + b'\n')
+                        build_log.writeline(msg.get('status', '').encode('utf-8', 'replace') + b'\n')
                     else:
-                        build_log.write(line.encode('utf-8', 'replace') + b'\n')
+                        build_log.writeline(line.encode('utf-8', 'replace') + b'\n')
 
         else:
             if instructions and instructions.get('docker_image'):
-                build_log.write(b"WARNING: User specified images are not allowed on this build worker\n")
-                build_log.write(b"Using default docker image\n")
+                build_log.writeline(b"WARNING: User specified images are not allowed on this build worker\n")
+                build_log.writeline(b"Using default docker image\n")
 
         command = " ".join(args)
         log.info("Executing '%s' on docker", command)
 
-        build_log.write("Docker Image: {0}\n".format(image).encode('utf8'))
+        build_log.writeline("Docker Image: {0}\n".format(image).encode('utf8'))
 
-        build_log.write(b"Docker: Create container\n")
+        build_log.writeline(b"Docker: Create container\n")
         cont = cli.create_container(image, command=command)
 
-        build_log.write(b"Docker: Attach output\n")
+        build_log.writeline(b"Docker: Attach output\n")
 
         archive = BytesIO()
         with tarfile.open(fileobj=archive, mode='w') as tf:
@@ -128,7 +128,7 @@ class DockerWorker(Worker):
         put_success = cli.put_archive(cont, working_dir, archive)
         # build_log.write(b"Docker: Inserted script: %s\n" % put_success)
 
-        build_log.write(b"Docker: Start\n")
+        build_log.writeline(b"Docker: Start\n")
         p0 = DockerBuildProcess(cli, cont)
 
         cli.start(cont)

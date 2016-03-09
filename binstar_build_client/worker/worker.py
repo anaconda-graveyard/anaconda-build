@@ -248,9 +248,9 @@ class Worker(object):
 
             msg = "Building on worker {0} (platform {1})\n".format(
                     self.config.hostname, self.config.platform)
-            build_log.write(msg.encode('utf-8', errors='replace'))
+            build_log.writeline(msg.encode('utf-8', errors='replace'))
             msg = "Starting build {0} at {1}\n".format(job_data['job_name'], job_data['BUILD_UTC_DATETIME'])
-            build_log.write(msg.encode('utf-8', errors='replace'))
+            build_log.writeline(msg.encode('utf-8', errors='replace'))
 
             # build_log.flush()
 

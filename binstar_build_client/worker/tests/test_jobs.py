@@ -3,6 +3,8 @@ from __future__ import print_function, unicode_literals, absolute_import
 import copy
 import datetime
 import unittest
+
+from io import BytesIO
 from mock import Mock, patch
 import os
 import shutil
@@ -147,9 +149,11 @@ class Test(unittest.TestCase):
 
             return b'ping'
 
+        stdout = BytesIO()
+
         mock_BuildProcess().wait.return_value = 0
         mock_BuildProcess().poll.return_value = 0
-        mock_BuildProcess().readline = mock_readline
+        mock_BuildProcess().stdout = stdout
 
         gen_build_script.return_value = 'script_filename'
 
@@ -257,9 +261,9 @@ class Test(unittest.TestCase):
         "Building on worker test_hostname (platform test_platform)\n"
         "Starting build job_name at {0}\n"
         "hello\n"
-        "sleep for 2 seconds\n\n\n"
-        "Timeout: No output from program for 0.5 seconds\n\n"
-        "Timeout: If you require a longer timeout you may set the 'iotimeout' "
+        "sleep for 2 seconds\n\n"
+        "Timeout: No output from program for 0.5 seconds\n"
+        "\tIf you require a longer timeout you may set the 'iotimeout' "
           "variable in your .binstar.yml file\n"
         "[Terminated]\n"
     ).format(started_date)
@@ -420,9 +424,9 @@ class DockerTest(Test):
         "Docker: Attach output\n"
         "Docker: Start\n"
         "hello\n"
-        "sleep for 2 seconds\n\n\n"
-        "Timeout: No output from program for 0.5 seconds\n\n"
-        "Timeout: If you require a longer timeout you may set the 'iotimeout' "
+        "sleep for 2 seconds\n\n"
+        "Timeout: No output from program for 0.5 seconds\n"
+        "\tIf you require a longer timeout you may set the 'iotimeout' "
           "variable in your .binstar.yml file\n"
         "[Terminated]\n"
     ).format(started_date)

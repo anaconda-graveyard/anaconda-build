@@ -3,6 +3,8 @@ import logging
 import re
 import time
 
+import io
+
 log = logging.getLogger('binstar.build')
 
 
@@ -63,6 +65,11 @@ def read_with_timeout(p0, output,
     Read the stdout from a Popen object and wait for it to
     """
 
+    stdout = p0.stdout
+    stdout = stdout if isinstance(stdout, io.IOBase) else io.open(stdout.fileno(), 'rb', buffering=0, closefd=False)
+    stdout = io.BufferedReader(stdout)
+    stdout = io.TextIOWrapper(stdout, encoding='utf-8', errors='replace', newline='')
+
     @Timeout(timeout)
     def timer():
         log.info("Kill build process || timeout")
@@ -76,13 +83,16 @@ def read_with_timeout(p0, output,
 
     log.debug("Starting timers")
     with timer, iotimer:
-        line = p0.readline()
         last_flush = time.time()
+
+        log.debug("Wait for line ...")
+        line = stdout.readline().encode('utf-8')
+        log.debug("Got line {}:{!r}".format(len(line), line))
 
         while line:
             iotimer.tick()
 
-            output.write(line)
+            output.writelines([line])
             if build_was_stopped_by_user():
                 log.info("Kill build process || user requested")
                 p0.kill()
@@ -97,7 +107,7 @@ def read_with_timeout(p0, output,
             # The user will not get any output for  iotimeout seconds
             # when the io timer kills the process
             log.debug("Wait for line ...")
-            line = p0.readline()
+            line = stdout.readline().encode('utf-8')
             log.debug("Got line {}:{!r}".format(len(line), line))
 
     while p0.poll() is None:
@@ -108,19 +118,27 @@ def read_with_timeout(p0, output,
     p0.wait()
 
     if timer.timeout_occurred:
-        output.write("\nTimeout: build exceeded maximum build time of {} seconds\n"
-                     .format(timeout).encode(errors='replace'))
-        output.write(b"[Terminated]\n")
+        output.writelines([
+            b"\n",
+            "Timeout: build exceeded maximum build time of {} seconds\n".format(timeout).encode(errors='replace'),
+            b"[Terminated]\n",
+        ])
 
     if iotimer.timeout_occurred:
-        output.write("\n\nTimeout: No output from program for {} seconds\n"
-                     .format(iotimeout).encode(errors='replace'))
-        output.write(b"\nTimeout: If you require a longer timeout you "
-                     b"may set the 'iotimeout' variable in your .binstar.yml file\n")
-        output.write(b"[Terminated]\n")
+        output.writelines([
+            b"\n",
+            "Timeout: No output from program for {} seconds\n"
+                .format(iotimeout).encode(errors='replace'),
+            b"\tIf you require a longer timeout you "
+            b"may set the 'iotimeout' variable in your .binstar.yml file\n",
+            b"[Terminated]\n",
+        ])
 
     if build_was_stopped_by_user():
-        output.write(b"\n\nTerminate: User requested build to be terminated\n")
-        output.write(b"[Terminated]\n")
+        output.writelines([
+            b"\n",
+            b"\Terminate: User requested build to be terminated\n",
+            b"[Terminated]\n",
+        ])
 
     output.flush()
