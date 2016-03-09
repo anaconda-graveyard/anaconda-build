@@ -9,6 +9,7 @@ import logging
 import os
 import yaml
 
+from clyent.logs import setup_logging
 from binstar_client.utils import get_binstar
 
 from binstar_build_client import BinstarBuildAPI
@@ -31,6 +32,10 @@ def main(args):
         log.warn(WRONG_HOSTNAME_MSG.format(worker_config.hostname,
                                            WorkerConfiguration.HOSTNAME))
     args.conda_build_dir = args.conda_build_dir.format(platform=worker_config.platform)
+
+    setup_logging(logging.getLogger('binstar_build_client'), args.log_level,
+                  args.color, show_tb=args.show_traceback)
+
     log.info("Using conda build directory: {}".format(args.conda_build_dir))
     log.info(str(worker_config))
 

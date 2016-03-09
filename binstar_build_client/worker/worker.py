@@ -159,7 +159,7 @@ class Worker(object):
                 job_data['job']['_id']
             )
         else:
-            job_data = bs.fininsh_build(
+            job_data = bs.finish_build(
                 self.config.username,
                 self.config.queue,
                 self.worker_id,
@@ -219,8 +219,8 @@ class Worker(object):
         Run a single build
         """
         job_id = job_data['job']['_id']
-        if 'envvars' in job_data['job']:
-            job_data['job']['env'] = job_data.pop('envvars')
+        if 'envvars' in job_data['build_item_info']:
+            job_data['build_item_info']['env'] = job_data['build_item_info'].pop('envvars')
 
         working_dir = self.working_dir(job_data)
         staging_dir = self.staging_dir(job_data)
@@ -231,27 +231,28 @@ class Worker(object):
         log.info("Creating working dir: {0}".format(staging_dir))
         os.makedirs(staging_dir)
 
-        raw_build_log = BuildLog(
+        quiet = job_data['build_item_info'].get('instructions',{}).get('quiet', False)
+        build_log = BuildLog(
             self.bs,
             self.config.username,
             self.config.queue,
             self.worker_id,
             job_id,
-            filename=self.build_logfile(job_data)
+            filename=self.build_logfile(job_data),
+            quiet=quiet,
         )
 
-        build_log = io.BufferedWriter(raw_build_log)
-
+        build_log.update_metadata({'section': 'dequeue_build'})
         with build_log:
             instructions = job_data['build_item_info'].get('instructions')
 
             msg = "Building on worker {0} (platform {1})\n".format(
                     self.config.hostname, self.config.platform)
-            build_log.write(msg.encode('utf-8', errors='replace'))
+            build_log.writeline(msg.encode('utf-8', errors='replace'))
             msg = "Starting build {0} at {1}\n".format(job_data['job_name'], job_data['BUILD_UTC_DATETIME'])
-            build_log.write(msg.encode('utf-8', errors='replace'))
+            build_log.writeline(msg.encode('utf-8', errors='replace'))
 
-            build_log.flush()
+            # build_log.flush()
 
             script_filename = script_generator.gen_build_script(
                 staging_dir,
@@ -273,8 +274,7 @@ class Worker(object):
             exit_code = self.run(
                 job_data, script_filename, build_log, timeout, iotimeout, api_token,
                 git_oauth_token, build_filename, instructions=instructions,
-                build_was_stopped_by_user=raw_build_log.terminated)
-
+                build_was_stopped_by_user=build_log.terminated)
             log.info("Build script exited with code {0}".format(exit_code))
             if exit_code == script_generator.EXIT_CODE_OK:
                 failed = False
@@ -293,7 +293,6 @@ class Worker(object):
                 status = 'error'
                 log.error("Unknown build exit status {0} for build {1}".format(
                     exit_code, job_data['job_name']))
-
             return failed, status
 
     def run(self, build_data, script_filename, build_log, timeout, iotimeout, api_token=None,
@@ -311,7 +310,6 @@ class Worker(object):
 
         elif build_filename:
             args.extend(['--build-tarball', build_filename])
-        quiet = build_data['build_item_info'].get('instructions',{}).get('quiet', False)
 
         log.info("Running command: (iotimeout={0})".format(iotimeout))
         log.info(" ".join(args))
@@ -334,11 +332,10 @@ class Worker(object):
                 iotimeout,
                 BuildLog.INTERVAL,
                 build_was_stopped_by_user,
-                quiet
             )
         except BaseException:
             log.error(
-                "Binstar build process caught an exception while waiting for the build to" "finish")
+                "Anaconda build process caught an exception while waiting for the build to finish")
             p0.kill()
             p0.wait()
             raise
@@ -360,6 +357,7 @@ class Worker(object):
                             pass
                         else:
                             build_log.write("    + {0}\n".format(cmdline))
+
         return p0.poll()
 
     def download_build_source(self, working_dir, job_id):
@@ -368,7 +366,6 @@ class Worker(object):
         Download them.
         """
         log.info("Fetching build data")
-
         build_filename = os.path.join(working_dir, 'source.tar.bz2')
 
         fp = self.bs.fetch_build_source(

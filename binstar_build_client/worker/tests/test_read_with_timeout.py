@@ -5,32 +5,44 @@ import unittest
 
 
 import mock
+
+from binstar_build_client.worker.utils.generator_file import GeneratorFile
 from binstar_build_client.worker.utils.timeout import read_with_timeout
 from threading import Event
 from binstar_build_client.worker.utils.process_wrappers import BuildProcess
 
-class MockProcess(object):
+class OutputGenerator(object):
     def __init__(self, *args, **kwargs):
-        self.pid = 1
         self.ct = 0
         self.sleep_time = kwargs.get('sleep_time', 0.1)
         self.limit_lines = kwargs.get('limit_lines', 10)
         self.event = Event()
         self.timed_out = False
 
-    def readline(self, n=0):
+    def __next__(self):
         if self.ct >= self.limit_lines:
             return b''
         self.timed_out = self.event.wait(self.sleep_time)
         self.ct += 1
-        return b'ping'
+        return b'ping\n'
+
+    next = __next__
+
+    def __iter__(self):
+        return self
+
+class MockProcess(object):
+    def __init__(self, *args, **kwargs):
+        self.pid = 1
+        self.output = OutputGenerator(**kwargs)
+        self.stdout = GeneratorFile(self.output)
 
     def kill(self):
-        self.event.set()
+        self.output.event.set()
         return
 
     def wait(self):
-        self.event.set()
+        self.output.event.set()
         return
 
     def poll(self):
@@ -45,7 +57,7 @@ class TestReadWithTimeout(unittest.TestCase):
         p0 = MockProcess(limit_lines=pings)
         output = io.BytesIO()
         read_with_timeout(p0, output)
-        self.assertFalse(p0.timed_out)
+        self.assertFalse(p0.output.timed_out)
         self.assertEqual(pings, output.getvalue().count(b'ping'))
 
     def test_iotimeout_build_1(self):
@@ -56,7 +68,7 @@ class TestReadWithTimeout(unittest.TestCase):
         p0 = MockProcess(limit_lines=pings, sleep_time=3)
         output = io.BytesIO()
         read_with_timeout(p0, output, iotimeout=0.5)
-        self.assertTrue(p0.timed_out)
+        self.assertTrue(p0.output.timed_out)
         out = output.getvalue()
         self.assertIn(b'iotimeout', out)
 
@@ -80,20 +92,6 @@ class TestReadWithTimeout(unittest.TestCase):
         read_with_timeout(p0, output, build_was_stopped_by_user=terminate)
         out = output.getvalue()
         self.assertIn(b'User requested', out)
-
-    def test_quiet(self):
-        for quiet in (True, False):
-            cmd = ['echo', 'ncurses-5.9-1.   9% |##   | ETA:  0:00:00  76.02 MB/s\r']
-            if os.name == 'nt':
-                cmd = ['cmd.exe', '/c'] + cmd
-            p0 = BuildProcess(cmd, '.')
-            output = io.BytesIO()
-            read_with_timeout(p0, output, timeout=20, quiet=quiet)
-            out = output.getvalue()
-            if quiet:
-                self.assertEqual(b'', out)
-            else:
-                self.assertIn(b'ncurses', out)
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,7 +1,13 @@
-from binstar_client.utils import jencode
+import logging
+
 import requests
+
+from binstar_client import errors
+from binstar_client.utils import jencode
 import binstar_client
 import binstar_build_client
+
+log = logging.getLogger('binstar.build')
 
 class BuildQueueMixin(object):
 
@@ -38,6 +44,7 @@ class BuildQueueMixin(object):
         return res.json()
 
     def log_build_output(self, username, queue_name, worker_id, job_id, msg):
+        '''Fallback log handler if /tagged-log endpoint does not exist'''
         url = '%s/build-worker/%s/%s/%s/jobs/%s/log' % (self.domain, username, queue_name, worker_id, job_id)
         res = self.session.post(url, data=msg)
         self._check_response(res, [201, 200])
@@ -49,7 +56,41 @@ class BuildQueueMixin(object):
 
         return result
 
-    def fininsh_build(self, username, queue_name, worker_id, job_id, status='success', failed=False):
+    def log_build_output_structured(self,
+                                    username,
+                                    queue_name,
+                                    worker_id,
+                                    job_id,
+                                    msg,
+                                    metadata):
+        '''Call /tagged-log endpoint or fallback to plain log '''
+        if getattr(self, 'log_build_output_structured_failed', False):
+            return self.log_build_output(username, queue_name, worker_id,
+                                         job_id, msg)
+        url = '%s/build-worker/%s/%s/%s/jobs/%s/tagged-log' % (self.domain, username, queue_name, worker_id, job_id)
+        content = metadata.copy()
+        content['msg'] = msg
+        res = self.session.post(url, data=content)
+        try:
+            self._check_response(res, [201, 200])
+        except Exception as e:
+            log.info('Will not attempt structured '
+                     'logging with tags, falling back '
+                     'to plain build log.  There is no '
+                     'Repository endpoint ' + url)
+            self.log_build_output_structured_failed = True
+            return self.log_build_output(username, queue_name,
+                                  worker_id, job_id,
+                                  msg)
+
+        try:
+            result = res.json().get('terminate_build', False)
+        except ValueError:
+            result = False
+
+        return result
+
+    def finish_build(self, username, queue_name, worker_id, job_id, status='success', failed=False):
         url = '%s/build-worker/%s/%s/%s/jobs/%s/finish' % (self.domain, username, queue_name, worker_id, job_id)
         data, headers = jencode(status=status, failed=failed)
         res = self.session.post(url, data=data, headers=headers)

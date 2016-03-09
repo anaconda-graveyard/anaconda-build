@@ -20,8 +20,8 @@ class Test(unittest.TestCase):
         p0 = BuildProcess([sys.executable, echo_hello], '.')
         p0.wait()
 
-        self.assertEqual(p0.readline().strip(), b'hello')
-        self.assertEqual(p0.readline().strip(), b'')
+        self.assertEqual(p0.stdout.readline().strip(), b'hello')
+        self.assertEqual(p0.stdout.readline().strip(), b'')
 
     def test_terminate_process_group_naive(self):
 

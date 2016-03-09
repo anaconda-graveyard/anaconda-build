@@ -35,6 +35,10 @@ def add_parser(subparsers):
 
                                       )
 
+    parser.add_argument('-V', '--version',
+                        action='version',
+                        version='anaconda-build {}'.format(version))
+
     add_subparser_modules(parser, build_commands, 'conda_server_build.subcommand')
 
 
