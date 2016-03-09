@@ -107,6 +107,10 @@ class BuildLog(object):
             except (ValueError, TypeError):
                 return None
 
+    def writelines(self, lines):
+        for line in lines:
+            self.writeline(line)
+
     def writeline(self, line):
         n = len(line)
 
@@ -114,7 +118,7 @@ class BuildLog(object):
         if metadata:
             self.flush()
             self.update_metadata(metadata)
-            log.info('Consumed {} bytes of build output metadata'.format(n))
+            log.info('Consumed %s bytes of build output metadata', n)
             return n
 
         if self.quiet and line.endswith(b'\r'):
@@ -123,47 +127,6 @@ class BuildLog(object):
 
         self.buf.write(line)
         if self.buf.tell() >= BUF_SIZE:
-            self.flush()
-
-        return n
-
-
-    def write(self, msg):
-        """
-
-        The if the io thread is running, msg will be appended an internal message buffer
-        """
-        # msg is a memory view object
-        if isinstance(msg, memoryview):
-            msg = msg.tobytes()
-
-        if not isinstance(msg, bytes):
-            raise TypeError("a bytes-like object is required, not {}".format(type(msg)))
-
-        n = len(msg)
-
-        metadata = self.detect_metadata(msg)
-        if metadata:
-            self.flush()
-            self.update_metadata(metadata)
-            log.info('Consumed {} bytes of build output metadata'.format(n))
-            return n
-
-        if self.quiet:
-            end = None
-            if msg and msg[-1] == b'\n':
-                # if the message terminates with a LF,
-                # we don't look at the last 2 characters, because we don't want to ignore
-                # data that ends with CRLF, only data that ends with just CR
-                end = -2
-            cr = msg.rfind(b'\r', 0, end)
-            if cr != -1:
-                n_ignored = cr + 1
-                log.info('Quiet: ignored %s bytes of output', n_ignored)
-                msg = msg[n_ignored:]
-
-        self.buf.write(msg)
-        if self.buf.tell() > BUF_SIZE:
             self.flush()
 
         return n
