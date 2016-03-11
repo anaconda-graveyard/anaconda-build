@@ -9,6 +9,7 @@ import logging
 
 from binstar_client import errors
 from binstar_client.utils import get_binstar
+from clyent.logs import setup_logging
 
 from binstar_build_client import BinstarBuildAPI
 from binstar_build_client.worker.docker_worker import DockerWorker
@@ -35,6 +36,10 @@ def main(args):
     if worker_config.hostname != WorkerConfiguration.HOSTNAME:
         log.warn(WRONG_HOSTNAME_MSG.format(worker_config.hostname,
                                            WorkerConfiguration.HOSTNAME))
+
+    setup_logging(logging.getLogger('binstar_build_client'), args.log_level,
+                  args.color, show_tb=args.show_traceback)
+
     worker = DockerWorker(bs, worker_config, args)
     worker.work_forever()
 
