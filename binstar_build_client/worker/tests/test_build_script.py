@@ -235,7 +235,6 @@ class Test(unittest.TestCase):
         else:
             self.assertEqual(build_env_path, '"${WORKING_DIR}/env"')
 
-    @unittest.skip('this test is too slow')
     def test_conda_npy(self):
         build_data = default_build_data()
         build_data['build_item_info']['engine'] = 'numpy=1.9'
@@ -255,19 +254,23 @@ class Test(unittest.TestCase):
             exported = relates_to_npy.pop(0)
             self.assertIn('=19', script_lines[exported])
             self.assertIn('CONDA_NPY', script_lines[exported])
+
         # Test that the other type of CONDA_NPY identification
         # can run without error
         other_numpy = "\n".join(script_lines[min(relates_to_npy): max(relates_to_npy) + 1])
-        script_name = 'numpy_script'
+
+        script_filename = os.path.join(tempdir, 'numpy_script')
         if os.name == 'nt':
-            script_name += '.bat'
-            exe = ['cmd', '/c', 'call']
+            script_filename += '.bat'
+            args = ['cmd', '/c', 'call', script_filename]
         else:
-            script_name += '.sh'
-            exe = ['bash']
-        with open(script_name, 'w') as f:
+            script_filename += '.sh'
+            args = ['bash', script_filename]
+        with open(script_filename, 'w') as f:
             f.write(other_numpy)
-        proc = Popen(exe + [os.path.abspath(script_name)], stdout=PIPE, stderr=STDOUT, cwd='.')
+        self.addCleanup(os.unlink, script_filename)
+
+        proc = Popen(args, stdout=PIPE, stderr=STDOUT, cwd=tempdir)
         output = proc.stdout.read().decode().splitlines()
         npy = len([line for line in output if 'CONDA_NPY=' in line])
         self.assertTrue(npy >= 1)
