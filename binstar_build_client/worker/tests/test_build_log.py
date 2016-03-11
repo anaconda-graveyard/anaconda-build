@@ -15,7 +15,7 @@ from six.moves import urllib
 
 from binstar_build_client import BinstarBuildAPI
 from binstar_build_client.worker.utils import build_log
-from binstar_build_client.worker.utils.build_log import BuildLog
+from binstar_build_client.worker.utils.build_log import BuildLog, wrap_file
 from binstar_build_client.worker.utils.generator_file import GeneratorFile
 
 
@@ -177,13 +177,6 @@ nope
         )
 
 
-import io
-
-def wrap_file(fd):
-    buf = io.BufferedReader(fd)
-    return io.TextIOWrapper(buf, encoding='utf-8', errors='replace', newline='')
-
-
 class TestBuffering(unittest.TestCase):
 
     def test_wrapper(self):
@@ -242,16 +235,14 @@ class TestBuffering(unittest.TestCase):
         self.assertEqual(b''.join(bufs),
                          b'Some output that is larger than the buffer\nAnd more')
 
-
-
     def test_buffer_send_when_available(self):
-        # how long to wait to send the second chunk of data
-        sleep_time = .1  # seconds
-
         def output():
-            yield b'Data\n'
-            time.sleep(sleep_time)
-            yield b'More data\n'
+            yield b'Data\r'
+            time.sleep(.05)
+            # The line `Data\r` cannot be sent until `More` arrives - it might be followed by `\n`
+            yield b'More'
+            time.sleep(.05)
+            yield b' data\n'
 
         fd = wrap_file(GeneratorFile(output()))
 
@@ -259,12 +250,15 @@ class TestBuffering(unittest.TestCase):
         line_1, time_1 = (fd.readline(), time.time())
         line_2, time_2 = (fd.readline(), time.time())
 
-        dur_1 = time_1 - time_0
-        dur_2 = time_2 - time_1
+        self.assertEqual("Data\r", line_1)
+        self.assertEqual("More data\n", line_2)
 
-        self.assertLess(dur_1, .1, "Should not wait for the first line")
-        self.assertGreater(dur_2, .1, "Should wait for the second line")
+        elapsed_1 = time_1 - time_0
+        elapsed_2 = time_2 - time_0
 
+        # We need to wait for more
+        self.assertTrue(.05 < elapsed_1 < .1, "Should wait for the line ending with CR until more data arrives")
+        self.assertGreater(elapsed_2, .1, "Should wait for the second line to complete")
 
 
 if __name__ == '__main__':

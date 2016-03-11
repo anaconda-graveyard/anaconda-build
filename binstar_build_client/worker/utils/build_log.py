@@ -10,6 +10,7 @@ import json
 import logging
 from io import BytesIO
 
+import io
 import requests
 
 log = logging.getLogger('binstar.build')
@@ -50,6 +51,22 @@ def decode_metadata(metadata_tag):
         raise ValueError('Metadata should begin with %r' % METADATA_PREFIX)
     payload = metadata_tag[len(METADATA_PREFIX):]
     return json.loads(base64.urlsafe_b64decode(payload).decode('ascii'))
+
+
+def wrap_file(fd):
+    '''
+    Wraps a file descriptor such that readline() only blocks until the first `\r` or `\n`
+
+    Args:
+        fd: The file descriptor to wrap
+
+    Returns:
+        a text-based file-like object
+    '''
+    fd = fd if isinstance(fd, io.IOBase) else io.open(fd.fileno(), 'rb', buffering=0, closefd=False)
+    fd = io.BufferedReader(fd)
+    fd = io.TextIOWrapper(fd, encoding='utf-8', errors='replace', newline='')
+    return fd
 
 
 class BuildLog(object):

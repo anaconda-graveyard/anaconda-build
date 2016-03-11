@@ -5,6 +5,8 @@ import time
 
 import io
 
+from binstar_build_client.worker.utils.build_log import wrap_file
+
 log = logging.getLogger('binstar.build')
 
 
@@ -62,13 +64,12 @@ def read_with_timeout(p0, output,
                       build_was_stopped_by_user=lambda:None
                       ):
     """
-    Read the stdout from a Popen object and wait for it to
+    Read the stdout from a Popen object, writing to output and wait for it to
     """
 
-    stdout = p0.stdout
-    stdout = stdout if isinstance(stdout, io.IOBase) else io.open(stdout.fileno(), 'rb', buffering=0, closefd=False)
-    stdout = io.BufferedReader(stdout)
-    stdout = io.TextIOWrapper(stdout, encoding='utf-8', errors='replace', newline='')
+    # TODO: this function `read_with_timeout` is a bad abstraction.
+    # clean it up.
+    stdout = wrap_file(p0.stdout)
 
     @Timeout(timeout)
     def timer():
