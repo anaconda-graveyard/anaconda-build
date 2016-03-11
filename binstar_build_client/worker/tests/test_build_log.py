@@ -6,10 +6,9 @@ import unittest
 
 import time
 
-import itertools
-
 import array
 from binstar_client.tests import urlmock
+import mock
 from six import text_type
 from six.moves import urllib
 
@@ -17,6 +16,15 @@ from binstar_build_client import BinstarBuildAPI
 from binstar_build_client.worker.utils import build_log
 from binstar_build_client.worker.utils.build_log import BuildLog, wrap_file
 from binstar_build_client.worker.utils.generator_file import GeneratorFile
+
+def mk_log(**kwargs):
+    return BuildLog(
+        BinstarBuildAPI(),
+        "user_name",
+        "queue_name",
+        "worker_id",
+        123,
+        **kwargs)
 
 
 class TestBuildLog(unittest.TestCase):
@@ -175,6 +183,59 @@ nope
             b'this is some normal data with crlf\r\n'
             b'this is more normal data\n'
         )
+
+
+class TestServer(unittest.TestCase):
+    def setUp(self):
+        tempdir = tempfile.mkdtemp()
+        self.filepath = os.path.join(tempdir, 'build-log-output.txt')
+
+    def tearDown(self):
+        try:
+            os.unlink(self.filepath)
+        except (OSError, IOError):
+            pass
+
+    @urlmock.urlpatch
+    def test_falls_back(self, urls):
+        urls.register(
+            method='POST',
+            path='/build-worker/user_name/queue_name/worker_id/jobs/123/tagged-log',
+            status=404,
+            )
+        urls.register(
+            method='POST',
+            path='/build-worker/user_name/queue_name/worker_id/jobs/123/log',
+            status=200,
+        )
+
+        with mk_log(filename=self.filepath) as log:
+            log.writeline(b'This is some data\n')
+
+        urls.assertAllCalled()
+
+    @mock.patch('binstar_build_client.worker.utils.build_log.MAX_WRITE_ATTEMPTS', 2)
+    @urlmock.urlpatch
+    def test_terminate_server_error(self, urls):
+        urls.register(
+            method='POST',
+            path='/build-worker/user_name/queue_name/worker_id/jobs/123/tagged-log',
+            status=500,
+        )
+        log_simple = urls.register(
+            method='POST',
+            path='/build-worker/user_name/queue_name/worker_id/jobs/123/log',
+            status=500,
+        )
+
+        with mk_log(filename=self.filepath) as log:
+            log.writeline(b'This is some data\n')
+            log.flush()
+            self.assertEqual(len(log_simple._resps), 1)
+            self.assertFalse(log.terminated(), "Should not terminate after the first failure")
+            log.flush()
+            self.assertEqual(len(log_simple._resps), 2)
+            self.assertTrue(log.terminated(), "Should terminate after MAX_WRITE_ATTEMPTS")
 
 
 class TestBuffering(unittest.TestCase):

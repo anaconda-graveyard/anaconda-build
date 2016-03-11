@@ -6,12 +6,12 @@ from __future__ import print_function, unicode_literals, absolute_import
 import base64
 import codecs
 import functools
+import io
 import json
 import logging
-from io import BytesIO
 
-import io
 import requests
+from binstar_client import BinstarError
 
 log = logging.getLogger('binstar.build')
 
@@ -19,7 +19,7 @@ log = logging.getLogger('binstar.build')
 BUF_SIZE = 72 # bytes
 METADATA_PREFIX = b'anaconda-build-metadata:'
 # number of write attempts to make before giving up
-MAX_WRITE_FAILURES = 5
+MAX_WRITE_ATTEMPTS = 5
 
 def encode_metadata(metadata):
     '''
@@ -86,7 +86,6 @@ class BuildLog(object):
         self.job_id = job_id
         self.quiet = quiet
 
-
         self.terminate_build = False
         self.metadata = {'section': 'dequeue_build'}
         self.write_to_server = functools.partial(self.bs.log_build_output_structured,
@@ -95,17 +94,13 @@ class BuildLog(object):
                                                  self.worker_id,
                                                  self.job_id)
         # the number of consecutive write failures - when this exceeds
-        # MAX_WRITE_FAILURES, terminate the build
+        # MAX_WRITE_ATTEMPTS, terminate the build
         self.write_failures = 0
 
-        self.buf = BytesIO()
+        self.buf = io.BytesIO()
 
-
-        log.info("Writing build log to %s" % filename)
-        if filename:
-            self.fd = codecs.open(filename, 'wb', buffering=0)
-        else:
-            self.fd = None
+        log.info("Writing build log to %s", filename)
+        self.fd = codecs.open(filename, 'wb', buffering=0)
 
     def terminated(self):
         return self.terminate_build
@@ -173,25 +168,28 @@ class BuildLog(object):
     def flush(self):
         self.buf.truncate()
         msg = self.buf.getvalue()
-        self.buf.seek(0)
 
         if not msg:
             # don't send empty messages to the server
+            self.buf.seek(0)
             return
-
-        self.fd.write(msg)
 
         terminate_build = False
         try:
+            self.fd.write(msg)
+            self.fd.flush()
             terminate_build = self.write_to_server(msg, self.metadata)
-        except (requests.HTTPError, requests.ConnectionError):
+        except (BinstarError, requests.HTTPError, requests.ConnectionError):
             self.write_failures += 1
-            log.warn('Failed to write log to server, %s attempts remaining', MAX_WRITE_FAILURES - self.write_failures)
+            log.warn('Failed to write log to server, %s attempts remaining', MAX_WRITE_ATTEMPTS - self.write_failures)
 
-            if self.write_failures > MAX_WRITE_FAILURES:
+            if self.write_failures >= MAX_WRITE_ATTEMPTS:
                 terminate_build = True
-                log.error('Failed to write log to server %s times in a row, terminating build', MAX_WRITE_FAILURES)
+                log.error('Failed to write log to server %s times in a row, terminating build', self.write_failures)
         else:
+            # we have successfully written this data, remove from the buffer
+            self.buf.seek(0)
+            # reset consecutive failures
             self.write_failures = 0
 
         log.info('Wrote %s bytes of build output to anaconda-server', len(msg))
@@ -199,6 +197,4 @@ class BuildLog(object):
         self.terminate_build = terminate_build
         if terminate_build:
             log.info('anaconda-server responded that the build should be terminated')
-
-        self.fd.flush()
 
