@@ -12,10 +12,10 @@ class Test(unittest.TestCase):
             pass
 
         with to:
-            while not to.timout_occurred:
+            while not to.timeout_occurred:
                 pass
 
-        self.assertTrue(to.timout_occurred)
+        self.assertTrue(to.timeout_occurred)
         self.assertTrue(to.callback_called)
 
     def test_timeout_2(self):
@@ -27,7 +27,7 @@ class Test(unittest.TestCase):
         with to:
             pass
 
-        self.assertFalse(to.timout_occurred)
+        self.assertFalse(to.timeout_occurred)
 
 
 if __name__ == "__main__":
