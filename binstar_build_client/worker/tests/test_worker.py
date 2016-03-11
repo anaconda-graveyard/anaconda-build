@@ -43,8 +43,8 @@ class Test(unittest.TestCase):
         worker.args.push_back = False
         worker._handle_job({'job':{'_id':'test_job_id'}})
         self.assertEqual(worker.build.call_count, 1)
-        self.assertEqual(worker.bs.fininsh_build.call_count, 1)
-        self.assertEqual(worker.bs.fininsh_build.call_args[1], {'status': 'success', 'failed': False})
+        self.assertEqual(worker.bs.finish_build.call_count, 1)
+        self.assertEqual(worker.bs.finish_build.call_args[1], {'status': 'success', 'failed': False})
 
     def test_failed_job(self):
 
@@ -58,8 +58,8 @@ class Test(unittest.TestCase):
         worker._handle_job({'job':{'_id':'test_job_id'}})
 
         self.assertEqual(worker.build.call_count, 1)
-        self.assertEqual(worker.bs.fininsh_build.call_count, 1)
-        self.assertEqual(worker.bs.fininsh_build.call_args[1], {'status': 'error', 'failed': True})
+        self.assertEqual(worker.bs.finish_build.call_count, 1)
+        self.assertEqual(worker.bs.finish_build.call_args[1], {'status': 'error', 'failed': True})
 
 
     def test_download_build_source(self):

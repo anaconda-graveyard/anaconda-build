@@ -49,7 +49,7 @@ class BuildQueueMixin(object):
 
         return result
 
-    def fininsh_build(self, username, queue_name, worker_id, job_id, status='success', failed=False):
+    def finish_build(self, username, queue_name, worker_id, job_id, status='success', failed=False):
         url = '%s/build-worker/%s/%s/%s/jobs/%s/finish' % (self.domain, username, queue_name, worker_id, job_id)
         data, headers = jencode(status=status, failed=failed)
         res = self.session.post(url, data=data, headers=headers)

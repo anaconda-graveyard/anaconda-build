@@ -159,7 +159,7 @@ class Worker(object):
                 job_data['job']['_id']
             )
         else:
-            job_data = bs.fininsh_build(
+            job_data = bs.finish_build(
                 self.config.username,
                 self.config.queue,
                 self.worker_id,
