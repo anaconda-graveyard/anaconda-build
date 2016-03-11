@@ -65,7 +65,7 @@ bb_check_result='if [ "$BINSTAR_BUILD_RESULT" != "" ]; then if [ "$BINSTAR_BUILD
 # Binstar build variables
 #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
-{% for key, value in exports %}
+{% for key, value in exports -%}
 export {{key}}={{quote(value)}}
 {% endfor %}
 

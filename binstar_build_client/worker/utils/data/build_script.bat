@@ -23,9 +23,7 @@ if not "%BINSTAR_BUILD_RESULT%" == "" (
 
 {{ start_section('build_env_exports', silent=True) }}
 set "PYTHONUNBUFFERED=TRUE"
-set "BUILD_PYTHON={{ executable }}"
-
-{% for key, value in exports %}
+{% for key, value in exports -%}
 set "{{key}}={{value}}"
 {% endfor %}
 

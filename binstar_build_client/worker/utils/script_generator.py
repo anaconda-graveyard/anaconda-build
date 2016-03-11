@@ -7,7 +7,6 @@ import logging
 import os
 import pipes
 import shlex
-import sys
 
 import jinja2
 
@@ -177,6 +176,7 @@ def create_exports(build_data, working_dir):
 GLOBALS = {
     'get_list': get_list,
     'quote': lambda item: pipes.quote(str(item)),
+    'metadata': metadata,
 }
 
 
@@ -194,14 +194,7 @@ def render_build_script(working_dir, build_data, **context):
 
 
     env = jinja2.Environment(loader=jinja2.PackageLoader(__name__, 'data'))
-    # Additional helper functions to call from the template.
     env.globals.update(GLOBALS)
-    env.globals.update(
-        get_list=get_list,
-        quote=lambda item: pipes.quote(str(item)),
-        metadata=metadata,
-        executable=sys.executable,
-    )
 
     exports = create_exports(build_data, working_dir)
     instructions = build_data['build_item_info'].get('instructions', {})
