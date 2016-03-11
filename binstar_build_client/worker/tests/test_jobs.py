@@ -1,6 +1,7 @@
 from __future__ import print_function, unicode_literals, absolute_import
 
 import copy
+import datetime
 import unittest
 from mock import Mock, patch
 import os
@@ -18,9 +19,15 @@ import warnings
 import tempfile
 import shutil
 
+
+DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
+def data_path(filename):
+    return os.path.join(DATA_DIR, filename)
+
 try_unlink = lambda path: os.unlink(path) if os.path.isfile(path) else None
 
 start_msg = BuildLog.SECTION_TAG.decode() + ' start_build_on_worker\n'
+started_date = datetime.datetime.utcnow().isoformat()
 
 def default_build_data():
     return {
@@ -57,13 +64,14 @@ def default_build_data():
             "login": "me"
         },
         "upload_token": "upload_token",
-        "job_name": "job_name"
+        "job_name": "job_name",
+        "BUILD_UTC_DATETIME": started_date,
     }
 
 
 class MyWorker(Worker):
     download_build_source = Mock()
-    download_build_source.return_value = 'build_source_filename'
+    download_build_source.return_value = data_path('example_package.tar.gz')
 
     def __init__(self):
         self.SLEEP_TIME = 0
@@ -74,6 +82,7 @@ class MyWorker(Worker):
         args.status_file = None
         args.timeout = 100
         args.show_new_procs = False
+        args.cwd = tempfile.mkdtemp()
 
         worker_config = WorkerConfiguration(
             'worker_name',
@@ -81,18 +90,13 @@ class MyWorker(Worker):
             'test_platform', 'test_hostname', 'dist'
         )
 
-        self._working_dir = tempfile.mkdtemp()
         super(MyWorker, self).__init__(bs, worker_config, args)
-
-    def working_dir(self, *args):
-
-        return self._working_dir
 
 
 class Test(unittest.TestCase):
     if os.name == 'nt':
 
-        def write_sript(self, mock_gen_build_script, exit_code, wait=None):
+        def write_script(self, mock_gen_build_script, exit_code, wait=None):
 
             mock_gen_build_script.return_value = script_path = os.path.abspath('script_filename.bat')
             self.addCleanup(try_unlink, script_path)
@@ -109,7 +113,7 @@ class Test(unittest.TestCase):
                 print('EXIT /B {}'.format(exit_code), file=fd)
 
     else:
-        def write_sript(self, mock_gen_build_script, exit_code, wait=None):
+        def write_script(self, mock_gen_build_script, exit_code, wait=None):
 
             mock_gen_build_script.return_value = script_path = os.path.abspath('script_filename.bash')
             self.addCleanup(try_unlink, script_path)
@@ -127,7 +131,6 @@ class Test(unittest.TestCase):
 
             st = os.stat(script_path)
             os.chmod(script_path, st.st_mode | stat.S_IEXEC)
-
 
     def get_worker(self):
         worker = MyWorker()
@@ -162,7 +165,7 @@ class Test(unittest.TestCase):
             '--api-token',
             'upload_token',
             '--build-tarball',
-            'build_source_filename'
+            data_path('example_package.tar.gz'),
         ]
         ending_posix = popen_args[0].split('/')[-1]
         ending_win = popen_args[0].split('\\')[-1]
@@ -171,15 +174,15 @@ class Test(unittest.TestCase):
 
     expected_output_success = start_msg + (
         "Building on worker test_hostname (platform test_platform)\n"
-        "Starting build job_name\n"
+        "Starting build job_name at {0}\n"
         "hello\n"
         "exit 0\n"
-    )
+    ).format(started_date)
 
     @patch('binstar_build_client.worker.utils.script_generator.gen_build_script')
     def test_build_success(self, gen_build_script):
 
-        self.write_sript(gen_build_script, script_generator.EXIT_CODE_OK)
+        self.write_script(gen_build_script, script_generator.EXIT_CODE_OK)
 
         worker = self.get_worker()
         job_data = default_build_data()
@@ -197,7 +200,7 @@ class Test(unittest.TestCase):
     @patch('binstar_build_client.worker.utils.script_generator.gen_build_script')
     def test_build_fail(self, gen_build_script):
 
-        self.write_sript(gen_build_script, script_generator.EXIT_CODE_FAILED)
+        self.write_script(gen_build_script, script_generator.EXIT_CODE_FAILED)
 
         worker = self.get_worker()
         job_data = default_build_data()
@@ -210,7 +213,7 @@ class Test(unittest.TestCase):
     def test_build_error(self, gen_build_script):
 
 
-        self.write_sript(gen_build_script, script_generator.EXIT_CODE_ERROR)
+        self.write_script(gen_build_script, script_generator.EXIT_CODE_ERROR)
 
         worker = self.get_worker()
         job_data = default_build_data()
@@ -222,18 +225,18 @@ class Test(unittest.TestCase):
 
     expected_output_timeout = start_msg + (
         "Building on worker test_hostname (platform test_platform)\n"
-        "Starting build job_name\n"
+        "Starting build job_name at {0}\n"
         "hello\n"
         "sleep for 2 seconds\n\n"
         "Timeout: build exceeded maximum build time of 0.5 seconds\n"
         "[Terminated]\n"
-    )
+    ).format(started_date)
 
 
     @patch('binstar_build_client.worker.utils.script_generator.gen_build_script')
     def test_build_timeout(self, gen_build_script):
 
-        self.write_sript(gen_build_script, script_generator.EXIT_CODE_OK, wait=2)
+        self.write_script(gen_build_script, script_generator.EXIT_CODE_OK, wait=2)
 
         worker = self.get_worker()
         worker.args.timeout = 0.5
@@ -251,19 +254,19 @@ class Test(unittest.TestCase):
 
     expected_output_iotimeout = start_msg + (
         "Building on worker test_hostname (platform test_platform)\n"
-        "Starting build job_name\n"
+        "Starting build job_name at {0}\n"
         "hello\n"
         "sleep for 2 seconds\n\n\n"
         "Timeout: No output from program for 0.5 seconds\n\n"
         "Timeout: If you require a longer timeout you may set the 'iotimeout' "
           "variable in your .binstar.yml file\n"
         "[Terminated]\n"
-    )
+    ).format(started_date)
 
     @patch('binstar_build_client.worker.utils.script_generator.gen_build_script')
     def test_build_iotimeout(self, gen_build_script):
 
-        self.write_sript(gen_build_script, script_generator.EXIT_CODE_OK, wait=2)
+        self.write_script(gen_build_script, script_generator.EXIT_CODE_OK, wait=2)
 
         worker = self.get_worker()
 #         worker.args.timeout = 0.5
@@ -297,6 +300,7 @@ class Test(unittest.TestCase):
         working_dir = tempfile.mkdtemp()
         try:
             script = script_generator.gen_build_script(working_dir,
+                                                       working_dir,
                                                        default_build_data())
             with open(script, 'r') as f:
                 contents = f.read()
@@ -314,6 +318,7 @@ class Test(unittest.TestCase):
             build_data['build_item_info']['instructions']['install_channels'] = []
             build_data['build_item_info']['engine'] = 'r'
             script = script_generator.gen_build_script(working_dir,
+                                                       working_dir,
                                                        build_data)
             with open(script, 'r') as f:
                 contents = f.read()
@@ -353,7 +358,7 @@ def have_docker():
 
 class TestDockerWorker(DockerWorker):
     download_build_source = Mock()
-    download_build_source.return_value = os.path.abspath('build_source_filename')
+    download_build_source.return_value = data_path('example_package.tar.gz')
 
     def __init__(self):
         self.SLEEP_TIME = 0
@@ -366,6 +371,7 @@ class TestDockerWorker(DockerWorker):
         args.timeout = 100
         args.show_new_procs = False
         args.image = 'binstar/linux-64'
+        args.cwd = tempfile.mkdtemp()
 
         worker_config = WorkerConfiguration(
             'worker_id', 'worker_id', 'username', 'queue', 'test_platform',
@@ -373,8 +379,6 @@ class TestDockerWorker(DockerWorker):
 
         super(TestDockerWorker, self).__init__(bs, worker_config, args)
 
-    def working_dir(self, *args):
-        return os.path.abspath('test_worker')
 
 
 @unittest.skipIf(not have_docker(), "Don't have docker")
@@ -384,18 +388,18 @@ class DockerTest(Test):
         return worker
     expected_output_success = start_msg + (
         "Building on worker test_hostname (platform test_platform)\n"
-        "Starting build job_name\n"
+        "Starting build job_name at {0}\n"
         "Docker Image: binstar/linux-64\n"
         "Docker: Create container\n"
         "Docker: Attach output\n"
         "Docker: Start\n"
         "hello\n"
         "exit 0\n"
-    )
+    ).format(started_date)
 
     expected_output_timeout = start_msg +(
         "Building on worker test_hostname (platform test_platform)\n"
-        "Starting build job_name\n"
+        "Starting build job_name at {0}\n"
         "Docker Image: binstar/linux-64\n"
         "Docker: Create container\n"
         "Docker: Attach output\n"
@@ -404,11 +408,11 @@ class DockerTest(Test):
         "sleep for 2 seconds\n\n"
         "Timeout: build exceeded maximum build time of 0.5 seconds\n"
         "[Terminated]\n"
-    )
+    ).format(started_date)
 
     expected_output_iotimeout = start_msg +(
         "Building on worker test_hostname (platform test_platform)\n"
-        "Starting build job_name\n"
+        "Starting build job_name at {0}\n"
         "Docker Image: binstar/linux-64\n"
         "Docker: Create container\n"
         "Docker: Attach output\n"
@@ -419,7 +423,7 @@ class DockerTest(Test):
         "Timeout: If you require a longer timeout you may set the 'iotimeout' "
           "variable in your .binstar.yml file\n"
         "[Terminated]\n"
-    )
+    ).format(started_date)
 
 
 if __name__ == "__main__":

@@ -4,6 +4,7 @@ The worker
 from __future__ import print_function, absolute_import, unicode_literals
 
 from contextlib import contextmanager
+import datetime
 import inspect
 import io
 import logging
@@ -179,10 +180,26 @@ class Worker(object):
                 with self.job_context(journal, job_data):
                     self._handle_job(job_data)
 
-    def working_dir(self, build_data):
+    def working_dir(self, job_data):
+        '''The location where the build process should `cd`
+        before execution. Relative to the container file system.
 
-        owner = build_data['owner']['login']
-        package = build_data['package']['name']
+        :param job_data: the job information
+        :return: path (str)
+        '''
+        return self.staging_dir(job_data)
+
+    def staging_dir(self, job_data):
+        '''
+        The location where the build files for this job should be created
+        while setting up
+
+        :param job_data: The job information
+        :return:  path (str)
+        '''
+
+        owner = job_data['owner']['login']
+        package = job_data['package']['name']
 
         working_dir = os.path.join(self.args.cwd, 'builds', owner, package)
         working_dir = os.path.abspath(working_dir)
@@ -191,8 +208,8 @@ class Worker(object):
 
     def build_logfile(self, build_data):
 
-        working_dir = self.working_dir(build_data)
-        filename = os.path.abspath(os.path.join(working_dir, 'build-log.txt'))
+        staging_dir = self.staging_dir(build_data)
+        filename = os.path.abspath(os.path.join(staging_dir, 'build-log.txt'))
 
         log.info("Writing build log to file {0}".format(filename))
         return filename
@@ -204,12 +221,15 @@ class Worker(object):
         job_id = job_data['job']['_id']
         if 'envvars' in job_data['build_item_info']:
             job_data['build_item_info']['env'] = job_data['build_item_info'].pop('envvars')
-        working_dir = self.working_dir(job_data)
 
-        log.info("Removing previous build dir: {0}".format(working_dir))
-        rm_rf(working_dir)
-        log.info("Creating working dir: {0}".format(working_dir))
-        os.makedirs(working_dir)
+        working_dir = self.working_dir(job_data)
+        staging_dir = self.staging_dir(job_data)
+
+        # -- Clean --
+        log.info("Removing previous build dir: {0}".format(staging_dir))
+        rm_rf(staging_dir)
+        log.info("Creating working dir: {0}".format(staging_dir))
+        os.makedirs(staging_dir)
         datatags = job_data['build_item_info']['instructions'].get('datatags', None) or None
         if datatags and not isinstance(datatags, (list, tuple)):
             datatags = [datatags]
@@ -231,14 +251,16 @@ class Worker(object):
             msg = "Building on worker {0} (platform {1})\n".format(
                     self.config.hostname, self.config.platform)
             build_log.write(msg.encode('utf-8', errors='replace'))
-
-            msg = "Starting build {0}\n".format(job_data['job_name'])
+            msg = "Starting build {0} at {1}\n".format(job_data['job_name'], job_data['BUILD_UTC_DATETIME'])
             build_log.write(msg.encode('utf-8', errors='replace'))
 
             build_log.flush()
 
-            script_filename = script_generator.gen_build_script(working_dir,
-                job_data, conda_build_dir=self.args.conda_build_dir)
+            script_filename = script_generator.gen_build_script(
+                staging_dir,
+                working_dir,
+                job_data,
+                conda_build_dir=self.args.conda_build_dir)
 
             iotimeout = instructions.get('iotimeout', DEFAULT_IO_TIMEOUT)
             timeout = self.args.timeout
@@ -247,7 +269,7 @@ class Worker(object):
 
             git_oauth_token = job_data.get('git_oauth_token')
             if not job_data.get('build_info', {}).get('github_info'):
-                build_filename = self.download_build_source(working_dir, job_id)
+                build_filename = self.download_build_source(staging_dir, job_id)
             else:
                 build_filename = None
 
@@ -381,10 +403,10 @@ class Worker(object):
 
         If the context is not exited within 'args.timeout' seconds, an exception will be raised
         """
-        ctx = (job_data['job']['_id'], job_data['job_name'])
-
-        log.info('Starting build, {0}, {1}'.format(*ctx))
-        journal.write('starting build, {0}, {1}\n'.format(*ctx))
+        job_data['BUILD_UTC_DATETIME'] = datetime.datetime.utcnow().isoformat()
+        ctx = (job_data['job']['_id'], job_data['job_name'], job_data['BUILD_UTC_DATETIME'])
+        log.info('Starting build, {0}, {1} at {2}'.format(*ctx))
+        journal.write('starting build, {0}, {1} at {2}\n'.format(*ctx))
 
         start_time = time.time()
         log.info('Setting alarm to terminate build after {0} seconds'.format(self.args.timeout))

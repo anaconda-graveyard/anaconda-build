@@ -38,3 +38,8 @@ nosetests.xml
 # Docs html test files
 doc/_build/
 .DS_Store
+
+# Build worker files
+/builds/
+/test/conda/builds/
+journal.csv

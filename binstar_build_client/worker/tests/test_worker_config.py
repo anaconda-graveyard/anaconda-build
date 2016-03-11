@@ -37,6 +37,7 @@ class Test(unittest.TestCase):
 \tpid: None
 \tdist: dist
 \thostname: hostname
+\tname: worker_name
 \tplatform: platform
 \tqueue: queue
 \tusername: username

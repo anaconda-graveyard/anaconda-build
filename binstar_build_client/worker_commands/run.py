@@ -9,6 +9,7 @@ import logging
 import os
 import yaml
 
+from clyent.logs import setup_logging
 from binstar_client.utils import get_binstar
 
 from binstar_build_client import BinstarBuildAPI
@@ -18,11 +19,23 @@ from binstar_build_client.worker.register import WorkerConfiguration
 
 log = logging.getLogger('binstar.build')
 
+WRONG_HOSTNAME_MSG = 'Proceeding with worker id registered for ' + \
+                     'different hostname: {}. ' + \
+                     'This host is: {}.'
+
 
 def main(args):
     bs = get_binstar(args, cls=BinstarBuildAPI)
-    worker_config = WorkerConfiguration.load(args.worker_id, bs)
+    worker_config = WorkerConfiguration.load(args.worker_id, bs, warn=True)
+    WorkerConfiguration.validate_worker_name(bs, args.worker_id)
+    if worker_config.hostname != WorkerConfiguration.HOSTNAME:
+        log.warn(WRONG_HOSTNAME_MSG.format(worker_config.hostname,
+                                           WorkerConfiguration.HOSTNAME))
     args.conda_build_dir = args.conda_build_dir.format(platform=worker_config.platform)
+
+    setup_logging(logging.getLogger('binstar_build_client'), args.log_level,
+                  args.color, show_tb=args.show_traceback)
+
     log.info("Using conda build directory: {}".format(args.conda_build_dir))
     log.info(str(worker_config))
 

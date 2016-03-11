@@ -3,15 +3,17 @@ from __future__ import print_function, unicode_literals, absolute_import
 import json
 import logging
 import os
-from os.path import basename, abspath
+import tarfile
+from io import BytesIO
+from os.path import basename
+
+from binstar_client import errors
+from requests import ConnectionError
 
 from binstar_build_client.worker.utils.build_log import BuildLog
 from binstar_build_client.worker.utils.process_wrappers import DockerBuildProcess
 from binstar_build_client.worker.utils.timeout import read_with_timeout
 from binstar_build_client.worker.worker import Worker
-from binstar_client import errors
-
-from requests import ConnectionError
 
 
 log = logging.getLogger("binstar.build")
@@ -35,7 +37,12 @@ class DockerWorker(Worker):
         )
         log.info('Connecting to docker daemon ...')
         try:
-            images = self.client.images(args.image)
+            image = args.image
+            if ':' in image:
+                image, tag = image.split(':', 1)
+            else:
+                image, tag = image, None
+            images = self.client.images(image)
         except ConnectionError as err:
             raise errors.BinstarError(
                 "Docker client could not connect to daemon (is docker installed?)\n"
@@ -48,6 +55,8 @@ class DockerWorker(Worker):
         if self.args.allow_user_images:
             log.warn("Allowing users to specify docker images")
 
+    def working_dir(self, build_data):
+        return '/root'
 
     def run(self, build_data, script_filename, build_log, timeout, iotimeout,
             api_token=None, git_oauth_token=None, build_filename=None, instructions=None,
@@ -56,11 +65,14 @@ class DockerWorker(Worker):
         """
         cli = self.client
         image = self.args.image
-        container_script_filename = '/{0}'.format(basename(script_filename))
 
-        volumes = [container_script_filename,
-                   ]
-        binds = {abspath(script_filename): {'bind': container_script_filename, 'ro': False}}
+        script_basename = basename(script_filename)
+        # files to transfer into the working directory of the image
+        transfer_files = [(script_filename, script_basename)]
+
+        # TODO: working_dir should probably be extracted from the docker image definition (WORKDIR)
+        working_dir = self.working_dir(build_data)
+        container_script_filename = '{0}/{1}'.format(working_dir, script_basename)
 
         args = ["bash", container_script_filename, '--api-token', api_token]
 
@@ -68,10 +80,10 @@ class DockerWorker(Worker):
             args.extend(['--git-oauth-token', git_oauth_token])
 
         elif build_filename:
-            container_build_filename = '/{0}'.format(basename(build_filename))
-            volumes.append(container_build_filename)
-            binds[build_filename] = {'bind': container_build_filename, 'ro': False}
+            build_basename = basename(build_filename)
+            container_build_filename = '{0}/{1}'.format(working_dir, build_basename)
             args.extend(['--build-tarball', container_build_filename])
+            transfer_files.append((build_filename, build_basename))
 
         log.info("Running command: (iotimeout={0})".format(iotimeout))
         if self.args.allow_user_images:
@@ -82,38 +94,45 @@ class DockerWorker(Worker):
                 else:
                     repository, tag = image, None
 
-                build_log.write('Docker: Pull {0}\n'.format(image))
+                build_log.write(b'Docker: Pull {0}\n'.format(image))
                 for line in cli.pull(repository, tag=tag, stream=True):
                     msg = json.loads(line)
                     if msg.get('status') == 'Downloading':
-                        build_log.write('.')
+                        build_log.write(b'.')
                     elif msg.get('status'):
-                        build_log.write(msg.get('status', '') + '\n')
+                        build_log.write(msg.get('status', '').encode('utf-8', 'replace') + b'\n')
                     else:
-                        build_log.write(line + '\n')
+                        build_log.write(line.encode('utf-8', 'replace') + b'\n')
 
         else:
             if instructions and instructions.get('docker_image'):
-                build_log.write("WARNING: User specified images are not allowed on this build worker\n")
-                build_log.write("Using default docker image\n")
+                build_log.write(b"WARNING: User specified images are not allowed on this build worker\n")
+                build_log.write(b"Using default docker image\n")
 
         command = " ".join(args)
-        log.info(command)
+        log.info("Executing '%s' on docker", command)
+
         build_log.write("Docker Image: {0}\n".format(image).encode('utf8'))
-        log.info("Volumes: {0}".format(volumes))
 
         build_log.write(b"Docker: Create container\n")
-        cont = cli.create_container(image, command=command, volumes=volumes)
+        cont = cli.create_container(image, command=command)
 
         build_log.write(b"Docker: Attach output\n")
 
+        archive = BytesIO()
+        with tarfile.open(fileobj=archive, mode='w') as tf:
+            for filename, arcname in transfer_files:
+                tf.add(filename, arcname)
+        archive.seek(0)
+
+        put_success = cli.put_archive(cont, working_dir, archive)
+        # build_log.write(b"Docker: Inserted script: %s\n" % put_success)
+
         build_log.write(b"Docker: Start\n")
         p0 = DockerBuildProcess(cli, cont)
-        log.info("Binds: {0}".format(binds))
 
-        cli.start(cont, binds=binds)
+        cli.start(cont)
 
-        # ios = IOStream(stream, build_log, iotimeout, timeout, timeout_callback)
         try:
             read_with_timeout(
                 p0,
