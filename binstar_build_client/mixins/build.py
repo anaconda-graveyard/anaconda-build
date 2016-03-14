@@ -130,12 +130,15 @@ class BuildMixin(object):
         self._check_response(res, [201])
 
     def trigger_build(self, username, package, channels=None,
-                      queue_name=None, branch=None, test_only=False,
+                      queue_name=None, queue_tags=None, branch=None, test_only=False,
                       filter_platform=None):
         url = '%s/build/%s/%s/trigger' % (self.domain, username, package)
 
-        data, headers = jencode(channels=channels, queue_name=queue_name,
-                                branch=branch, test_only=test_only,
+        data, headers = jencode(channels=channels,
+                                queue_name=queue_name,
+                                queue_tags=queue_tags,
+                                branch=branch,
+                                test_only=test_only,
                                 filter_platform=filter_platform)
 
         res = self.session.post(url, data=data, headers=headers)
