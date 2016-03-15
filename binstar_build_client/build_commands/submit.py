@@ -107,8 +107,10 @@ def print_build_results(args, build, binstar):
     log.info('')
     build_result_url = build.get('url')
     if not build_result_url:
-        netloc = get_anaconda_url(binstar)
-        build_result_url = 'http://%s/%s/%s/builds/matrix/%s' % (netloc, args.package.user, args.package.name, build['build_no'])
+        build_result_url = get_anaconda_url(binstar, '/{package.user}/{package.name}/builds/matrix/{build_no}'.format(
+            package=args.package,
+            build_no=build['build_no'],
+        ))
     log.info('To view this build go to %s' % build_result_url)
     log.info('')
     log.info('You may also run\n\n    anaconda build tail -f %s/%s %s\n' % (args.package.user, args.package.name, build['build_no']))
