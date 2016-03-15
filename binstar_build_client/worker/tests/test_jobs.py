@@ -3,6 +3,8 @@ from __future__ import print_function, unicode_literals, absolute_import
 import copy
 import datetime
 import unittest
+
+from io import BytesIO
 from mock import Mock, patch
 import os
 import shutil
@@ -13,6 +15,7 @@ from binstar_build_client.worker.register import WorkerConfiguration
 from binstar_build_client.worker.worker import Worker
 from binstar_build_client.worker_commands.register import get_platform
 from binstar_build_client.worker.utils import script_generator
+from binstar_build_client.worker.utils.build_log import BuildLog
 from binstar_build_client.worker.docker_worker import DockerWorker
 import warnings
 import tempfile
@@ -74,6 +77,7 @@ class MyWorker(Worker):
         self.SLEEP_TIME = 0
         bs = Mock()
         bs.log_build_output.return_value = False
+        bs.log_build_output_structured.return_value = False
         args = Mock()
         args.status_file = None
         args.timeout = 100
@@ -93,8 +97,9 @@ class Test(unittest.TestCase):
     if os.name == 'nt':
 
         def write_script(self, mock_gen_build_script, exit_code, wait=None):
+            tempdir = tempfile.gettempdir()
 
-            mock_gen_build_script.return_value = script_path = os.path.abspath('script_filename.bat')
+            mock_gen_build_script.return_value = script_path = os.path.join(tempdir, 'script_filename.bat')
             self.addCleanup(try_unlink, script_path)
 
             with open(script_path, 'w') as fd:
@@ -110,8 +115,9 @@ class Test(unittest.TestCase):
 
     else:
         def write_script(self, mock_gen_build_script, exit_code, wait=None):
+            tempdir = tempfile.gettempdir()
 
-            mock_gen_build_script.return_value = script_path = os.path.abspath('script_filename.bash')
+            mock_gen_build_script.return_value = script_path = os.path.join(tempdir, 'script_filename.sh')
             self.addCleanup(try_unlink, script_path)
 
             with open(script_path, 'w') as fd:
@@ -143,9 +149,11 @@ class Test(unittest.TestCase):
 
             return b'ping'
 
+        stdout = BytesIO()
+
         mock_BuildProcess().wait.return_value = 0
         mock_BuildProcess().poll.return_value = 0
-        mock_BuildProcess().readline = mock_readline
+        mock_BuildProcess().stdout = stdout
 
         gen_build_script.return_value = 'script_filename'
 
@@ -252,9 +260,9 @@ class Test(unittest.TestCase):
         "Building on worker test_hostname (platform test_platform)\n"
         "Starting build job_name at {0}\n"
         "hello\n"
-        "sleep for 2 seconds\n\n\n"
-        "Timeout: No output from program for 0.5 seconds\n\n"
-        "Timeout: If you require a longer timeout you may set the 'iotimeout' "
+        "sleep for 2 seconds\n\n"
+        "Timeout: No output from program for 0.5 seconds\n"
+        "\tIf you require a longer timeout you may set the 'iotimeout' "
           "variable in your .binstar.yml file\n"
         "[Terminated]\n"
     ).format(started_date)
@@ -359,6 +367,7 @@ class TestDockerWorker(DockerWorker):
     def __init__(self):
         self.SLEEP_TIME = 0
         bs = Mock()
+        bs.log_build_output_structured.return_value = False
         bs.log_build_output.return_value = False
 
         args = Mock()
@@ -414,9 +423,9 @@ class DockerTest(Test):
         "Docker: Attach output\n"
         "Docker: Start\n"
         "hello\n"
-        "sleep for 2 seconds\n\n\n"
-        "Timeout: No output from program for 0.5 seconds\n\n"
-        "Timeout: If you require a longer timeout you may set the 'iotimeout' "
+        "sleep for 2 seconds\n\n"
+        "Timeout: No output from program for 0.5 seconds\n"
+        "\tIf you require a longer timeout you may set the 'iotimeout' "
           "variable in your .binstar.yml file\n"
         "[Terminated]\n"
     ).format(started_date)

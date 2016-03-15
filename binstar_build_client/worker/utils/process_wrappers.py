@@ -5,6 +5,8 @@ import subprocess
 import os
 import signal
 
+from binstar_build_client.worker.utils.generator_file import GeneratorFile
+
 WIN = os.name == 'nt'
 
 if WIN:
@@ -18,20 +20,20 @@ class DockerBuildProcess(object):
     def __init__(self, cli, cont):
         self.cli = cli
         self.cont = cont
-        self.stream = self.cli.attach(cont, stream=True, stdout=True, stderr=True)
+        self.stdout = GeneratorFile(self.cli.attach(cont, stream=True, stdout=True, stderr=True))
         self.pid = 'docker container'
 
     def kill(self):
-        self.cli.kill(self.cont)
+        try:
+            self.cli.kill(self.cont)
+        except requests.HTTPError:
+            log.warn('Could not kill docker process', exc_info=True)
 
     def wait(self):
         return self.cli.wait(self.cont)
 
     def remove(self):
         self.cli.remove_container(self.cont, v=True)
-
-    def readline(self):
-        return next(self.stream, b'')
 
     def poll(self):
         try:
@@ -141,5 +143,3 @@ class BuildProcess(subprocess.Popen):
                 child.kill()
 
 
-    def readline(self):
-        return self.stdout.readline()

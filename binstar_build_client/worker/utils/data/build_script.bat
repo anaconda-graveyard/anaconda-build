@@ -1,20 +1,31 @@
 @echo off
 
-set "PYTHONUNBUFFERED=TRUE"
 
+{% macro start_section(name, silent=False) %}
+echo {{metadata(section=name)}}
+{% if not silent %}
+echo [{{name.title().replace('_',' ')}}]
+{% endif %}
+set "CURRENT_SECTION_TAG={{name}}"
+{% endmacro %}
 {% macro set_error(fail_type='error') -%}
 set "BINSTAR_BUILD_RESULT={{fail_type}}" & goto:eof
 {%- endmacro %}
 
 {%macro check_result() -%}
-if not "%BINSTAR_BUILD_RESULT%" == "" (goto:eof)
+if not "%BINSTAR_BUILD_RESULT%" == "" (
+    if not "%BINSTAR_BUILD_RESULT%" == "success" (
+        echo The build ended in %BINSTAR_BUILD_RESULT% in section %CURRENT_SECTION_TAG%
+    )
+    goto:eof
+)
 {%- endmacro %}
 
-
-{% for key, value in exports %}
+{{ start_section('build_env_exports', silent=True) }}
+set "PYTHONUNBUFFERED=TRUE"
+{% for key, value in exports -%}
 set "{{key}}={{value}}"
 {% endfor %}
-
 
 call:parse_options %*
 call:main
@@ -25,6 +36,7 @@ goto:eof
 :: #######################################################
 
 :parse_options
+  {{ start_section('parse_options', silent=True) }}
 
   :parse_options_loop
     IF NOT "%1"=="" (
@@ -62,6 +74,7 @@ goto:eof
 
     set BINSTAR_BUILD_RESULT=
 
+
     {% if ignore_setup_build %}
     echo [ignore setup_build]
     {% else %}
@@ -94,13 +107,16 @@ goto:eof
     echo Exit BINSTAR_BUILD_RESULT=%BINSTAR_BUILD_RESULT%
 
     if "%BINSTAR_BUILD_RESULT%" == "success" (
+        echo {{metadata(binstar_build_result='success')}}
         exit {{EXIT_CODE_OK}}
     )
     if "%BINSTAR_BUILD_RESULT%" == "error" (
+        echo {{metadata(binstar_build_result='error')}}
         exit {{EXIT_CODE_ERROR}}
     )
 
     if "%BINSTAR_BUILD_RESULT%" == "failure" (
+        echo {{metadata(binstar_build_result='failure')}}
         exit {{EXIT_CODE_FAILED}}
     )
 
@@ -117,8 +133,7 @@ goto:eof
 
     @echo off
 
-    echo.
-    echo [Fetching Build Source]
+    {{ start_section('fetch_build_source') }}
 
     Rmdir /s /q "%SOURCE_DIR%"
 
@@ -173,8 +188,8 @@ goto:eof
 goto:eof
 
 :setup_build
+    {{ start_section('setup_build') }}
 
-    echo [Setup Build]
     echo|set /p "noNewline=Host: "
     hostname
 
@@ -262,16 +277,18 @@ goto:eof
     :: Empty set of instructions for {{key}}
     {% else -%}
 
-    echo.
-    echo [{{key.title().replace('_',' ')}}]
+    {{ start_section(key) }}
 
     {%   for instruction_lines in all_instruction_lines -%}
+    echo {{metadata(command=instruction_lines)}}
 
     {%      for instruction_line in instruction_lines.split('\n') %}
     echo {{instruction_line}}
     {%      endfor %}
 
     ( {{instruction_lines}} ) || ( {{set_error(fail_type)}} )
+
+    echo {{metadata(command=None)}}
     {%   endfor -%}
 
     @echo off
@@ -338,14 +355,13 @@ goto:eof
     set "CONDARC="
 
     {% if instructions.get('test_results') %}
-    echo
-    echo [Test Results]
+    {{ start_section('upload_test_results') }}
     {% endif %}
 
     {%for test_result, filename in instructions.get('test_results', {}).items() %}
 
-    echo binstar-build -q -t %%TOKEN%% results {{test_result}} "%BINSTAR_OWNER%/%BINSTAR_PACKAGE%" "%BINSTAR_BUILD%" {{filename}}
-    binstar-build -q -t "%BINSTAR_API_TOKEN%" results {{test_result}} "%BINSTAR_OWNER%/%BINSTAR_PACKAGE%" "%BINSTAR_BUILD%" {{filename}}
+    echo anaconda build -q -t %%TOKEN%% results {{test_result}} "%BINSTAR_OWNER%/%BINSTAR_PACKAGE%" "%BINSTAR_BUILD%" {{filename}}
+    anaconda build -q -t "%BINSTAR_API_TOKEN%" results {{test_result}} "%BINSTAR_OWNER%/%BINSTAR_PACKAGE%" "%BINSTAR_BUILD%" {{filename}}
 
     {% endfor %}
 
@@ -361,12 +377,11 @@ goto:eof
     {% else %}
 
 
-    echo .
-    echo [Build Targets]
+    {{ start_section('upload_build_targets') }}
 
     {% for tgt in files %}
-    echo binstar -q -t %%TOKEN%% upload --force --user %BINSTAR_OWNER% --package %BINSTAR_PACKAGE% {{labels}} {{tgt}} --build-id %BINSTAR_BUILD_MAJOR%
-    binstar -q -t "%BINSTAR_API_TOKEN%" upload --force --user "%BINSTAR_OWNER%" --package "%BINSTAR_PACKAGE%" {{labels}} {{tgt}} --build-id "%BINSTAR_BUILD%" || ( {{ set_error() }} )
+    echo anaconda -q -t %%TOKEN%% upload --force --user %BINSTAR_OWNER% --package %BINSTAR_PACKAGE% {{labels}} {{tgt}} --build-id %BINSTAR_BUILD_MAJOR%
+    anaconda -q -t "%BINSTAR_API_TOKEN%" upload --force --user "%BINSTAR_OWNER%" --package "%BINSTAR_PACKAGE%" {{labels}} {{tgt}} --build-id "%BINSTAR_BUILD%" || ( {{ set_error() }} )
     {% else %}
     echo No build targets specified
     {% endfor %}
@@ -374,4 +389,3 @@ goto:eof
 
 
 goto:eof
-

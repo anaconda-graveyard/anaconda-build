@@ -7,9 +7,11 @@ import logging
 import os
 import pipes
 import shlex
+
 import jinja2
 
 from binstar_build_client.utils import get_conda_root_prefix
+from binstar_build_client.worker.utils import build_log
 
 try:
     unicode
@@ -30,6 +32,12 @@ EXIT_CODE_FAILED = 12
 # ===============================================================================
 # Helper functions
 # ===============================================================================
+
+def metadata(**kwargs):
+    '''
+    Returns a metadata tag that is safe for inclusion in script or bat files
+    '''
+    return build_log.encode_metadata(kwargs)
 
 def get_labels(job_data):
     """
@@ -168,6 +176,7 @@ def create_exports(build_data, working_dir):
 GLOBALS = {
     'get_list': get_list,
     'quote': lambda item: pipes.quote(str(item)),
+    'metadata': metadata,
 }
 
 

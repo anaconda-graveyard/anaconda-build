@@ -1,13 +1,14 @@
 from __future__ import print_function, unicode_literals, absolute_import
 
+from os import path
+import os
 from subprocess import Popen, PIPE, STDOUT
 import unittest
+import tempfile
+
 
 from binstar_build_client.worker_commands.register import get_platform
 from binstar_build_client.worker.utils.script_generator import gen_build_script
-from os import path
-import os
-import tempfile
 
 def default_build_data():
     return {
@@ -253,19 +254,23 @@ class Test(unittest.TestCase):
             exported = relates_to_npy.pop(0)
             self.assertIn('=19', script_lines[exported])
             self.assertIn('CONDA_NPY', script_lines[exported])
+
         # Test that the other type of CONDA_NPY identification
         # can run without error
         other_numpy = "\n".join(script_lines[min(relates_to_npy): max(relates_to_npy) + 1])
-        script_name = 'numpy_script'
+
+        script_filename = os.path.join(tempdir, 'numpy_script')
         if os.name == 'nt':
-            script_name += '.bat'
-            exe = ['cmd', '/c', 'call']
+            script_filename += '.bat'
+            args = ['cmd', '/c', 'call', script_filename]
         else:
-            script_name += '.sh'
-            exe = ['bash']
-        with open(script_name, 'w') as f:
+            script_filename += '.sh'
+            args = ['bash', script_filename]
+        with open(script_filename, 'w') as f:
             f.write(other_numpy)
-        proc = Popen(exe + [os.path.abspath(script_name)], stdout=PIPE, stderr=STDOUT, cwd='.')
+        self.addCleanup(os.unlink, script_filename)
+
+        proc = Popen(args, stdout=PIPE, stderr=STDOUT, cwd=tempdir)
         output = proc.stdout.read().decode().splitlines()
         npy = len([line for line in output if 'CONDA_NPY=' in line])
         self.assertTrue(npy >= 1)

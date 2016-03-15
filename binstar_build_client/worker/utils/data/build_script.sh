@@ -1,6 +1,15 @@
 #!/bin/bash
 set +e
 
+{%- macro start_section(name, silent=False) %}
+echo '{{metadata(section=name)}}'
+{% if not silent %}
+echo '[{{name.title().replace('_',' ')}}]'
+{% endif %}
+export CURRENT_SECTION_TAG={{name}}
+{% endmacro -%}
+
+{{ start_section('build_env_exports', silent=True) }}
 export BINSTAR_BUILD_RESULT=""
 export PYTHONUNBUFFERED="TRUE"
 
@@ -9,6 +18,7 @@ export PYTHONUNBUFFERED="TRUE"
 #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
 parse_options(){
+    {{ start_section('parse_options', silent=True) }}
 
 
     while [[ $# > 1 ]]
@@ -48,14 +58,14 @@ bb_check_command_error='exit_status=$?; if [ "$exit_status" != "0" ]; then echo 
 # Check the exit status of the last command and return if it was an error
 bb_check_command_failure='exit_status=$?; if [ "$exit_status" != "0" ]; then echo "command exited with status $exit_status"; export BINSTAR_BUILD_RESULT="failure"; return 1; fi'
 # Check the state of "BINSTAR_BUILD_RESULT" and return if it is set
-bb_check_result='if [ "$BINSTAR_BUILD_RESULT" != "" ]; then return 1; fi'
+bb_check_result='if [ "$BINSTAR_BUILD_RESULT" != "" ]; then if [ "$BINSTAR_BUILD_RESULT" != "success" ]; then echo The build ended in $BINSTAR_BUILD_RESULT in section $CURRENT_SECTION_TAG; fi; return 1; fi'
 
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 # Binstar build variables
 #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
-{% for key, value in exports %}
+{% for key, value in exports -%}
 export {{key}}={{quote(value)}}
 {% endfor %}
 
@@ -63,11 +73,11 @@ export {{key}}={{quote(value)}}
 # User defined build commands
 #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 setup_build(){
+    {{ start_section('setup_build') }}
 
 
     export BUILD_ENV_PATH="${WORKING_DIR}/env"
 
-    echo -e "\n[Setup Build]"
 
     echo "Host:" `hostname`
     echo 'Setting engine'
@@ -120,9 +130,8 @@ setup_build(){
 }
 
 fetch_build_source(){
+    {{ start_section('fetch_build_source') }}
 
-
-    echo -e '\n[Fetching Build Source]'
 
     SOURCE_DIR="${WORKING_DIR}/source"
     echo "SOURCE_DIR=$SOURCE_DIR"
@@ -188,13 +197,16 @@ fetch_build_source(){
     # Empty set of instructions for {{key}}
     true;
     {%- else %}
-    echo -e '\n[{{key.title().replace('_',' ')}}]'
+    {{ start_section(key) }}
 
     {%   for instruction_lines in all_instruction_lines -%}
     {%-     for iline in instruction_lines.split('\n') -%}
-    echo {{quote(iline)}}
+
+    echo {{ metadata(command=iline) }}
+    echo {{ quote(iline) }}
     {{iline|safe}}
-        eval $bb_check_command_{{fail_type}}
+    eval $bb_check_command_{{fail_type}}
+    echo {{ metadata(command=None) }}
 
     {%     endfor -%}
     {%   endfor -%}
@@ -243,7 +255,6 @@ bb_after_script() {
 #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 
 binstar_build(){
-
     bb_install; eval $bb_check_result
     bb_test; eval $bb_check_result
     bb_before_script; eval $bb_check_result
@@ -274,7 +285,7 @@ upload_build_targets(){
     source deactivate
 
     {% if instructions.get('test_results') %}
-    echo -e "\n[Test Results]"
+    {{ start_section('upload_test_results') }}
     {% endif %}
 
     {%for test_result, filename in instructions.get('test_results', {}).items() %}
@@ -285,7 +296,6 @@ upload_build_targets(){
     {% endfor %}
 
 
-
     if [ "$BINSTAR_BUILD_RESULT" != "success" ]; then
         return 1;
     fi
@@ -293,12 +303,11 @@ upload_build_targets(){
     echo -e '\nRunning Build in "Test Only" mode, not uploading build targets'
     {% else %}
 
-    echo -e '\n[Build Targets]'
+    {{ start_section('upload_build_targets') }}
     eval $bb_check_command_error
     {% for tgt in files %}
-    echo "anaconda  -q -t \$TOKEN upload --force --user $BINSTAR_OWNER --package $BINSTAR_PACKAGE {{labels}} {{tgt}} --build-id $BINSTAR_BUILD"
-
-    anaconda  -q -t "$BINSTAR_API_TOKEN" upload --force --user "$BINSTAR_OWNER" --package "$BINSTAR_PACKAGE" {{labels}} {{tgt}} --build-id "$BINSTAR_BUILD"
+    echo "anaconda -q -t \$TOKEN upload --force --user $BINSTAR_OWNER --package $BINSTAR_PACKAGE {{labels}} {{tgt}} --build-id $BINSTAR_BUILD"
+    anaconda -q -t "$BINSTAR_API_TOKEN" upload --force --user "$BINSTAR_OWNER" --package "$BINSTAR_PACKAGE" {{labels}} {{tgt}} --build-id "$BINSTAR_BUILD"
     eval $bb_check_command_error
     {% else %}
     echo "No build targets specified"
@@ -320,7 +329,6 @@ main(){
         echo "Internal anaconda build error: Could not set up initial build state"
         exit {{EXIT_CODE_ERROR}}
     fi
-
     {% if ignore_fetch_build_source %}
     echo "[Ignore Fetch Build Source]"
     {% else %}
@@ -331,27 +339,29 @@ main(){
         echo "Anaconda build error: Could not fetch build sources"
         exit {{EXIT_CODE_ERROR}}
     fi
-
     binstar_build
     binstar_post_build
-
     upload_build_targets
 
     echo "Exit BINSTAR_BUILD_RESULT=$BINSTAR_BUILD_RESULT"
 
     if [ "$BINSTAR_BUILD_RESULT" == "success" ]; then
+        echo {{ metadata(binstar_build_result='success') }}
         exit {{EXIT_CODE_OK}}
     elif [ "$BINSTAR_BUILD_RESULT" == "error" ]; then
+        echo {{ metadata(binstar_build_result='error') }}
         exit {{EXIT_CODE_ERROR}}
     elif [ "$BINSTAR_BUILD_RESULT" == "failure" ]; then
+        echo {{ metadata(binstar_build_result='failure') }}
         exit {{EXIT_CODE_FAILED}}
     else
+        echo {{ metadata(binstar_build_result='error') }}
         exit {{EXIT_CODE_ERROR}}
     fi
 }
 
 #### #### #### #### #### #### #### #### #### #### #### #### #### ####
-# Execute main funtions
+# Execute main functions
 #### #### #### #### #### #### #### #### #### #### #### #### #### ####
 parse_options $*;
 main;
