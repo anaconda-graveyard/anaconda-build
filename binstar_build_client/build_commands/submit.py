@@ -184,7 +184,8 @@ def tail_sub_build(binstar, args, build_no):
     return 0
 
 def clean_validate_tail_args(args):
-    if args.tail:
+    if args.tail or args.sub_builds:
+        args.tail = True
         tail_sub_builds = sorted(_.strip() for _ in args.sub_builds or []) or ['all']
         for sub_build_no in tail_sub_builds:
             if sub_build_no == 'all':
