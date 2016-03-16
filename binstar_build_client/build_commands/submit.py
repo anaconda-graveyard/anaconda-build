@@ -13,7 +13,7 @@ See also:
 from __future__ import (print_function, unicode_literals, division,
     absolute_import)
 
-from argparse import RawDescriptionHelpFormatter
+from argparse import RawDescriptionHelpFormatter, Namespace
 from contextlib import contextmanager
 import logging
 import os
@@ -27,6 +27,7 @@ from binstar_build_client.utils.filter import ExcludeGit
 from binstar_build_client.utils.git_utils import is_url, get_urlpath, \
     get_gitrepo
 from binstar_build_client.utils.matrix import serialize_builds, load_all_binstar_yml
+from binstar_build_client.build_commands.info import tail as tail_main
 from binstar_client import errors
 from binstar_client.errors import UserError
 from binstar_client.utils import get_binstar, PackageSpec, upload_print_callback
@@ -96,8 +97,10 @@ def submit_build(binstar, args):
                                                      queue=args.queue, queue_tags=queue_tags,
                                                      test_only=args.test_only, callback=upload_print_callback(args))
 
-                print_build_results(args, build, binstar)
-
+                if not args.tail:
+                    print_build_results(args, build, binstar)
+                else:
+                    tail_sub_build(binstar, args, build['build_no'])
     else:
         log.info('Build not submitted (dry-run)')
 
@@ -116,7 +119,6 @@ def print_build_results(args, build, binstar):
     log.info('You may also run\n\n    anaconda build tail -f %s/%s %s\n' % (args.package.user, args.package.name, build['build_no']))
     log.info('')
     log.info('Build %s submitted' % build['build_no'])
-
 
 def submit_git_build(binstar, args):
 
@@ -139,9 +141,6 @@ def submit_git_build(binstar, args):
     if not args.dry_run:
         log.info("Submitting the following repo for package creation: %s" % args.git_url)
         builds = get_gitrepo(urlparse(args.path))
-        for build in builds:
-            if build.get('envvars'):
-                build['env'] = build['envvars']
         # TODO: change channels= to labels=
         build = binstar.submit_for_url_build(args.package.user, args.package.name, builds,
                                              channels=args.labels, queue=args.queue, sub_dir=args.sub_dir,
@@ -149,19 +148,64 @@ def submit_git_build(binstar, args):
                                              filter_platform=args.platform,
                                                 )
 
-        print_build_results(args, build, binstar)
-
+        if not args.tail:
+            print_build_results(args, build, binstar)
+        else:
+            tail_sub_build(binstar, args, build['build_no'])
     else:
         log.info('Build not submitted (dry-run)')
 
 
+def tail_sub_build(binstar, args, build_no):
+    short_arg = '-f' if args.tail_lines is None else '-n'
+    spacer = '###\n###'
+    for sub_build_no, raise_ in args.sub_build_gen():
+        if binstar.sub_build_exists(args.package.user, args.package.name, build_no, sub_build_no):
+            build_no_sub_build_no = '{}.{}'.format(build_no, sub_build_no)
+            tail_args = Namespace(f=args.tail_lines is None,
+                                  n=args.tail_lines,
+                                  build_no=build_no_sub_build_no)
+            vars(tail_args).update(vars(args))
+            log.info(spacer)
+            log.info('\t\tanaconda build tail {} {}/{} {}'.format(short_arg,
+                                                       args.package.user,
+                                                       args.package.name,
+                                                       build_no_sub_build_no))
+            log.info(spacer)
+            ret_val = tail_main(tail_args)
+            if ret_val:
+                return ret_val
+        elif raise_:
+            raise errors.BinstarError('Sub-build {}.{} for '
+                                      'package {} does not exist'.format(build_no, sub_build_no, package))
+    return 0
+
+def clean_validate_tail_args(args):
+    tail_sub_builds = sorted(_.strip() for _ in args.tail)
+    for sub_build_no in tail_sub_builds:
+        if sub_build_no == 'all':
+            continue
+        try:
+            sub_build_no = int(sub_build_no)
+        except Exception as e:
+            raise errors.BinstarError('Expected args to --tail to be integers of "all"')
+    def sub_build_gen():
+        if 'all' in tail_sub_builds:
+            idx = 0
+            while True:
+                yield str(idx), False
+                idx +=1
+        else:
+            for sub_build_no in tail_sub_builds:
+                yield sub_build_no, True
+    args.sub_build_gen = sub_build_gen
+
 def main(args):
 
     binstar = get_binstar(args, cls=BinstarBuildAPI)
-
     package_name = None
     user_name = None
-
+    clean_validate_tail_args(args)
     if args.git_url:
         args.path = args.git_url
 
@@ -273,4 +317,19 @@ def add_parser(subparsers):
     cgroup.add_argument('--sub-dir',
                        help="The sub directory within the git repository (github url submits only)")
 
+    tail_group = parser.add_argument_group('tail')
+    tail_group.add_argument('--tail',
+                            nargs="*",
+                            dest='tail',
+                            help="If '--tail all' or "
+                                 "'--tail <sub-build-int> <sub-build-int>' "
+                                 "\n\tthen immediately tail "
+                                 "all sub-builds or given sub-build integers")
+    tail_group.add_argument('--tail-lines',
+                            type=int,
+                            help='Tail the top "--tail-lines <int>"'
+                                 'lines of each sub-build given '
+                                 'in --tail.\n\t  If --tail-lines is not given, '
+                                 'then wait on "anaconda build tail -f" '
+                                 'for each sub-build in order')
     parser.set_defaults(main=main)
