@@ -175,10 +175,12 @@ def tail_sub_build(binstar, args, build_no):
         elif raise_:
             raise errors.BinstarError('Sub-build {}.{} for '
                                       'package {} does not exist'.format(build_no, sub_build_no, package))
+        else:
+            break
     return 0
 
 def clean_validate_tail_args(args):
-    tail_sub_builds = sorted(_.strip() for _ in args.tail)
+    tail_sub_builds = sorted(_.strip() for _ in args.tail) or ['all']
     for sub_build_no in tail_sub_builds:
         if sub_build_no == 'all':
             continue
