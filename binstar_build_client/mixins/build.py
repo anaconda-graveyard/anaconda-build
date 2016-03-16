@@ -163,8 +163,6 @@ class BuildMixin(object):
                                            sub_build_no)
         url = get_anaconda_url(self, url)
         res = self.session.get(url)
-        import sys
-        print(url, res.status_code, file=sys.stderr)
         if res.status_code in (200, 201):
             return res
 

@@ -157,20 +157,17 @@ def submit_git_build(binstar, args):
 
 
 def tail_sub_build(binstar, args, build_no):
-    short_arg = '-f' if args.tail_lines is None else '-n'
     spacer = '###\n###'
     for sub_build_no, raise_ in args.sub_build_gen():
         if binstar.sub_build_exists(args.package.user, args.package.name, build_no, sub_build_no):
             build_no_sub_build_no = '{}.{}'.format(build_no, sub_build_no)
-            tail_args = Namespace(f=args.tail_lines is None,
-                                  n=args.tail_lines,
-                                  build_no=build_no_sub_build_no)
+            tail_args = Namespace(f=True,n=None)
             vars(tail_args).update(vars(args))
+            tail_args.build_no = build_no_sub_build_no
             log.info(spacer)
-            log.info('\t\tanaconda build tail {} {}/{} {}'.format(short_arg,
-                                                       args.package.user,
-                                                       args.package.name,
-                                                       build_no_sub_build_no))
+            log.info('\t\tanaconda build tail -f {}/{} {}'.format(args.package.user,
+                                                                  args.package.name,
+                                                                  build_no_sub_build_no))
             log.info(spacer)
             ret_val = tail_main(tail_args)
             if ret_val:
@@ -319,17 +316,11 @@ def add_parser(subparsers):
 
     tail_group = parser.add_argument_group('tail')
     tail_group.add_argument('--tail',
+                            '-f',
                             nargs="*",
                             dest='tail',
                             help="If '--tail all' or "
                                  "'--tail <sub-build-int> <sub-build-int>' "
                                  "\n\tthen immediately tail "
                                  "all sub-builds or given sub-build integers")
-    tail_group.add_argument('--tail-lines',
-                            type=int,
-                            help='Tail the top "--tail-lines <int>"'
-                                 'lines of each sub-build given '
-                                 'in --tail.\n\t  If --tail-lines is not given, '
-                                 'then wait on "anaconda build tail -f" '
-                                 'for each sub-build in order')
     parser.set_defaults(main=main)
