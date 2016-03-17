@@ -158,7 +158,7 @@ class BuildMixin(object):
         return
 
     def sub_build_exists(self, username, package, build_no, sub_build_no):
-        url = '/{}/{}/builds/{}.{}'.format(username,
+        url = '/{}/{}/builds/{}/{}'.format(username,
                                            package, build_no,
                                            sub_build_no)
         url = get_anaconda_url(self, url)
