@@ -66,13 +66,41 @@ def conda_stats():
     return out
 
 def system_packages():
+    out = {}
     if os.name == 'nt':
-        pass
+        args = ['wmic', 'product', 'get', '/format:csv']
+        wmic = check_output(args, raise_=False)
+        if wmic:
+            out['wmic'] = {'out': wmic,
+                           'cmd': ' '.join(args)}
     else:
+        args = ['apt', '--installed', 'list']
+        apt_installed = check_output(args, raise_=False)
+        if apt_installed:
+            out['apt'] = {'cmd': ' '.join(args),
+                          'out': apt_installed,}
+        args = ['dpkg', '-l']
+        dpkg = check_output(args, raise_=False)
+        if dpkg:
+            out['dpkg'] = {'out': dpkg,
+                           'cmd': ' '.join(args),}
+        args = ['brew', 'list']
+        brew = check_output(args, raise_=False)
+        if brew:
+            out['brew'] = {'out': brew,
+                           'cmd': ' '.join(args)}
+        args = ['yum', 'list', 'installed']
+        yum = check_output(args, raise_=False)
+        if yum:
+            out['yum'] = {'out': yum,
+                          'cmd': ' '.join(args)}
+    return out
+
 
 def worker_stats():
     out = {}
-    for func in (conda_stats, storage_stats, memory_stats, system_packages):
+    for func in (conda_stats, storage_stats,
+                 memory_stats, system_packages):
         out.update(func())
     return out
 
