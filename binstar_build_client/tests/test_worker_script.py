@@ -20,6 +20,7 @@ from binstar_client.utils import get_binstar
 from binstar_client.tests.fixture import CLITestCase
 from binstar_client.tests.urlmock import urlpatch
 from binstar_build_client.scripts.worker import main
+from binstar_build_client.utils.worker_stats import worker_stats
 from binstar_build_client.worker.register import WorkerConfiguration
 from binstar_build_client import worker
 from binstar_build_client import BinstarBuildAPI

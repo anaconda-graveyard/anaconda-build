@@ -6,6 +6,7 @@ from binstar_client import errors
 from binstar_client.utils import jencode
 import binstar_client
 import binstar_build_client
+from binstar_build_client.utils.worker_stats import worker_stats
 
 log = logging.getLogger('binstar.build')
 
@@ -158,3 +159,10 @@ class BuildQueueMixin(object):
 
         self._check_response(res, [200])
         return res.json().get('jobs', [])
+
+    def upload_worker_stats(self, username, queue_name, worker_id):
+        url = '%s/build-worker/%s/%s/%s/worker-stats' % (self.domain, username, queue_name, worker_id)
+        data, headers = jencode(worker_stats=worker_stats())
+        res = self.session.post(url, data=data, headers=headers)
+        self._check_response(res, [201])
+        return res.json()
