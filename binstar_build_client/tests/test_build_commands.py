@@ -26,46 +26,44 @@ from binstar_build_client import BinstarBuildAPI
 
 class Test(CLITestCase):
 
-    @property
-    def conda_test_dir(self):
-        d = os.path.dirname
-        return os.path.join(d(d(d(__file__))), 'test', 'conda')
 
     @urlpatch
     @patch('binstar_client.utils.get_binstar')
-    def _tst_submit_git_url(self, bs,  urls, extra_args=None):
-
+    def _tst_submit(self, bs, urls, extra_args=None):
+        bs.user = lambda: {}
         args = ['submit', self.repo] + (extra_args or [])
         main(args, False)
 
     def test_submit_ok(self):
-        self.repo = self.conda_test_dir
-        self._tst_submit_git_url()
+        self.repo = './'
+        self._tst_submit()
 
+    @patch('os.path.isfile')
     @patch('binstar_build_client.build_commands.submit.tail_sub_build')
-    def test_submit_tail(self, tail):
-        self.repo = self.conda_test_dir
-        self._tst_submit_git_url(extra_args=['-f'])
-        self._tst_submit_git_url(extra_args=['--tail'])
-        self._tst_submit_git_url(extra_args=['-f', '--sub-builds', '0', '1'])
+    def test_submit_tail(self, tail, isfile):
+        self.repo = './'
+        self._tst_submit(extra_args=['-f'])
+        self._tst_submit(extra_args=['--tail'])
+        self._tst_submit(extra_args=['-f', '--sub-builds', '0', '1'])
         self.assertEqual(tail.call_count, 3)
 
-    def test_submit_git_url_ok(self):
+    @patch('os.path.isfile')
+    def test_submit_ok(self, isfile):
         self.repo = 'https://github.com/conda/conda-recipes'
-        self._tst_submit_git_url()
+        self._tst_submit()
 
-    def test_submit_git_url_no_github(self):
+    def test_submit_no_github(self):
         self.repo = 'https://gitlab.com/conda/conda-recipes'
         with self.assertRaises(errors.UserError):
-            self._tst_submit_git_url()
+            self._tst_submit()
 
-    def test_submit_git_url_with_dot(self):
+    def test_submit_with_dot(self):
         self.repo = 'http://github.com/PeterDSteinberg/myorg.package1'
-        self._tst_submit_git_url()
+        self._tst_submit()
 
-    def test_submit_git_url_dots_in_branch(self):
+    def test_submit_dots_in_branch(self):
         self.repo = 'https://github.com/PeterDSteinberg/myorg.package1/tree/mybranch.odd.name'
-        self._tst_submit_git_url()
+        self._tst_submit()
 
 if __name__ == '__main__':
     unittest.main()
