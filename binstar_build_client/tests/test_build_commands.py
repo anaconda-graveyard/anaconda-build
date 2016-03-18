@@ -29,7 +29,7 @@ class Test(CLITestCase):
     @property
     def conda_test_dir(self):
         d = os.path.dirname
-        return os.path.join(d(d(d(d(__file__)))), 'test', 'conda')
+        return os.path.join(d(d(d(__file__))), 'test', 'conda')
 
     @urlpatch
     @patch('binstar_client.utils.get_binstar')
@@ -69,4 +69,3 @@ class Test(CLITestCase):
 
 if __name__ == '__main__':
     unittest.main()
->>>>>>> develop
