@@ -52,7 +52,7 @@ def get_gitrepo(url):
     if url.netloc != 'github.com':
         raise errors.UserError("Currently only github.com urls are supported (got %s)" % url.netloc)
 
-    pat = re.compile('^/(?P<repo>[\w-]+/[\w-]+)(/tree/(?P<branch>[\w/]+))?(.git)?$')
+    pat = re.compile('^/(?P<repo>[\w-]+/[-\w\.]+)(/tree/(?P<branch>[\w/\.]+))?(.git)?$')
     match = pat.match(url.path)
     if not match:
         raise errors.UserError("URL path '%s' is not a git repo" % url.path)

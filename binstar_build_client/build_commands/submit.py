@@ -139,9 +139,6 @@ def submit_git_build(binstar, args):
     if not args.dry_run:
         log.info("Submitting the following repo for package creation: %s" % args.git_url)
         builds = get_gitrepo(urlparse(args.path))
-        for build in builds:
-            if build.get('envvars'):
-                build['env'] = build['envvars']
         # TODO: change channels= to labels=
         build = binstar.submit_for_url_build(args.package.user, args.package.name, builds,
                                              channels=args.labels, queue=args.queue, sub_dir=args.sub_dir,
