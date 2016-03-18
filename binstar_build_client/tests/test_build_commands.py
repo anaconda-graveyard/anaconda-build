@@ -28,9 +28,13 @@ class Test(CLITestCase):
 
 
     @urlpatch
-    @patch('binstar_client.utils.get_binstar')
-    def _tst_submit(self, bs, urls, extra_args=None):
-        bs.user = lambda: {}
+    @patch('binstar_client.Binstar')
+    @patch('binstar_client.Binstar.user')
+    @patch('binstar_client.Binstar.package')
+    @patch('binstar_build_client.mixins.build.BuildMixin.submit_for_url_build')
+    @patch('binstar_build_client.mixins.build.BuildMixin.submit_for_build')
+    def _tst_submit(self, submit, submit_url, bs, package, user, urls, extra_args=None):
+        bs.user = lambda :{}
         args = ['submit', self.repo] + (extra_args or [])
         main(args, False)
 
