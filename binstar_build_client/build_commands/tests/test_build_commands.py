@@ -50,5 +50,23 @@ class Test(CLITestCase):
         self._tst_submit_git_url(extra_args=['-f', '--sub-builds', '0', '1'])
         self.assertEqual(tail.call_count, 3)
 
+    def test_submit_git_url_ok(self):
+        self.repo = 'https://github.com/conda/conda-recipes'
+        self._tst_submit_git_url()
+
+    def test_submit_git_url_no_github(self):
+        self.repo = 'https://gitlab.com/conda/conda-recipes'
+        with self.assertRaises(errors.UserError):
+            self._tst_submit_git_url()
+
+    def test_submit_git_url_with_dot(self):
+        self.repo = 'http://github.com/PeterDSteinberg/myorg.package1'
+        self._tst_submit_git_url()
+
+    def test_submit_git_url_dots_in_branch(self):
+        self.repo = 'https://github.com/PeterDSteinberg/myorg.package1/tree/mybranch.odd.name'
+        self._tst_submit_git_url()
+
 if __name__ == '__main__':
     unittest.main()
+>>>>>>> develop
