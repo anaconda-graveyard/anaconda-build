@@ -12,7 +12,7 @@ from binstar_client import errors
 
 def check_output(args, cwd='.', raise_=True):
     try:
-        return _check_output(args, cwd=cwd, env=os.environ)
+        return _check_output(args, cwd=cwd, env=os.environ).decode()
     except Exception as e:
         if raise_:
             raise errors.BinstarError('Failed on {}'.format(args))
@@ -59,10 +59,10 @@ def conda_stats():
     args = ['conda', 'list', '--json']
     conda_list = json.loads(check_output(args).strip())
     out['conda list'] = {'out': conda_list, 'cmd': " ".join(args)}
-    out['conda env list'] = {'out': check_output(['conda','env', 'list']),
+    out['conda env list'] = {'out': check_output(['conda','env', 'list', '--json']),
                              'cmd': 'conda env list'}
-    out['conda info'] = {'out': check_output(['conda', 'info']),
-                         'cmd': 'conda info'}
+    out['conda info'] = {'out': check_output(['conda', 'info', '--json']),
+                         'cmd': 'conda info --json'}
     return out
 
 def system_packages():
