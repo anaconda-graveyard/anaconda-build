@@ -155,61 +155,38 @@ def submit_git_build(binstar, args):
     else:
         log.info('Build not submitted (dry-run)')
 
+def sub_build_gen(binstar, username, package, build_no):
+    for build in binstar.builds(username, package, build_no):
+        for item in build['items']:
+            yield build['build_no'], item['sub_build_no']
+
+
 
 def tail_sub_build(binstar, args, build_no):
     spacer = '###\n###'
-    for sub_build_no, raise_ in args.sub_build_gen():
-        if binstar.sub_build_exists(args.package.user, args.package.name, build_no, sub_build_no):
-            build_no_sub_build_no = '{}.{}'.format(build_no, sub_build_no)
-            tail_args = Namespace(f=True,n=None)
-            vars(tail_args).update(vars(args))
-            tail_args.build_no = build_no_sub_build_no
-            log.info(spacer)
-            log.info('###\t\tanaconda build tail -f {}/{} {}'.format(args.package.user,
-                                                                  args.package.name,
-                                                                  build_no_sub_build_no))
-            log.info(spacer)
-            ret_val = tail_main(tail_args)
-            if ret_val:
-                return ret_val
-        elif raise_:
-            raise errors.BinstarError('Sub-build {}.{} for '
-                                      'package {}/{} does '
-                                      'not exist'.format(build_no,
-                                                         sub_build_no,
-                                                         args.package.user,
-                                                         args.package.name))
-        else:
-            break
+    for build_no, sub_build_no in sub_build_gen(binstar, args.package.user,
+                                                args.package.name, build_no):
+        build_str = '{}.{}'.format(build_no, sub_build_no)
+        tail_args = Namespace(f=True, n=None,
+                              build_no=build_str, package=args.package)
+        log.info(spacer)
+        log.info('###\t\tanaconda build tail -f {}/{} {}'.format(args.package.user,
+                                                                 args.package.name,
+                                                                 build_str))
+        log.info(spacer)
+        ret_val = tail_main(tail_args)
+        if ret_val:
+            return ret_val
     return 0
 
 def clean_validate_tail_args(args):
     if args.tail or args.sub_builds:
         args.tail = True
-        tail_sub_builds = [_.strip() for _ in args.sub_builds or []]or ['all']
-        for sub_build_no in tail_sub_builds:
-            if sub_build_no == 'all':
-                continue
-            try:
-                sub_build_no = int(sub_build_no)
-            except Exception as e:
-                raise errors.BinstarError('Expected args to --tail to be integers of "all"')
-        def sub_build_gen():
-            if 'all' in tail_sub_builds:
-                idx = 0
-                while True:
-                    yield str(idx), False
-                    idx +=1
-            else:
-                for sub_build_no in tail_sub_builds:
-                    yield sub_build_no, True
-        args.sub_build_gen = sub_build_gen
 
 def main(args):
     binstar = get_binstar(args, cls=BinstarBuildAPI)
     package_name = None
     user_name = None
-    clean_validate_tail_args(args)
     if args.git_url:
         args.path = args.git_url
 
@@ -261,6 +238,23 @@ def main(args):
         args.package = PackageSpec(user_name, package_name)
 
         submit_build(binstar, args)
+
+def add_tail_parser(parser):
+    tail_group = parser.add_argument_group('tail')
+    tail_group.add_argument('--tail',
+                            '-f',
+                            action='store_true',
+                            dest='tail',
+                            help="Do 'tail -f on each sub-build log or "
+                                 "each of the sub-builds given in '--sub-builds'")
+    tail_group.add_argument('--sub-builds',
+                            '-s',
+                            type=int,
+                            nargs="+",
+                            action='append',
+                            help="If --tail or -f is given, "
+                                 "then tail sub-builds in '--sub-builds <int> <int>' "
+                                 " \n\tOtherwise with --tail or -f, tail -f all sub-builds")
 
 
 def add_parser(subparsers):
@@ -321,17 +315,5 @@ def add_parser(subparsers):
     cgroup.add_argument('--sub-dir',
                        help="The sub directory within the git repository (github url submits only)")
 
-    tail_group = parser.add_argument_group('tail')
-    tail_group.add_argument('--tail',
-                            '-f',
-                            action='store_true',
-                            dest='tail',
-                            help="Do 'tail -f on each sub-build log or "
-                                 "each of the sub-builds given in '--sub-builds'")
-    tail_group.add_argument('--sub-builds',
-                            '-s',
-                            nargs='*',
-                            help="If --tail or -f is given, "
-                                 "then tail sub-builds in '--sub-builds <int> <int>' "
-                                 " \n\tOtherwise with --tail or -f, tail -f all sub-builds")
+    add_tail_parser(parser)
     parser.set_defaults(main=main)

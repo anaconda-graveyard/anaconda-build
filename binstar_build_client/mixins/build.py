@@ -156,13 +156,3 @@ class BuildMixin(object):
         self._check_response(res)
 
         return
-
-    def sub_build_exists(self, username, package, build_no, sub_build_no):
-        url = '/{}/{}/builds/{}/{}'.format(username,
-                                           package, build_no,
-                                           sub_build_no)
-        url = get_anaconda_url(self, url)
-        res = self.session.get(url)
-        if res.status_code in (200, 201):
-            return res
-

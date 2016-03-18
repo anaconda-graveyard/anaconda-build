@@ -35,7 +35,6 @@ class Test(CLITestCase):
     @patch('binstar_client.utils.get_binstar')
     def _tst_submit_git_url(self, bs,  urls, extra_args=None):
 
-        bs.user = lambda: {}
         args = ['submit', self.repo] + (extra_args or [])
         main(args, False)
 
@@ -50,12 +49,6 @@ class Test(CLITestCase):
         self._tst_submit_git_url(extra_args=['--tail'])
         self._tst_submit_git_url(extra_args=['-f', '--sub-builds', '0', '1'])
         self.assertEqual(tail.call_count, 3)
-    def test_submit_tail_bad_args(self):
-        self.repo = self.conda_test_dir
-        with self.assertRaises(errors.BinstarError):
-            self._tst_submit_git_url(extra_args=['-f', '--sub-builds',
-                                                 'not-allowed'])
-
 
 if __name__ == '__main__':
     unittest.main()

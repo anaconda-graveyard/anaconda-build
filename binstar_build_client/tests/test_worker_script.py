@@ -66,10 +66,10 @@ class Test(CLITestCase):
     @patch('binstar_build_client.worker.register.WorkerConfiguration.register')
     @patch('binstar_build_client.worker.register.WorkerConfiguration.deregister')
     @patch('binstar_build_client.worker.register.WorkerConfiguration.load')
-    def test_register_name(self, load, deregister, urls, register):
+    def test_register_name(self, load, deregister, register, urls):
 
         main(['register', 'username/queue-1', '--name', 'myworker'], False)
-        self.assertEqual(register.call_count, 1)
+        self.assertEqual(urls.call_count, 1)
 
         main(['deregister', 'myworker'], False)
         self.assertEqual(deregister.call_count, 1)
@@ -78,7 +78,7 @@ class Test(CLITestCase):
     @patch('binstar_build_client.worker.register.WorkerConfiguration.register')
     @patch('binstar_build_client.worker.register.WorkerConfiguration.deregister')
     @patch('binstar_build_client.worker.register.WorkerConfiguration.load')
-    def test_register_bad_name(self, load, deregister, urls, register):
+    def test_register_bad_name(self, load, deregister, register, urls):
         with self.assertRaises(errors.BinstarError):
             main(['register', 'username/queue-1', '--name','!bad-name'], False)
 
