@@ -80,7 +80,7 @@ anaconda logout
 ```
 Add a chalmers managed program for the worker
 ```
-chalmers add --name worker -c "anaconda --show-traceback -t ${HOME}/.anaconda.token worker run ${WORKER_ID} --status-file ${HOME}/.worker.status
+chalmers add --name worker -c "anaconda --show-traceback -t ${HOME}/.anaconda.token worker run ${WORKER_ID} --status-file" ${HOME}/.worker.status
 ```
 Start chalmers
 ```
