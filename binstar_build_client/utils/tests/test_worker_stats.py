@@ -4,7 +4,7 @@ import os
 
 from binstar_build_client.utils.worker_stats import worker_stats
 
-expected_keys = {'win': set(('fsutil', 'systeminfo', 'wmic')),
+expected_keys = {'win': set(('logicaldisk', 'systeminfo', 'wmic')),
                  'posix': set(('df',('vm_stat', 'meminfo'),
                                ))}
 

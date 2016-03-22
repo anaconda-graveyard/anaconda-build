@@ -19,19 +19,10 @@ def check_output(args, cwd='.', raise_=True):
 
 def storage_stats():
     if os.name == 'nt':
-        fsutil_args = ['cmd', '/c', 'fsutil', 'fsinfo', 'drives']
-        drives = check_output(fsutil_args)
-        drives = [line.lower() for line in drives.splitlines() if 'drives:' in line.lower()]
-        if not len(drives):
-            raise errors.BinstarError('Failed on {}'.format(fsutil_args))
-        drives = drives[0].replace('drives:', '').strip().split()
-        drives = [drive.strip().replace('\\', '') for drive in drives]
-        cmds = [['cmd', '/c', 'fsutil',
-                 'fsinfo', 'statistics',
-                 drive] for drive in drives]
-
-        out =  "\n\n".join(" ".join(cmd) + '\n\n' +check_output(cmd) for cmd in cmds)
-        return {'fsutil': {'cmd': "\n".join(" ".join(cmd) for cmd in cmds),
+        disk_args = ['cmd', '/c', 'wmic', 'logicaldisk', 'get',
+                       'size,freespace,caption,description,volumename']
+        disk = check_output(disk_args, raise_=False)
+        return {'logicaldisk': {'cmd': " ".join(disk_args),
                            'out': out,
         }}
     else:
