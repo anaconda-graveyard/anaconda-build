@@ -2,6 +2,10 @@ FROM: continuumIO/conda_builder_linux
 RUN yum install -y patch subversion
 
 MAINTAINER Peter Steinberg <psteinberg@continuum.io>
+USER root
+WORKDIR /root
+
+RUN yum install -y curl-devel openssl-devel zlib-devel
 USER dev
 WORKDIR /home/dev
 
@@ -14,7 +18,3 @@ RUN conda config --set always_yes true && \
     conda config --add channels binstar
 RUN conda install conda-build jinja2 anaconda-client psutil anaconda-build llvm
 RUN anaconda config --set url https://api.anaconda.org
-USER root
-WORKDIR /root
-
-RUN yum install -y curl-devel openssl-devel zlib-devel

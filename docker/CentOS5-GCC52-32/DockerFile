@@ -2,6 +2,11 @@ FROM: continuumIO/conda_builder_linux
 RUN yum install -y patch subversion
 
 MAINTAINER Peter Steinberg <psteinberg@continuum.io>
+USER root
+WORKDIR /root
+
+RUN yum install -y curl-devel openssl-devel zlib-devel
+
 USER dev
 WORKDIR /home/dev
 
@@ -23,7 +28,3 @@ RUN echo 'export CXXFLAGS="\${CXXFLAGS} -m32"' >> ~/.bashrc
 RUN export CONDA_FORCE_32BIT=1
 RUN echo 'export CONDA_FORCE_32BIT=1' >> ~/.bashrc
 
-USER root
-WORKDIR /root
-
-RUN yum install -y curl-devel openssl-devel zlib-devel
