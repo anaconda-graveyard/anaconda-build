@@ -5,7 +5,7 @@ MAINTAINER Peter Steinberg <psteinberg@continuum.io>
 USER root
 WORKDIR /root
 
-RUN yum install -y curl-devel openssl-devel zlib-devel
+RUN conda install curl openssl zlib
 USER dev
 WORKDIR /home/dev
 
