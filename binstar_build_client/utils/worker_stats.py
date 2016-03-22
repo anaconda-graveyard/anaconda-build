@@ -48,11 +48,11 @@ def memory_stats():
 def conda_stats():
     out = {}
     args = ['conda', 'list', '--json']
-    conda_list = json.loads(check_output(args).strip())
+    conda_list = json.loads(check_output(args))
     out['conda list'] = {'out': conda_list, 'cmd': " ".join(args)}
-    out['conda env list'] = {'out': check_output(['conda','env', 'list', '--json']),
+    out['conda env list'] = {'out': json.loads(check_output(['conda','env', 'list', '--json'])),
                              'cmd': 'conda env list'}
-    out['conda info'] = {'out': check_output(['conda', 'info', '--json']),
+    out['conda info'] = {'out': json.loads(check_output(['conda', 'info', '--json'])),
                          'cmd': 'conda info --json'}
     return out
 
