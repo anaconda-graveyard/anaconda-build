@@ -21,9 +21,9 @@ def storage_stats():
     if os.name == 'nt':
         disk_args = ['cmd', '/c', 'wmic', 'logicaldisk', 'get',
                        'size,freespace,caption,description,volumename']
-        disk = check_output(disk_args, raise_=False)
+        disk = check_output(disk_args)
         return {'logicaldisk': {'cmd': " ".join(disk_args),
-                           'out': out,
+                                'out': disk,
         }}
     else:
         return {'df': {'cmd': 'df', 'out': check_output(['df'])}}
