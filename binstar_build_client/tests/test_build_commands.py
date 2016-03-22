@@ -50,6 +50,7 @@ class Test(CLITestCase):
         self._tst_submit(extra_args=['-f', '--sub-builds', '0', '1'])
         self.assertEqual(tail.call_count, 3)
 
+    @patch('os.path.isfile')
     def test_submit_ok(self, isfile):
         self.repo = 'https://github.com/conda/conda-recipes'
         self._tst_submit()
