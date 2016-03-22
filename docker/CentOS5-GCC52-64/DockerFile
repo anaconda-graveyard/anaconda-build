@@ -2,17 +2,8 @@ FROM: continuumIO/conda_builder_linux
 RUN yum install -y patch subversion
 
 MAINTAINER Peter Steinberg <psteinberg@continuum.io>
-USER root
-WORKDIR /root
 
 RUN conda install curl openssl zlib
-USER dev
-WORKDIR /home/dev
-
-ENV HOME /home/dev
-ENV PATH /opt/miniconda/bin:$PATH
-
-
 RUN conda config --set always_yes true && \
     conda config --set anaconda_upload false && \
     conda config --add channels binstar
