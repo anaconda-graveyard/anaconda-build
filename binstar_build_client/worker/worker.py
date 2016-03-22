@@ -67,6 +67,9 @@ class Worker(object):
             with open(self.args.status_file, 'w') as fd:
                 fd.write("{0} {1} '{2}'\n".format(int(not ok), int(time.time()), msg))
 
+    def write_stats(self):
+        self.bs.upload_worker_stats(self.config.username, self.config.queue, self.worker_id)
+
     def job_loop(self):
         """
         An iterator that will yield job_data objects when

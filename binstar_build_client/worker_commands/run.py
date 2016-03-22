@@ -42,6 +42,7 @@ def main(args):
     worker = Worker(bs, worker_config, args)
 
     worker.write_status(True, "Starting")
+    worker.write_stats()
 
     try:
         with worker_config.running():
