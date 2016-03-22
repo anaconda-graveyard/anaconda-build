@@ -1,7 +1,6 @@
 '''
 test_build_commands.py includes tests for commands
 that start with:
-
 anaconda build
 '''
 from __future__ import (print_function, unicode_literals, division,
@@ -51,7 +50,6 @@ class Test(CLITestCase):
         self._tst_submit(extra_args=['-f', '--sub-builds', '0', '1'])
         self.assertEqual(tail.call_count, 3)
 
-    @patch('os.path.isfile')
     def test_submit_ok(self, isfile):
         self.repo = 'https://github.com/conda/conda-recipes'
         self._tst_submit()
@@ -68,6 +66,33 @@ class Test(CLITestCase):
     def test_submit_dots_in_branch(self):
         self.repo = 'https://github.com/PeterDSteinberg/myorg.package1/tree/mybranch.odd.name'
         self._tst_submit()
+
+    @urlpatch
+    @patch('binstar_build_client.mixins.build_queue.BuildQueueMixin.build_backlog')
+    def test_backlog(self, backlog, urls):
+        main(['backlog', 'user/queue'], False)
+
+    @urlpatch
+    @patch('binstar_build_client.mixins.build.BuildMixin.tail_build')
+    def test_tail(self, tail, urls):
+        main(['tail', '-f', 'user/package', '0.1'], False)
+
+    @urlpatch
+    @patch('binstar_build_client.mixins.build_queue.BuildQueueMixin.add_build_queue')
+    def test_queue(self, add_build_queue, urls):
+        main(['queue', '--create', 'user/queue'], False)
+
+    @urlpatch
+    @patch('binstar_client.Binstar.package')
+    @patch('binstar_build_client.mixins.build.BuildMixin.add_ci')
+    def test_save(self, add_ci, package, urls):
+        main(['save', 'https://github.com/user/package.name',
+              '--package', 'user/package.name'], False)
+
+    def test_save_bad_url(self):
+        with self.assertRaises(errors.BinstarError):
+            main(['save', 'https://not-github.com/user/package.name',
+                  '--package', 'user/package.name'], False)
 
 if __name__ == '__main__':
     unittest.main()
