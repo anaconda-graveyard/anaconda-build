@@ -44,7 +44,7 @@ Here is an example of informally testing anaconda-build that can be run after in
 Make sure build-related Python packages are up-to-date
 ```
 conda update -n root conda-build conda
-conda create -n build_env python=2.7 anaconda-build chalmers anaconda-client ndg-httpsclient jinja2
+conda create -n build_env python=2.7 anaconda-build chalmers anaconda-client ndg-httpsclient jinja2 mock
 source activate build_env
 ```
 Login and come up with a queue name (user/queue)
