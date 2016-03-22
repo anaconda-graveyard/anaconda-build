@@ -31,8 +31,8 @@ def storage_stats():
 def memory_stats():
     out = {}
     if os.name == 'nt':
-        out = {'out': check_output(['systeminfo']),
-               'cmd': 'systeminfo'}
+        out['systeminfo'] = {'out': check_output(['systeminfo']),
+                             'cmd': 'systeminfo'}
     else:
         meminfo = os.path.join('/', 'proc', 'meminfo')
         if os.path.exists(meminfo):
