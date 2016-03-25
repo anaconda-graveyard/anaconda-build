@@ -9,7 +9,7 @@ import tempfile
 
 from binstar_build_client.worker_commands.register import get_platform
 from binstar_build_client.worker.utils.script_generator import gen_build_script
-from binstar_build_client.utils.script_generator import remove_conda_n_root
+from binstar_build_client.worker.utils.script_generator import remove_conda_n_root
 
 def default_build_data():
     return {
