@@ -6,6 +6,7 @@ from __future__ import print_function, unicode_literals, absolute_import
 import logging
 import os
 import pipes
+import re
 import shlex
 
 import jinja2
@@ -28,6 +29,9 @@ EXIT_CODE_OK = 0
 EXIT_CODE_ERROR = 11
 EXIT_CODE_FAILED = 12
 
+AVOID_CONDA_UPDATE_N_ROOT = re.compile('conda\s+(--debug\s+){0,1}'
+                                       '((install)|(update)){1}\s+'
+                                       '[\. "\'\\/.-]*-n\s+root\s+|$')
 
 # ===============================================================================
 # Helper functions
@@ -179,6 +183,16 @@ GLOBALS = {
     'metadata': metadata,
 }
 
+def remove_conda_n_root(build_script):
+    lines = []
+    comment = 'REM ######## ' if os.name == 'nt' else '########  '
+    for line in build_script.split('\n'):
+        if bool(re.search(AVOID_CONDA_UPDATE_N_ROOT, line)):
+            lines.extend(('{} NOT RUNNING: {}'.format(comment, line),
+                          '{} (It is updating conda root env)'.format(comment)))
+        else:
+            lines.append(line)
+    return '\n'.join(lines)
 
 # ===============================================================================
 # Generate
@@ -222,8 +236,8 @@ def render_build_script(working_dir, build_data, **context):
     extension = '.bat' if platform in ['win-32', 'win-64'] else '.sh'
     template_name = 'build_script' + extension
     template = env.get_or_select_template(template_name)
-
-    return template.render(**context)
+    build_script = template.render(**context)
+    return remove_conda_n_root(build_script)
 
 
 def gen_build_script(staging_dir, working_dir, build_data, **context):

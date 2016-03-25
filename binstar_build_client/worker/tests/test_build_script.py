@@ -9,6 +9,7 @@ import tempfile
 
 from binstar_build_client.worker_commands.register import get_platform
 from binstar_build_client.worker.utils.script_generator import gen_build_script
+from binstar_build_client.utils.script_generator import remove_conda_n_root
 
 def default_build_data():
     return {
@@ -291,6 +292,22 @@ class Test(unittest.TestCase):
             self.assertIn('ENVIRONMENT_VARIABLE=', contents)
             build_data['build_item_info'].pop(name)
 
+
+    def test_cant_conda_install_n_root(self):
+        ok = ['conda install -n myenv numpy scipy scikit-learn',
+              'conda update -n otherenv r',
+              '/path/to/conda --debug update anaconda-client',
+              'conda update numpy -n rootlikename']
+        for ok_cmd in ok:
+            self.assertEqual(ok_cmd, remove_conda_n_root(ok_cmd))
+        bad = ['conda --debug update -n root conda',
+               ' conda    --debug    update     -n     root    conda  ',
+               'conda install something -n root',
+               'conda install something -n root ',
+               'conda --debug install conda-build -n root',
+               '/path/to/conda   --debug    install    conda-build   -n   root  ']
+        for bad_cmd in bad:
+            self.assertIn('NOT RUNNING', remove_conda_n_root(bad_cmd))
 
 if __name__ == "__main__":
     # import sys;sys.argv = ['', 'Test.test_timeout']
