@@ -9,6 +9,7 @@ import tempfile
 
 from binstar_build_client.worker_commands.register import get_platform
 from binstar_build_client.worker.utils.script_generator import gen_build_script
+from binstar_build_client.worker.utils.script_generator import remove_conda_n_root
 
 def default_build_data():
     return {
@@ -291,6 +292,55 @@ class Test(unittest.TestCase):
             self.assertIn('ENVIRONMENT_VARIABLE=', contents)
             build_data['build_item_info'].pop(name)
 
+
+    def test_cant_conda_install_n_root(self):
+        ok = ['conda install -n myenv numpy scipy scikit-learn',
+              'conda update -n otherenv r',
+              '/path/to/conda --debug update anaconda-client',
+              'conda update numpy -n rootlikename',
+              'conda install abc def ghi -n rootlike',
+              'conda --debug update r-root',
+              'conda install root',
+              'conda env list -n root',
+              'conda env list',
+              'conda env list -n rootlike',
+              'conda --debug install numpy',
+              'conda update conda',
+              'conda update conda-build',
+              'conda install anaconda-client',
+              'conda install roottools',
+              'conda info',
+              'someothercommand -n root'
+
+              ]
+        for ok_cmd in ok:
+            self.assertEqual(ok_cmd, remove_conda_n_root(ok_cmd))
+            ok_cmd = '  ' + ok_cmd + '  '
+            self.assertEqual(ok_cmd, remove_conda_n_root(ok_cmd))
+        bad = ['conda --debug update -n root conda',
+               ' conda    --debug    update     -n     root    conda  ',
+               'conda install something -n root',
+               'conda --debug install conda-build -n root',
+               '/path/to/conda   --debug    install    conda-build   -n   root  ',
+               'conda install -c abc/def -n root conda-build conda',
+              ' conda update -c http://domain.com/path -n root',
+              '/path/to/conda --debug update abc def ghi -n root',
+              'conda install abc def ghi -n root']
+        for bad_cmd in bad:
+            self.assertIn('NOT RUNNING', remove_conda_n_root(bad_cmd))
+            bad_cmd = bad_cmd.replace('-n', '--name')
+            self.assertIn('NOT RUNNING', remove_conda_n_root(bad_cmd))
+        for ok_cmd in ok:
+            if not 'update' in ok_cmd or not 'install' in ok_cmd:
+                continue
+            if not 'conda' in ok_cmd:
+                continue
+            bad_cmd = ok_cmd + '     -n root'
+            self.assertNotEqual(bad_cmd, remove_conda_n_root(bad_cmd))
+            bad_cmd = ' ' + bad_cmd + ' '
+            self.assertNotEqual(bad_cmd, remove_conda_n_root(bad_cmd))
+            bad_cmd = bad_cmd.replace('-n root', '--name   root')
+            self.assertNotEqual(bad_cmd, remove_conda_n_root(bad_cmd))
 
 if __name__ == "__main__":
     # import sys;sys.argv = ['', 'Test.test_timeout']
