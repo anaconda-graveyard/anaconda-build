@@ -108,7 +108,8 @@ class Test(CLITestCase):
     @patch('binstar_build_client.worker.register.WorkerConfiguration.load')
     @patch('binstar_build_client.worker.worker.Worker.run')
     @patch('binstar_build_client.worker.register.WorkerConfiguration.validate_worker_name')
-    def test_worker_simple(self, validate, run, load, loop, urls):
+    @patch('binstar_build_client.mixins.build_queue.BuildQueueMixin.upload_worker_stats')
+    def test_worker_simple(self, upload, validate, run, load, loop, urls):
 
         main(['--show-traceback', 'worker', 'run', worker_data['worker_id']], False)
 
@@ -122,7 +123,8 @@ class Test(CLITestCase):
     @patch('binstar_build_client.worker.docker_worker.docker')
     @patch('binstar_build_client.worker.docker_worker.kwargs_from_env')
     @patch('binstar_build_client.worker.register.WorkerConfiguration.validate_worker_name')
-    def test_worker_simple_docker(self, validate, kwargs_from_env, docker1, docker2, run, load, loop, urls):
+    @patch('binstar_build_client.mixins.build_queue.BuildQueueMixin.upload_worker_stats')
+    def test_worker_simple_docker(self, upload, validate, kwargs_from_env, docker1, docker2, run, load, loop, urls):
 
         docker1.Client = docker2.Client = Mock()
 

@@ -51,20 +51,14 @@ def conda_stats():
     conda_list = json.loads(check_output(args))
     out['conda list'] = {'out': conda_list, 'cmd': " ".join(args)}
     out['conda env list'] = {'out': json.loads(check_output(['conda','env', 'list', '--json'])),
-                             'cmd': 'conda env list'}
+                             'cmd': 'conda env list --json'}
     out['conda info'] = {'out': json.loads(check_output(['conda', 'info', '--json'])),
                          'cmd': 'conda info --json'}
     return out
 
 def system_packages():
     out = {}
-    if os.name == 'nt':
-        args = ['wmic', 'product', 'get', '/format:csv']
-        wmic = check_output(args, raise_=False)
-        if wmic:
-            out['wmic'] = {'out': wmic,
-                           'cmd': ' '.join(args)}
-    else:
+    if os.name != 'nt':
         args = ['apt', '--installed', 'list']
         apt_installed = check_output(args, raise_=False)
         if apt_installed:
