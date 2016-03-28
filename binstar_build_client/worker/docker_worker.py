@@ -56,7 +56,9 @@ class DockerWorker(Worker):
             log.warn("Allowing users to specify docker images")
 
     def working_dir(self, build_data):
-        return '/root'
+        image = [img for img in self.client.images()
+                 if self.args.image in img['RepoTags']][0]
+        return self.client.inspect_image(image)['Config']['WorkingDir']
 
     def run(self, build_data, script_filename, build_log, timeout, iotimeout,
             api_token=None, git_oauth_token=None, build_filename=None, instructions=None,
