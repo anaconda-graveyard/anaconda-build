@@ -39,10 +39,10 @@ class DockerWorker(Worker):
         try:
             image = args.image
             if ':' in image:
-                image, tag = image.split(':', 1)
+                self.image, self.tag = image.split(':', 1)
             else:
-                image, tag = image, None
-            images = self.client.images(image)
+                self.image, self.tag = image, None
+            images = self.client.images(self.image)
         except ConnectionError as err:
             raise errors.BinstarError(
                 "Docker client could not connect to daemon (is docker installed?)\n"
@@ -56,8 +56,15 @@ class DockerWorker(Worker):
             log.warn("Allowing users to specify docker images")
 
     def working_dir(self, build_data):
-        image = [img for img in self.client.images()
-                 if self.args.image in img['RepoTags']][0]
+        if not self.tag:
+            find_match = self.image # no tag
+            image = [img for img in self.client.images()
+                     if find_match in {i.split(':', 1)[0] for i in img['RepoTags']}][0]
+        else:
+            find_match = self.args.image # with the tag
+            image = [img for img in self.client.images()
+                     if find_match in img['RepoTags']][0]
+
         return self.client.inspect_image(image)['Config']['WorkingDir']
 
     def run(self, build_data, script_filename, build_log, timeout, iotimeout,
