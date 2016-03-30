@@ -29,7 +29,7 @@ from binstar_build_client import BinstarBuildAPI
 log = logging.getLogger('binstar.build')
 
 def tail(package_user, package_name, build_no,
-         limit, tail_f=True, binstar=None, binstar_args=None):
+         limit, follow=True, binstar=None, binstar_args=None):
 
     if binstar is None:
         binstar = get_binstar(binstar_args, cls=BinstarBuildAPI)
@@ -41,7 +41,7 @@ def tail(package_user, package_name, build_no,
 
     last_entry = log_items['last_entry']
 
-    while tail_f and not log_items.get('finished'):
+    while follow and not log_items.get('finished'):
         time.sleep(4)
         log_items = binstar.tail_build(package_user, package_name,
                                        build_no, after=last_entry)
@@ -60,7 +60,7 @@ def tail(package_user, package_name, build_no,
 
 def tail_main(args):
     return tail(args.package.user, args.package.name,
-                args.build_no, limit=args.n, tail_f=args.f,
+                args.build_no, limit=args.n, follow=args.f,
                 binstar_args=args)
 
 def list_builds(args):

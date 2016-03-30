@@ -173,7 +173,7 @@ def tail_sub_build(binstar, args, build_no):
                                                                  build_str))
         log.info(spacer)
         ret_val = tail(args.package.user, args.package.name,
-                       build_str, tail_f=True, limit=None,
+                       build_str, follow=True, limit=None,
                        binstar=binstar)
         if ret_val:
             return ret_val
