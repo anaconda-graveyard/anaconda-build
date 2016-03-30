@@ -167,8 +167,6 @@ def tail_sub_build(binstar, args, build_no):
     for build_no, sub_build_no in sub_build_gen(binstar, args.package.user,
                                                 args.package.name, build_no):
         build_str = '{}.{}'.format(build_no, sub_build_no)
-        tail_args = Namespace(f=True, n=None,
-                              build_no=build_str, package=args.package)
         log.info(spacer)
         log.info('###\t\tanaconda build tail -f {}/{} {}'.format(args.package.user,
                                                                  args.package.name,
