@@ -1,6 +1,7 @@
 import unittest
 import mock
 import os
+import platform
 
 from binstar_build_client.utils.worker_stats import worker_stats
 
@@ -20,12 +21,13 @@ class Test(unittest.TestCase):
                 has_mem = True
             else:
                 has_mem = False
-            has_sys = False
-            for key in ('yum', 'brew', 'dpkg', 'apt'):
-                if key in stats:
-                    has_sys = True
             self.assertTrue(has_mem)
-            self.assertTrue(has_sys)
+            if platform.system().lower() != 'darwin':
+                has_sys = False
+                for key in ('yum', 'dpkg', 'apt'):
+                    if key in stats:
+                        has_sys = True
+                self.assertTrue(has_sys)
         for key, value in stats.items():
             self.assertEqual(sorted(value.keys()), ['cmd', 'out'])
         self.assertIn('conda list', stats)
