@@ -27,7 +27,7 @@ from binstar_build_client.utils.filter import ExcludeGit
 from binstar_build_client.utils.git_utils import is_url, get_urlpath, \
     get_gitrepo
 from binstar_build_client.utils.matrix import serialize_builds, load_all_binstar_yml
-from binstar_build_client.build_commands.info import tail as tail_main
+from binstar_build_client.build_commands.info import tail
 from binstar_client import errors
 from binstar_client.errors import UserError
 from binstar_client.utils import get_binstar, PackageSpec, upload_print_callback
@@ -174,7 +174,9 @@ def tail_sub_build(binstar, args, build_no):
                                                                  args.package.name,
                                                                  build_str))
         log.info(spacer)
-        ret_val = tail_main(tail_args)
+        ret_val = tail(args.package.user, args.package.name,
+                       build_str, tail_f=True, limit=None,
+                       binstar=binstar)
         if ret_val:
             return ret_val
     return 0
