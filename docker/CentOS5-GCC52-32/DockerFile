@@ -1,21 +1,8 @@
-FROM: continuumIO/conda_builder_linux
-RUN yum install -y patch subversion
-
+FROM continuumio/anaconda-build-64
 MAINTAINER Peter Steinberg <psteinberg@continuum.io>
 
-RUN conda install curl openssl zlib
+USER root
+RUN echo 'Defaults:dev   !requiretty' >> /etc/sudoers
 
-RUN conda config --set always_yes true && \
-    conda config --set anaconda_upload false && \
-    conda config --add channels binstar
-RUN conda install conda-build jinja2 anaconda-client psutil anaconda-build llvm
-RUN anaconda config --set url https://api.anaconda.org
-
-RUN export CFLAGS="${CFLAGS} -m32"
-RUN export CXXFLAGS="${CXXFLAGS} -m32"
-RUN echo >> ~/.bashrc
-RUN echo 'export CFLAGS="\${CFLAGS} -m32"' >> ~/.bashrc
-RUN echo 'export CXXFLAGS="\${CXXFLAGS} -m32"' >> ~/.bashrc
-RUN export CONDA_FORCE_32BIT=1
-RUN echo 'export CONDA_FORCE_32BIT=1' >> ~/.bashrc
-
+USER dev
+ENV ARCH=32
