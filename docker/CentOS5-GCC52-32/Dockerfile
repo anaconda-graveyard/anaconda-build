@@ -1,8 +1,4 @@
-FROM continuumio/anaconda-build-64
+FROM continuumio/anaconda-build-linux-64
 MAINTAINER Peter Steinberg <psteinberg@continuum.io>
 
-USER root
-RUN echo 'Defaults:dev   !requiretty' >> /etc/sudoers
-
-USER dev
 ENV ARCH=32

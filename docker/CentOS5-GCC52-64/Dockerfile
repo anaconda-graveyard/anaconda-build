@@ -1,14 +1,16 @@
-FROM continuumio/conda_builder_linux:5.11-5.2-0-0
+FROM continuumio/conda_builder_linux:5.11-5.2-0-1
 MAINTAINER Peter Steinberg <psteinberg@continuum.io>
 
 USER root
+# Subversion is required to support `svn_url` for conda-build
 RUN yum install -y subversion
 
+# Automated build should not prompt for installs, and should not
+# submit builds automatically
 RUN /opt/miniconda/bin/conda config --set always_yes true && \
     /opt/miniconda/bin/conda config --set anaconda_upload false
 
-RUN /opt/miniconda/bin/conda install anaconda-build
-
+# Run as unprivileged user
 USER dev
 # Use the C++98 ABI by default
 ENV ABI=4
