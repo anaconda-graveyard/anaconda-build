@@ -68,7 +68,16 @@ class Worker(object):
                 fd.write("{0} {1} '{2}'\n".format(int(not ok), int(time.time()), msg))
 
     def write_stats(self):
-        self.bs.upload_worker_stats(self.config.username, self.config.queue, self.worker_id)
+        try:
+            self.bs.upload_worker_stats(self.config.username,
+                                        self.config.queue,
+                                        self.worker_id)
+        except errors.NotFound:
+            log.warn('{} does not support upload '
+                     'of worker status information like system '
+                     'packages and the output of conda list.'
+                     '  It may be an out of date '
+                     'version of Repository'.format(self.bs.domain))
 
     def job_loop(self):
         """
