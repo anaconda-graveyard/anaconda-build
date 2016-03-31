@@ -41,6 +41,7 @@ def main(args):
                   args.color, show_tb=args.show_traceback)
 
     worker = DockerWorker(bs, worker_config, args)
+    worker.write_stats()
     worker.work_forever()
 
 def add_parser(subparsers):
