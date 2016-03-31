@@ -8,6 +8,7 @@ from __future__ import (print_function, unicode_literals, division,
     absolute_import)
 
 from binstar_client.utils import jencode, compute_hash
+from binstar_build_client.utils import get_anaconda_url
 from binstar_client.requests_ext import stream_multipart
 import requests
 from binstar_client.errors import BinstarError
@@ -155,4 +156,3 @@ class BuildMixin(object):
         self._check_response(res)
 
         return
-

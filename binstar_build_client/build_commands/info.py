@@ -28,20 +28,23 @@ from binstar_build_client import BinstarBuildAPI
 
 log = logging.getLogger('binstar.build')
 
-def tail(args):
+def tail(package_user, package_name, build_no,
+         limit, follow=True, binstar=None, binstar_args=None):
 
-    binstar = get_binstar(args, cls=BinstarBuildAPI)
+    if binstar is None:
+        binstar = get_binstar(binstar_args, cls=BinstarBuildAPI)
 
-    log_items = binstar.tail_build(args.package.user, args.package.name, args.build_no, limit=args.n)
+    log_items = binstar.tail_build(package_user, package_name,
+                                   build_no, limit=limit)
     for log_item in log_items['log']:
         log.info(log_item.get('msg'))
 
     last_entry = log_items['last_entry']
 
-    while args.f and not log_items.get('finished'):
+    while follow and not log_items.get('finished'):
         time.sleep(4)
-        log_items = binstar.tail_build(args.package.user, args.package.name, args.build_no,
-                                       after=last_entry)
+        log_items = binstar.tail_build(package_user, package_name,
+                                       build_no, after=last_entry)
         for log_item in log_items['log']:
             log.info(log_item.get('msg'))
 
@@ -55,6 +58,10 @@ def tail(args):
     else:
         log.info('... Build still running ...')
 
+def tail_main(args):
+    return tail(args.package.user, args.package.name,
+                args.build_no, limit=args.n, follow=args.f,
+                binstar_args=args)
 
 def list_builds(args):
 
@@ -105,7 +112,7 @@ def add_parser(subparsers):
                              ' but rather to wait for additional data to be appended to the input')
                        )
 
-    parser.set_defaults(main=tail)
+    parser.set_defaults(main=tail_main)
     #===========================================================================
     #
     #===========================================================================

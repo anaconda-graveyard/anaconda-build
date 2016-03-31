@@ -1,7 +1,7 @@
 '''
 Trigger a build that has been saved
 
-See also: 
+See also:
 
   * [Save and Trigger Your Builds](http://docs.anaconda.org/build.html#SaveAndTriggerYourBuilds)
 '''
@@ -16,7 +16,8 @@ from binstar_client.utils import get_binstar
 from binstar_client.utils import package_specs
 
 from binstar_build_client.utils import get_anaconda_url
-
+from binstar_build_client.build_commands.submit import (tail_sub_build,
+                                                       add_tail_parser)
 log = logging.getLogger('binstar.build')
 
 
@@ -48,10 +49,14 @@ def main(args):
     ))
     log.info('To view this build go to %s', url)
     log.info('')
-    log.info(
-        'You may also run\n\n    anaconda build tail -f %s/%s %s\n' % (args.package.user, args.package.name, build_no))
-    log.info('')
-    log.info('Build %s submitted' % build_no)
+
+    if args.tail:
+        tail_sub_build(binstar, args, build_no)
+    else:
+        log.info(
+            'You may also run\n\n    anaconda build tail -f %s/%s %s\n' % (args.package.user, args.package.name, build_no))
+        log.info('')
+        log.info('Build %s submitted' % build_no)
 
 
 def add_parser(subparsers):
@@ -100,4 +105,5 @@ def add_parser(subparsers):
                          dest='test_only',
                          help="Don't upload the build targets to Anaconda Cloud, but run everything else")
 
+    add_tail_parser(parser)
     parser.set_defaults(main=main)
