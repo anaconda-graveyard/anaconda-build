@@ -1,4 +1,4 @@
-FROM continuumio/conda_builder_linux:5.11-5.2-0-1
+FROM continuumio/conda_builder_linux:5.11-5.2-1-0
 MAINTAINER Peter Steinberg <psteinberg@continuum.io>
 
 USER root
