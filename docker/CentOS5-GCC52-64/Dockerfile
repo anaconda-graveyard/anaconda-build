@@ -3,7 +3,7 @@ MAINTAINER Peter Steinberg <psteinberg@continuum.io>
 
 USER root
 # Subversion is required to support `svn_url` for conda-build
-RUN yum install -y subversion
+RUN yum install -y subversion && yum clean all
 
 # Automated build should not prompt for installs, and should not
 # submit builds automatically
