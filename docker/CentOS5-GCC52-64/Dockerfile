@@ -10,6 +10,11 @@ RUN yum install -y subversion && yum clean all
 RUN /opt/miniconda/bin/conda config --set always_yes true && \
     /opt/miniconda/bin/conda config --set anaconda_upload false
 
+# Install anaconda-build
+RUN /opt/miniconda/bin/conda update --all && \
+    /opt/miniconda/bin/conda install anaconda-build && \
+    /opt/miniconda/bin/conda clean --all
+
 # Run as unprivileged user
 USER dev
 # Use the C++98 ABI by default
