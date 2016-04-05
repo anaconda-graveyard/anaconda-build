@@ -22,6 +22,18 @@ def get_conda_root_prefix():
             bin_dir = os.path.dirname(conda_exe_path)
             return os.path.dirname(bin_dir)
 
+
+def get_conda_build_dir():
+
+    conda_prefix = get_conda_root_prefix()
+
+    if conda_prefix and os.access(conda_prefix, os.W_OK):
+        default_build_dir = os.path.join(conda_prefix, 'conda-bld', '{platform}')
+    else:
+        default_build_dir = os.path.expanduser(os.path.join('~', 'conda-bld', '{platform}'))
+
+    return default_build_dir
+
 def get_anaconda_url(binstar, path):
     '''
     Gets an absolute URL to the `path` identified

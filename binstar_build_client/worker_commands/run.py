@@ -13,7 +13,7 @@ from clyent.logs import setup_logging
 from binstar_client.utils import get_binstar
 
 from binstar_build_client import BinstarBuildAPI
-from binstar_build_client.utils import get_conda_root_prefix
+from binstar_build_client.utils import get_conda_build_dir
 from binstar_build_client.worker.worker import Worker
 from binstar_build_client.worker.register import WorkerConfiguration
 
@@ -72,11 +72,8 @@ def add_parser(subparsers, name='run',
 
     dgroup = parser.add_argument_group('development options')
 
-    conda_prefix = get_conda_root_prefix()
-    if conda_prefix:
-        default_build_dir = os.path.join(conda_prefix, 'conda-bld', '{platform}')
-    else:
-        default_build_dir = None
+    default_build_dir = get_conda_build_dir()
+
     dgroup.add_argument("--conda-build-dir",
                         default=default_build_dir,
                         help="[Advanced] The conda build directory (default: %(default)s)",
