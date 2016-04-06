@@ -15,6 +15,9 @@ RUN /opt/miniconda/bin/conda update --all && \
     /opt/miniconda/bin/conda install anaconda-build && \
     /opt/miniconda/bin/conda clean --all
 
+# We need git when the root environment is inactive
+RUN /bin/ln -sf /opt/miniconda/bin/git /usr/local/bin/git
+
 # Run as unprivileged user
 USER dev
 # Use the C++98 ABI by default
