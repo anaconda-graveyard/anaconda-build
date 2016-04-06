@@ -21,9 +21,8 @@
 * Use BINSTAR_CONFIG_DIR in build scripts for anaconda config
   settings like endpoint url
 * Bug fixes related to working directory definition for docker workers
-* Prevent registration of the same worker_id by users who share
-  an organization(s)
-
+* Prevent registration of the same worker --name by users
+  who share an organization(s)
 
 2016-02-11: 0.14.0:
 -------------------
