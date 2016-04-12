@@ -4,12 +4,16 @@ from __future__ import (print_function, unicode_literals, division,
 
 import os
 from subprocess import check_output, CalledProcessError
+try:
+    from subprocess import DEVNULL
+except ImportError:
+    DEVNULL = open(os.devnull, 'r+b')
 
 class ExcludeGit(object):
     def __init__(self, path, use_git_ignore=True):
         self.path = os.path.abspath(path)
         try:
-            filelist = check_output(['git', 'ls-files'], cwd=self.path).decode().split()
+            filelist = check_output(['git', 'ls-files'], stderr=DEVNULL, cwd=self.path).decode().split()
             self.to_include = [ os.path.abspath(os.path.join(self.path, fn))
                                 for fn in filelist ]
         except CalledProcessError as err:
