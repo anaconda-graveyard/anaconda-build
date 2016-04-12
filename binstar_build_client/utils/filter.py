@@ -23,13 +23,10 @@ class ExcludeGit(object):
 
     def __call__(self, filename):
         filename = os.path.abspath(filename)
-        if self.to_include is None:
-            return False
-
         if os.path.isdir(filename):
             return False
 
-        if filename in self.to_include:
+        if self.to_include is None or filename in self.to_include:
             self.num_included += 1
             return False
 
