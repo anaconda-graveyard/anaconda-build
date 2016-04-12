@@ -75,6 +75,11 @@ class BuildQueueMixin(object):
         try:
             self._check_response(res, [201, 200])
         except errors.NotFound:
+            if hasattr(self, 'log_build_output_structured_failed'):
+                # it might be a missing build or job that's not found.
+                # structured log has succeeded at least once, so don't give up!
+                raise
+
             log.info('Will not attempt structured '
                      'logging with tags, falling back '
                      'to plain build log.  There is no '
@@ -83,6 +88,8 @@ class BuildQueueMixin(object):
             return self.log_build_output(username, queue_name,
                                   worker_id, job_id,
                                   msg)
+        else:
+            self.log_build_output_structured_failed = False
 
         try:
             result = res.json().get('terminate_build', False)

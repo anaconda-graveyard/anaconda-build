@@ -214,6 +214,39 @@ class TestServer(unittest.TestCase):
 
         urls.assertAllCalled()
 
+    @urlmock.urlpatch
+    def test_after_success_does_not_fall_back(self, urls):
+        log_tagged = urls.register(
+            method='POST',
+            path='/build-worker/user_name/queue_name/worker_id/jobs/123/tagged-log',
+            status=200,
+        )
+        log_simple = urls.register(
+            method='POST',
+            path='/build-worker/user_name/queue_name/worker_id/jobs/123/log',
+            status=200,
+        )
+
+        with mk_log(filename=self.filepath) as log:
+            log.writeline(b'This is some data\n')
+            log.flush()
+
+            self.assertEqual(len(log_tagged._resps), 1)
+            self.assertEqual(len(log_simple._resps), 0)
+
+            log_tagged = urls.register(
+                method='POST',
+                path='/build-worker/user_name/queue_name/worker_id/jobs/123/tagged-log',
+                status=404,
+            )
+
+            log.writeline(b'This is some later data\n')
+            log.flush()
+
+            self.assertEqual(len(log_tagged._resps), 1)
+            self.assertEqual(len(log_simple._resps), 0)
+
+
     @mock.patch('binstar_build_client.worker.utils.build_log.MAX_WRITE_ATTEMPTS', 2)
     @urlmock.urlpatch
     def test_terminate_server_error(self, urls):
