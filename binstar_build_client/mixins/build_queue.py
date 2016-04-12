@@ -74,11 +74,11 @@ class BuildQueueMixin(object):
         res = self.session.post(url, data=content)
         try:
             self._check_response(res, [201, 200])
-        except Exception as e:
+        except errors.NotFound:
             log.info('Will not attempt structured '
                      'logging with tags, falling back '
                      'to plain build log.  There is no '
-                     'Repository endpoint ' + url)
+                     'Repository endpoint %s', url, exc_info=True)
             self.log_build_output_structured_failed = True
             return self.log_build_output(username, queue_name,
                                   worker_id, job_id,

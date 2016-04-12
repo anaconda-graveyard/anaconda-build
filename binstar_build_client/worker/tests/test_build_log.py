@@ -217,24 +217,19 @@ class TestServer(unittest.TestCase):
     @mock.patch('binstar_build_client.worker.utils.build_log.MAX_WRITE_ATTEMPTS', 2)
     @urlmock.urlpatch
     def test_terminate_server_error(self, urls):
-        urls.register(
+        log_tagged = urls.register(
             method='POST',
             path='/build-worker/user_name/queue_name/worker_id/jobs/123/tagged-log',
-            status=500,
-        )
-        log_simple = urls.register(
-            method='POST',
-            path='/build-worker/user_name/queue_name/worker_id/jobs/123/log',
             status=500,
         )
 
         with mk_log(filename=self.filepath) as log:
             log.writeline(b'This is some data\n')
             log.flush()
-            self.assertEqual(len(log_simple._resps), 1)
+            self.assertEqual(len(log_tagged._resps), 1)
             self.assertFalse(log.terminated(), "Should not terminate after the first failure")
             log.flush()
-            self.assertEqual(len(log_simple._resps), 2)
+            self.assertEqual(len(log_tagged._resps), 2)
             self.assertTrue(log.terminated(), "Should terminate after MAX_WRITE_ATTEMPTS")
 
 
