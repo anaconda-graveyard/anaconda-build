@@ -45,7 +45,7 @@ class Test(CLITestCase):
         self.assertIn('queue_tags', parameters)
         self.assertIn('filter_platform', parameters)
         self.assertEqual(parameters['filter_platform'], 'linux-64')
-        self.assertItemsEqual(parameters['queue_tags'], ['dist:ubuntu', 'hostname:host1'])
+        self.assertEqual(set(parameters['queue_tags']), {'dist:ubuntu', 'hostname:host1'})
 
 
 if __name__ == '__main__':
