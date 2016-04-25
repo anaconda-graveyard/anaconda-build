@@ -7,12 +7,18 @@ Created on Feb 22, 2014
 from __future__ import (print_function, unicode_literals, division,
     absolute_import)
 
-import logging
+import codecs
+import contextlib
 import io
+import logging
 import mock
-import unittest
-from binstar_client import tests
+import shutil
 from os.path import join, dirname
+import os
+import tempfile
+import unittest
+
+from binstar_client import tests
 
 test_data = join(dirname(tests.__file__), 'data')
 
@@ -52,3 +58,27 @@ class CLITestCase(unittest.TestCase):
         self.store_token_patch.stop()
 
         self.logger.removeHandler(self.hndlr)
+
+
+@contextlib.contextmanager
+def mkdtemp():
+    """Create a temporary directory that is removed after the context
+    """
+    dirname = tempfile.mkdtemp()
+    try:
+        yield dirname
+    finally:
+        shutil.rmtree(dirname)
+
+def makedirs_ok_if_exists(path):
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+def with_directory_contents(contents, func):
+    with mkdtemp() as dirname:
+        for filename, file_content in contents.items():
+            path = os.path.join(dirname, filename)
+            makedirs_ok_if_exists(os.path.dirname(path))
+            with codecs.open(path, 'w', 'utf-8') as f:
+                f.write(file_content)
+        func(os.path.realpath(dirname))
