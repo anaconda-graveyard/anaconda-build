@@ -74,15 +74,22 @@ class BuildQueueMixin(object):
         res = self.session.post(url, data=content)
         try:
             self._check_response(res, [201, 200])
-        except Exception as e:
+        except errors.NotFound:
+            if hasattr(self, 'log_build_output_structured_failed'):
+                # it might be a missing build or job that's not found.
+                # structured log has succeeded at least once, so don't give up!
+                raise
+
             log.info('Will not attempt structured '
                      'logging with tags, falling back '
                      'to plain build log.  There is no '
-                     'Repository endpoint ' + url)
+                     'Repository endpoint %s', url, exc_info=True)
             self.log_build_output_structured_failed = True
             return self.log_build_output(username, queue_name,
                                   worker_id, job_id,
                                   msg)
+        else:
+            self.log_build_output_structured_failed = False
 
         try:
             result = res.json().get('terminate_build', False)
