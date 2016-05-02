@@ -292,6 +292,39 @@ class Test(unittest.TestCase):
             build_data['build_item_info'].pop(name)
 
 
+class TestContent(unittest.TestCase):
+
+    def generate_script(self, build_data, **kwargs):
+        tempdir = tempfile.mkdtemp()
+        script_filename = gen_build_script(
+            tempdir,
+            tempdir,
+            build_data,
+            **kwargs)
+
+        self.addCleanup(os.unlink, script_filename)
+        with open(script_filename, 'r') as script:
+            return script.read()
+
+    def test_normal_upload(self):
+        build_data = default_build_data()
+        build_data['build_item_info']['instructions']['build_targets'] = ['README.md']
+
+        content = self.generate_script(build_data)
+
+        self.assertIn('README.md', content)
+        self.assertNotIn('--force', content)
+
+    def test_force_upload(self):
+        build_data = default_build_data()
+        build_data['build_item_info']['instructions']['build_targets'] = {'files': 'README.md', 'force_upload': True}
+
+        content = self.generate_script(build_data)
+
+        self.assertIn('README.md', content)
+        self.assertIn('--force', content)
+
+
 if __name__ == "__main__":
     # import sys;sys.argv = ['', 'Test.test_timeout']
     unittest.main()

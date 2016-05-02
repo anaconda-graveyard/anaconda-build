@@ -96,6 +96,15 @@ def get_files(context, job_data):
     return build_targets
 
 
+def get_force_upload(job_data):
+    build_targets = job_data['build_item_info'].get('instructions', {}).get('build_targets')
+    force = False
+    if isinstance(build_targets, dict):
+        force = build_targets.get('force_upload', False)
+
+    return '--force' if force else ''
+
+
 def get_list(dct, item, default=()):
     """
     Get an item from a dictionary, like `dict.get`.
@@ -212,6 +221,7 @@ def render_build_script(working_dir, build_data, **context):
         'sub_dir': build_data['build_info'].get('sub_dir'),
         'labels': get_labels(build_data),
         'files': get_files(context, build_data),
+        'force_upload': get_force_upload(build_data),
         'install_channels': install_channels,
         'EXIT_CODE_OK': 0,
         'EXIT_CODE_ERROR': 11,
