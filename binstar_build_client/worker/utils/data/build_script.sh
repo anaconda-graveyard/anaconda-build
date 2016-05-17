@@ -306,8 +306,8 @@ upload_build_targets(){
     {{ start_section('upload_build_targets') }}
     eval $bb_check_command_error
     {% for tgt in files %}
-    echo "anaconda -q -t \$TOKEN upload --force --user $BINSTAR_OWNER --package $BINSTAR_PACKAGE {{labels}} {{tgt}} --build-id $BINSTAR_BUILD"
-    anaconda -q -t "$BINSTAR_API_TOKEN" upload --force --user "$BINSTAR_OWNER" --package "$BINSTAR_PACKAGE" {{labels}} {{tgt}} --build-id "$BINSTAR_BUILD"
+    echo "anaconda -q -t \$TOKEN upload {{force_upload}} --user $BINSTAR_OWNER --package $BINSTAR_PACKAGE {{labels}} {{tgt}} --build-id $BINSTAR_BUILD"
+    anaconda -q -t "$BINSTAR_API_TOKEN" upload {{force_upload}} --user "$BINSTAR_OWNER" --package "$BINSTAR_PACKAGE" {{labels}} {{tgt}} --build-id "$BINSTAR_BUILD"
     eval $bb_check_command_error
     {% else %}
     echo "No build targets specified"

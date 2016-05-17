@@ -380,8 +380,8 @@ goto:eof
     {{ start_section('upload_build_targets') }}
 
     {% for tgt in files %}
-    echo anaconda -q -t %%TOKEN%% upload --force --user %BINSTAR_OWNER% --package %BINSTAR_PACKAGE% {{labels}} {{tgt}} --build-id %BINSTAR_BUILD_MAJOR%
-    anaconda -q -t "%BINSTAR_API_TOKEN%" upload --force --user "%BINSTAR_OWNER%" --package "%BINSTAR_PACKAGE%" {{labels}} {{tgt}} --build-id "%BINSTAR_BUILD%" || ( {{ set_error() }} )
+    echo anaconda -q -t %%TOKEN%% upload {{force_upload}} --user %BINSTAR_OWNER% --package %BINSTAR_PACKAGE% {{labels}} {{tgt}} --build-id %BINSTAR_BUILD_MAJOR%
+    anaconda -q -t "%BINSTAR_API_TOKEN%" upload {{force_upload}} --user "%BINSTAR_OWNER%" --package "%BINSTAR_PACKAGE%" {{labels}} {{tgt}} --build-id "%BINSTAR_BUILD%" || ( {{ set_error() }} )
     {% else %}
     echo No build targets specified
     {% endfor %}
