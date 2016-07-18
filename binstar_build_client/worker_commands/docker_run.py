@@ -51,7 +51,7 @@ def add_parser(subparsers):
                                description, __doc__)
 
     dgroup = parser.add_argument_group('docker arguments')
-    dgroup.add_argument("-i", "--image", default="binstar/linux-64",
+    dgroup.add_argument("-i", "--image", default="continuumio/anaconda-build-linux-64",
                         help="Docker image to use (default %(default)s)",
                         )
     dgroup.add_argument('--allow-user-images', action='store_true', default=False,
